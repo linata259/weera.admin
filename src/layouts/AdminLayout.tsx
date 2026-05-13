@@ -1,13 +1,27 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import Sidebar, { NavItem } from '../components/Sidebar';
+import Sidebar, { NavItem, NavGroup } from '../components/Sidebar';
 
-const NAV_FEATURES: NavItem[] = [
+const NAV_FEATURES: NavGroup[] = [
   { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: '⊞' },
-  { id: 'users',     label: 'Users',     path: '/users',     icon: '👥' },
-  { id: 'jobs',      label: 'Jobs',      path: '/jobs',      icon: '💼' },
+  {
+    id: 'users',
+    label: 'User Management',
+    path: '/users',
+    icon: '👥',
+    children: [
+      { id: 'users-analytics', label: 'Analytics', path: '/users/analytics' },
+      { id: 'users-clients',   label: 'Clients',   path: '/users/clients' },
+      { id: 'users-bidders',   label: 'Bidders',   path: '/users/bidders' },
+    ],
+  },
+  { id: 'jobs', label: 'Job Management', path: '/jobs', icon: '💼' },
 ];
+
+// Flatten all nav items (including children) for tab tracking
+// const flattenNav = (groups: NavGroup[]): NavItem[] =>
+//   groups.flatMap(g => (g.children ? g.children : [{ id: g.id, label: g.label, path: g.path, icon: g.icon }]));
 
 export const AdminLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
@@ -28,8 +42,7 @@ export const AdminLayout: React.FC<React.PropsWithChildren<{}>> = ({ children })
       const idx = prev.findIndex(t => t.id === id);
       const next = prev.filter(t => t.id !== id);
       if (next.length > 0) {
-        const newActive = next[Math.max(0, idx - 1)];
-        navigate(newActive.path);
+        navigate(next[Math.max(0, idx - 1)].path);
       } else {
         navigate('/dashboard');
       }

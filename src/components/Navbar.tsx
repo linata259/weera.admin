@@ -1,6 +1,8 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 
+const PRIMARY = '#EA580C';
+
 export type NavItem = {
   id: string;
   label: string;
@@ -47,10 +49,18 @@ const Navbar: React.FC<NavbarProps> = ({ sidebarWidth = 280, openTabs }) => {
       {/* Right: avatar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{
-          width: 36, height: 36, borderRadius: '50%',
-          background: '#E1E4EA', display: 'flex',
-          alignItems: 'center', justifyContent: 'center',
-          fontWeight: 600, fontSize: 14, color: '#4B5565',
+          width: 36,
+          height: 36,
+          borderRadius: '50%',
+          background: PRIMARY,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontWeight: 700,
+          fontSize: 14,
+          color: '#ffffff',
+          boxShadow: `0 2px 8px ${PRIMARY}55`,
+          letterSpacing: '0.02em',
         }}>
           U
         </div>
