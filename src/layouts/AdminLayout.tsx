@@ -12,8 +12,8 @@ const NAV_FEATURES: NavGroup[] = [
     icon: '👥',
     children: [
       { id: 'users-analytics', label: 'Analytics', path: '/users/analytics' },
-      { id: 'users-clients',   label: 'Clients',   path: '/users/clients' },
-      { id: 'users-bidders',   label: 'Bidders',   path: '/users/bidders' },
+      { id: 'users',   label: 'Users',   path: '/users' },
+      // { id: 'users-bidders',   label: 'Bidders',   path: '/users/bidders' },
     ],
   },
   { id: 'jobs', label: 'Job Management', path: '/jobs', icon: '💼' },

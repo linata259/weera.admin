@@ -28,7 +28,7 @@ export default function App() {
         />
 
         <Route
-          path="/users/clients"
+          path="/users"
           element={
             <AdminLayout>
               <Users />
