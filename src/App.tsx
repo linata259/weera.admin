@@ -2,8 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 import AdminLayout from './layouts/AdminLayout';
 import Users from './features/users/pages/Users';
-import Bidders from './features/users/pages/Bidders';
 import UserAnalytics from './features/users/pages/UserAnalytics';
+import JobPage from './features/jobs/pages/jobs';
 
 export default function App() {
   return (
@@ -48,7 +48,7 @@ export default function App() {
           path="/users/bidders"
           element={
             <AdminLayout>
-              <Bidders />
+              <JobPage/>
             </AdminLayout>
           }
         />

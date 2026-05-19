@@ -12,6 +12,6 @@ export interface Column {
 
 export function deriveStatus(user: User): Status {
   if (user.location_allowed === true) return "active";
-  if (user.location_allowed === false) return "suspended";
-  return "pending";
+  // if (user.location_allowed === false) return "suspended";
+  return "active"; // default to active if field is missing, since most users are active
 }

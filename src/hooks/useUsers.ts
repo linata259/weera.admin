@@ -12,6 +12,7 @@ export const useUsers = (initialUsers: any[]) => {
     );
     return sortData(result, sortConfig.key as any, sortConfig.dir);
   }, [initialUsers, searchTerm, sortConfig]);
+  
 
   const requestSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
