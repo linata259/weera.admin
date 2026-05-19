@@ -28,6 +28,7 @@
     "typecheck": "tsc --noEmit",
     "th": "npm run typecheck"
   },
+  
   "eslintConfig": {
     "extends": [
       "react-app",
