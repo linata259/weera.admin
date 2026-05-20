@@ -3,7 +3,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import AdminLayout from './layouts/AdminLayout';
 import Users from './features/users/pages/Users';
 import UserAnalytics from './features/users/pages/UserAnalytics';
-import JobPage from './features/jobs/pages/jobs';
+import Jobs from './features/jobs/pages/Jobs';
+import JobAnalytics from './features/jobs/pages/JobAnalytics';
+
 
 export default function App() {
   return (
@@ -40,7 +42,7 @@ export default function App() {
           path="/jobs"
           element={
             <AdminLayout>
-              <div>Job Management</div>
+              <Jobs />
             </AdminLayout>
           }
         />
@@ -48,7 +50,7 @@ export default function App() {
           path="/users/bidders"
           element={
             <AdminLayout>
-              <JobPage/>
+              <div>Bidders List</div>
             </AdminLayout>
           }
         />
@@ -57,6 +59,14 @@ export default function App() {
           element={
             <AdminLayout>
               <UserAnalytics />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/jobs/analytics"
+          element={
+            <AdminLayout>
+              <JobAnalytics />
             </AdminLayout>
           }
         />
