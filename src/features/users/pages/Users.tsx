@@ -1,287 +1,174 @@
-import React, { useState, useEffect } from "react";
-import { useUsers } from "../hooks/useUsers";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
+import { Column, User } from "../types";
 import { fetchUsers } from "../api/userServices";
-import { StatusFilter, UserTypeFilter } from "@features/shared/types";
-import {
-  ALL_EXTRA_COLUMNS,
-  TableToolbar,
-} from "../components/table/TableToolbar";
+import { TableToolbar } from "../components/table/TableToolbar";
 import { UserTable } from "../components/table/UserTable";
 
-/* -------------------------------------------------------------------------- */
-/*                                   TYPES                                    */
-/* -------------------------------------------------------------------------- */
-
-export interface User {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  image_url: string | null;
-  about_me: string | null;
-  professional_headline: string | null;
-  location_allowed: boolean | null;
-  certifications: string[];
-  location_id: string[];
-  user_type_id: string[];
-  skills_id: string[];
-  profile_attachments: string[];
-  phone: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-
-  /* Computed display helpers */
-  name: string;
-  location: string;
-  location_names: string[];
-  user_type_names: string[];
-}
-
-/* -------------------------------------------------------------------------- */
-/*                              SANITIZE HELPERS                              */
-/* -------------------------------------------------------------------------- */
-
-const sanitizeText = (value: string | null): string => {
-  if (!value) return "";
-
-  return value
-    .replace(/<script.*?>.*?<\/script>/gi, "")
-    .replace(/<[^>]+>/g, "")
-    .replace(/[<>]/g, "")
-    .trim();
+/* ── sanitise helpers (keep XSS out of rendered values) ─────── */
+const sanitizeText = (v: string | null | undefined): string => {
+  if (!v) return "";
+  return v.replace(/<script.*?>.*?<\/script>/gi, "").replace(/<[^>]+>/g, "").replace(/[<>]/g, "").trim();
 };
-
-const sanitizePhone = (value: string | null): string => {
-  if (!value) return "";
-
-  return value.replace(/[^\d+]/g, "");
-};
-
-const sanitizeImageUrl = (url: string | null): string | null => {
+const sanitizePhone = (v: string | null | undefined): string =>
+  v ? v.replace(/[^\d+]/g, "") : "";
+const sanitizeImageUrl = (url: string | null | undefined): string | null => {
   if (!url) return null;
-
-  const clean = url.trim();
-
-  if (
-    clean.startsWith("http://") ||
-    clean.startsWith("https://")
-  ) {
-    return clean;
-  }
-
-  return null;
+  const c = url.trim();
+  return c.startsWith("http://") || c.startsWith("https://") ? c : null;
 };
 
-/* -------------------------------------------------------------------------- */
-/*                                MAIN SCREEN                                 */
-/* -------------------------------------------------------------------------- */
+/* ── columns shown in the extra-columns area of the table ───── */
+const COLUMNS: Column[] = [
+  { key: "phone",    label: "Phone"    },
+  { key: "email",    label: "Email"    },
+  { key: "location", label: "Location" },
+];
 
-const Users: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([]);
+/* ────────────────────────────────────────────────────────────── */
+const UsersPage: React.FC = () => {
+  const [users,      setUsers]      = useState<User[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [locationFilter,  setLocationFilter]  = useState("all");
+  const [userTypeFilter,  setUserTypeFilter]  = useState<"all" | "clients" | "bidders">("all");
+  const [sortConfig, setSortConfig] = useState<{ key: keyof User; direction: "asc" | "desc" } | null>(null);
 
-  const [locationFilter, setLocationFilter] =
-    useState<string>("all");
-
-  const [statusFilter, setStatusFilter] =
-    useState<StatusFilter>("all");
-
-  const [userTypeFilter, setUserTypeFilter] =
-    useState<UserTypeFilter>("all");
-
-  const [visibleCols, setVisibleCols] =
-    useState<Set<string>>(
-      new Set(ALL_EXTRA_COLUMNS.map((c) => c.key))
-    );
-
-  const {
-    searchTerm,
-    setSearchTerm,
-    filteredAndSortedUsers: baseFiltered,
-    requestSort,
-    sortConfig,
-  } = useUsers(users);
-
-  /* ---------------------------------------------------------------------- */
-  /*                            FETCH + SANITIZE                            */
-  /* ---------------------------------------------------------------------- */
-
+  /* ── fetch ───────────────────────────────────────────────── */
   useEffect(() => {
-    fetchUsers().then((data) => {
-      const sanitizedUsers = (data as User[]).map((user) => {
-        const safeFirstName = sanitizeText(user.first_name);
-        const safeLastName = sanitizeText(user.last_name);
-
-        const safeName =
-          `${safeFirstName} ${safeLastName}`.trim() || "Unknown User";
-
-        return {
-          ...user,
-
-          first_name: safeFirstName,
-          last_name: safeLastName,
-
-          about_me: sanitizeText(user.about_me),
-
-          professional_headline: sanitizeText(
-            user.professional_headline
-          ),
-
-          phone: sanitizePhone(user.phone),
-
-          image_url: sanitizeImageUrl(user.image_url),
-
-          name: safeName,
-
-          location: sanitizeText(user.location),
-
-          location_names: (user.location_names ?? []).map(
-            sanitizeText
-          ),
-
-          user_type_names: (
-            user.user_type_names ?? []
-          ).map(sanitizeText),
-        };
-      });
-
-      setUsers(sanitizedUsers);
-    });
+    fetchUsers()
+      .then((data) => {
+        const clean = data.map((u) => ({
+          ...u,
+          first_name:            sanitizeText(u.first_name),
+          last_name:             sanitizeText(u.last_name),
+          about_me:              sanitizeText(u.about_me),
+          professional_headline: sanitizeText(u.professional_headline),
+          phone:                 sanitizePhone(u.phone) || null,
+          image_url:             sanitizeImageUrl(u.image_url),
+          name:                  sanitizeText(u.name) || "Unknown User",
+          location:              sanitizeText(u.location),
+          location_names:        (u.location_names ?? []).map(sanitizeText),
+          user_type_names:       (u.user_type_names ?? []).map(sanitizeText),
+        }));
+        setUsers(clean);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
-  /* ---------------------------------------------------------------------- */
-  /*                                FILTERING                               */
-  /* ---------------------------------------------------------------------- */
+  /* ── sort ────────────────────────────────────────────────── */
+  const handleSort = useCallback((key: keyof User) => {
+    setSortConfig((prev) =>
+      prev?.key === key
+        ? { key, direction: prev.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: "asc" }
+    );
+  }, []);
 
-  const filteredAndSortedUsers = baseFiltered.filter((u) => {
-    /* Location filter */
+  /* ── filter + sort pipeline ──────────────────────────────── */
+  const filteredUsers = useMemo(() => {
+    let list = users;
 
-    if (
-      locationFilter !== "all" &&
-      !(u.location_names ?? []).includes(locationFilter)
-    ) {
-      return false;
-    }
-
-    /* Status filter */
-
-    if (statusFilter !== "all") {
-      const s =
-        u.location_allowed === true
-          ? "active"
-          : "active"; // default to active if field is missing, since most users are active
-
-      if (s !== statusFilter) return false;
-    }
-
-    /* User type filter */
-
-    if (userTypeFilter !== "all") {
-      const typeNames = (u.user_type_names ?? []).map((t) =>
-        t.toLowerCase()
+    /* search */
+    if (searchTerm.trim()) {
+      const q = searchTerm.toLowerCase();
+      list = list.filter(
+        (u) =>
+          u.name?.toLowerCase().includes(q) ||
+          (u as any).email?.toLowerCase().includes(q) ||
+          u.phone?.includes(q) ||
+          u.professional_headline?.toLowerCase().includes(q)
       );
-
-      const wantType =
-        userTypeFilter === "clients"
-          ? "hire talent"
-          : "find work";
-
-      if (!typeNames.includes(wantType)) return false;
     }
 
-    return true;
-  });
+    /* location */
+    if (locationFilter !== "all") {
+      list = list.filter((u) => (u.location_names ?? []).includes(locationFilter));
+    }
 
-  /* ---------------------------------------------------------------------- */
-  /*                             LOCATION OPTIONS                           */
-  /* ---------------------------------------------------------------------- */
+    /* user type */
+    if (userTypeFilter !== "all") {
+      const want = userTypeFilter === "clients" ? "hire talent" : "find work";
+      list = list.filter((u) =>
+        (u.user_type_names ?? []).map((t) => t.toLowerCase()).includes(want)
+      );
+    }
 
-  const locationOptions = Array.from(
-    new Set(
-      users
-        .flatMap((u) => u.location_names ?? [])
-        .filter(Boolean)
-    )
-  )
-    .sort()
-    .map((l) => ({
-      label: l,
-      value: l,
-    }));
+    /* sort */
+    if (sortConfig) {
+      list = [...list].sort((a, b) => {
+        const av = (a as unknown as Record<string, unknown>)[sortConfig.key as string];
+        const bv = (b as unknown as Record<string, unknown>)[sortConfig.key as string];
+        if (av == null) return 1;
+        if (bv == null) return -1;
+        if (typeof av === "string" && typeof bv === "string")
+          return sortConfig.direction === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+        return sortConfig.direction === "asc" ? (av < bv ? -1 : 1) : av > bv ? -1 : 1;
+      });
+    }
 
-  /* ---------------------------------------------------------------------- */
-  /*                            COLUMN VISIBILITY                           */
-  /* ---------------------------------------------------------------------- */
+    return list;
+  }, [users, searchTerm, locationFilter, userTypeFilter, sortConfig]);
 
-  const toggleColVisibility = (key: string) =>
-    setVisibleCols((prev) => {
-      const next = new Set(prev);
-
-      next.has(key)
-        ? next.delete(key)
-        : next.add(key);
-
-      return next;
-    });
-
-  const activeColumns = ALL_EXTRA_COLUMNS.filter((c) =>
-    visibleCols.has(c.key)
+  /* ── location options for toolbar dropdown ───────────────── */
+  const locationOptions = useMemo(() =>
+    Array.from(new Set(users.flatMap((u) => u.location_names ?? []).filter(Boolean)))
+      .sort()
+      .map((l) => ({ label: l, value: l })),
+    [users]
   );
 
-  /* ---------------------------------------------------------------------- */
-  /*                                ACTIONS                                 */
-  /* ---------------------------------------------------------------------- */
+  /* ── suspend / unsuspend ─────────────────────────────────── */
+  const handleSuspendUser = useCallback((user: User) => {
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.id === user.id
+          ? { ...u, is_active: u.is_active === false ? true : false }
+          : u
+      )
+    );
+    // TODO: persist to Supabase: supabase.from('profiles').update({ is_active: ... }).eq('id', user.id)
+  }, []);
 
-  const handleViewUser = (user: User) => {
-    console.log("View user:", user);
-  };
-
-  const handleSuspendUser = (user: User) => {
-    console.log("Toggle suspend:", user);
-  };
-
-  /* ---------------------------------------------------------------------- */
-  /*                                  UI                                    */
-  /* ---------------------------------------------------------------------- */
+  /* ── loading state ───────────────────────────────────────── */
+  if (loading) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 300, fontFamily: "'DM Sans', sans-serif", color: "#64748B" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ width: 32, height: 32, border: "3px solid #E2E8F0", borderTop: "3px solid #EA580C", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
+          Loading users…
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+      </div>
+    );
+  }
 
   return (
-    <div
-      style={{
-        width: "100%",
-        display: "flex",
-        flexDirection: "column",
-        gap: 20,
-        fontFamily:
-          "'DM Sans', 'Helvetica Neue', sans-serif",
-      }}
-    >
-      {/* ----------------------------- TOOLBAR ----------------------------- */}
-
+    <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 20, fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif" }}>
       <TableToolbar
-        // users={users}
         searchTerm={searchTerm}
         onSearch={setSearchTerm}
         locationOptions={locationOptions}
         locationFilter={locationFilter}
         onLocationChange={setLocationFilter}
-        statusFilter={statusFilter}
-        onStatusChange={setStatusFilter}
+        statusFilter="all"
+        onStatusChange={() => {}}
         userTypeFilter={userTypeFilter}
         onUserTypeChange={setUserTypeFilter}
-        visibleCols={visibleCols}
-        onToggleCol={toggleColVisibility}
+        visibleCols={new Set(COLUMNS.map((c) => c.key as string))}
+        onToggleCol={() => {}}
       />
 
-      {/* ------------------------------ TABLE ------------------------------ */}
       <UserTable
-        data={filteredAndSortedUsers}
-        columns={activeColumns}
-        onSort={requestSort}
+        data={filteredUsers}
+        columns={COLUMNS}
+        onSort={handleSort}
         sortConfig={sortConfig}
-        onViewUser={handleViewUser}
-        onSuspendUser={handleSuspendUser}
         rowsPerPage={10}
+        onSuspendUser={handleSuspendUser}
       />
     </div>
   );
 };
 
-export default Users;
+export default UsersPage;

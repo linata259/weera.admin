@@ -1,9 +1,7 @@
 import React from "react";
-import { User } from "../../pages/Users";
-import { deriveStatus } from "../../../shared/types";
+import { User, deriveStatus } from "../../types";
 import { StatusBadge } from "../../../shared/StatusBadge";
 import { Avatar } from "../../../shared/Avatar";
-
 
 interface Props {
   user: User;
@@ -17,9 +15,14 @@ export const MobileUserCard: React.FC<Props> = ({ user, index, onClick }) => {
     <div
       onClick={onClick}
       style={{
-        padding: "14px 16px", borderBottom: "1px solid #F1F5F9",
-        display: "flex", alignItems: "center", gap: 12,
-        cursor: "pointer", transition: "background 0.12s", background: "#fff",
+        padding: "14px 16px",
+        borderBottom: "1px solid #F1F5F9",
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        cursor: "pointer",
+        transition: "background 0.12s",
+        background: "#fff",
       }}
       onMouseEnter={(e) => { e.currentTarget.style.background = "#FAFBFC"; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = "#fff"; }}

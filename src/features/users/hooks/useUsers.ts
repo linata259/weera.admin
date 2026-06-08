@@ -1,7 +1,8 @@
 // hooks/useUsers.ts
 
 import { useMemo, useState } from "react";
-import { User } from "../pages/Users";
+import { User } from "../types";
+
 
 type SortDirection = "asc" | "desc";
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { fetchUsers } from '../api/userServices';
-import type { User } from '../pages/Users';
+import { User } from '../types';
+
 
 // ── colour tokens ──────────────────────────────────────────────────────
 const ORANGE = '#EA580C';
@@ -15,7 +16,7 @@ type GrowthPeriod = 'days' | 'weeks' | 'months';
 interface GrowthBucket {
   label: string;
   clients: number;
-  freelancers: number;
+  bidders : number;
 }
 
 // ── helpers ────────────────────────────────────────────────────────────
@@ -42,7 +43,7 @@ function buildGrowthBuckets(users: User[], period: GrowthPeriod): GrowthBucket[]
       return {
         label: d.toLocaleString('default', { weekday: 'short', day: 'numeric' }),
         clients: 0,
-        freelancers: 0,
+        bidders : 0,
         _key: startOfDay(d).getTime(),
       } as GrowthBucket & { _key: number };
     });
@@ -54,7 +55,7 @@ function buildGrowthBuckets(users: User[], period: GrowthPeriod): GrowthBucket[]
       if (!b) return;
       const types = u.user_type_names ?? [];
       if (types.some(t => t === 'hire talent')) b.clients++;
-      if (types.some(t => t === 'find work'))   b.freelancers++;
+      if (types.some(t => t === 'find work'))   b.bidders ++;
     });
 
     return buckets;
@@ -69,7 +70,7 @@ function buildGrowthBuckets(users: User[], period: GrowthPeriod): GrowthBucket[]
       d.setDate(d.getDate() - i * 7);
       const lbl = isoWeek(d);
       if (!map.has(lbl)) {
-        map.set(lbl, { label: lbl, clients: 0, freelancers: 0 });
+        map.set(lbl, { label: lbl, clients: 0, bidders : 0 });
         labels.push(lbl);
       }
     }
@@ -80,7 +81,7 @@ function buildGrowthBuckets(users: User[], period: GrowthPeriod): GrowthBucket[]
       if (!b) return;
       const types = u.user_type_names ?? [];
       if (types.some(t => t === 'hire talent')) b.clients++;
-      if (types.some(t => t === 'find work'))   b.freelancers++;
+      if (types.some(t => t === 'find work'))   b.bidders ++;
     });
     return labels.map(l => map.get(l)!);
   }
@@ -91,7 +92,7 @@ function buildGrowthBuckets(users: User[], period: GrowthPeriod): GrowthBucket[]
     return {
       label: d.toLocaleString('default', { month: 'short' }),
       clients: 0,
-      freelancers: 0,
+      bidders : 0,
       _key: `${d.getFullYear()}-${d.getMonth()}`,
     } as GrowthBucket & { _key: string };
   });
@@ -104,7 +105,7 @@ function buildGrowthBuckets(users: User[], period: GrowthPeriod): GrowthBucket[]
     if (!b) return;
     const types = u.user_type_names ?? [];
     if (types.some(t => t === 'hire talent')) b.clients++;
-    if (types.some(t => t === 'find work'))   b.freelancers++;
+    if (types.some(t => t === 'find work'))   b.bidders ++;
   });
 
   return buckets;
@@ -146,15 +147,15 @@ function StatCard({ label, value, sub, accent }: { label: string; value: number;
 
 // ── bar chart ──────────────────────────────────────────────────────────
 function BarChart({ data }: { data: GrowthBucket[] }) {
-  const max = Math.max(...data.flatMap(d => [d.clients, d.freelancers]), 1);
+  const max = Math.max(...data.flatMap(d => [d.clients, d.bidders ]), 1);
   return (
     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 140, padding: '0 4px', overflowX: 'auto' }}>
       {data.map((d, i) => (
         <div key={i} style={{ flex: '1 0 auto', minWidth: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 110 }}>
             <div style={{ width: 12, height: `${Math.max((d.clients / max) * 100, 2)}%`, background: ORANGE, borderRadius: '4px 4px 0 0', transition: 'height 0.8s cubic-bezier(.4,0,.2,1)' }} title={`Clients: ${d.clients}`} />
-            <div style={{ width: 12, height: `${Math.max((d.freelancers / max) * 100, 2)}%`, background: NAVY,   borderRadius: '4px 4px 0 0', transition: 'height 0.8s cubic-bezier(.4,0,.2,1)' }} title={`Freelancers: ${d.freelancers}`} />
-          </div>
+            <div style={{ width: 12, height: `${Math.max((d.bidders  / max) * 100, 2)}%`, background: NAVY,   borderRadius: '4px 4px 0 0', transition: 'height 0.8s cubic-bezier(.4,0,.2,1)' }} title={`Bidders: ${d.bidders }}`} />
+          </div>    
           <span style={{ fontSize: 8, color: SLATE, letterSpacing: 0.2, whiteSpace: 'nowrap' }}>{d.label}</span>
         </div>
       ))}
@@ -163,12 +164,12 @@ function BarChart({ data }: { data: GrowthBucket[] }) {
 }
 
 // ── donut chart ────────────────────────────────────────────────────────
-function DonutChart({ clients, freelancers, suspended }: { clients: number; freelancers: number; suspended: number }) {
-  const total = clients + freelancers + suspended || 1;
+function DonutChart({ clients, bidders, suspended }: { clients: number; bidders: number; suspended: number }) {
+  const total = clients + bidders + suspended || 1;
   const r = 52, circ = 2 * Math.PI * r;
   const segments = [
     { value: clients,     color: ORANGE,    label: 'Clients' },
-    { value: freelancers, color: NAVY,      label: 'Freelancers' },
+    { value: bidders, color: NAVY,      label: 'Bidders' },
     { value: suspended,   color: '#CBD5E1', label: 'Suspended' },
   ];
   let offset = 0;
@@ -259,7 +260,7 @@ const UserAnalytics: React.FC = () => {
 
   // ── derived stats ────────────────────────────────────────────────────
   const stats = useMemo(() => {
-    let clients = 0, freelancers = 0, suspended = 0;
+    let clients = 0, bidders = 0, suspended = 0;
     const locationCount: Record<string, number> = {};
     const skillCount:    Record<string, number> = {};
 
@@ -272,7 +273,7 @@ const UserAnalytics: React.FC = () => {
       // The fetchUsers mapper doesn't expose suspended_at, so we skip it here.
       // If you expose it, add: if (u.suspended_at) suspended++;
       if (isClient)     clients++;
-      if (isFreelancer) freelancers++;
+      if (isFreelancer) bidders++;
 
       // locations – use resolved location_names (array)
       (u.location_names ?? [u.location].filter(Boolean)).forEach(loc => {
@@ -296,7 +297,7 @@ const UserAnalytics: React.FC = () => {
       .sort((a, b) => b[1] - a[1]).slice(0, 5)
       .map(([name, count]) => ({ name, count }));
 
-    return { total, clients, freelancers, suspended, activeRate, topLocations, topSkills };
+    return { total, clients, bidders, suspended, activeRate, topLocations, topSkills };
   }, [users]);
 
   const growthData = useMemo(() => buildGrowthBuckets(users, period), [users, period]);
@@ -328,7 +329,7 @@ const UserAnalytics: React.FC = () => {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
         <StatCard label="Total Users"  value={stats.total}       sub="All registered accounts"     accent={NAVY}      />
         <StatCard label="Clients"      value={stats.clients}     sub="Hire talent accounts"         accent={ORANGE}    />
-        <StatCard label="Freelancers"  value={stats.freelancers} sub="Find work accounts"           accent={SKY}       />
+        <StatCard label="Bidders"  value={stats.bidders } sub="Find work accounts"           accent={SKY}       />
         <StatCard label="Suspended"    value={stats.suspended}   sub={`${stats.activeRate}% active rate`} accent="#CBD5E1" />
       </div>
 
@@ -344,7 +345,7 @@ const UserAnalytics: React.FC = () => {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ display: 'flex', gap: 10 }}>
-                {[{ color: ORANGE, label: 'Clients' }, { color: NAVY, label: 'Freelancers' }].map(({ color, label }) => (
+                {[{ color: ORANGE, label: 'Clients' }, { color: NAVY, label: 'Bidders' }].map(({ color, label }) => (
                   <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                     <div style={{ width: 8, height: 8, borderRadius: 2, background: color }} />
                     <span style={{ fontSize: 11, color: SLATE }}>{label}</span>
@@ -361,7 +362,7 @@ const UserAnalytics: React.FC = () => {
         <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 16, padding: 24 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: NAVY, marginBottom: 4 }}>User Breakdown</div>
           <div style={{ fontSize: 11, color: SLATE, marginBottom: 20 }}>Distribution by type</div>
-          <DonutChart clients={stats.clients} freelancers={stats.freelancers} suspended={stats.suspended} />
+          <DonutChart clients={stats.clients} bidders={stats.bidders  } suspended={stats.suspended} />
         </div>
       </div>
 

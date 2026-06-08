@@ -16,13 +16,40 @@ const NAV_FEATURES: NavGroup[] = [
       // { id: 'users-bidders',   label: 'Bidders',   path: '/users/bidders' },
     ],
   },
-  { id: "jobs", label: "Job Management", path: "/jobs", icon: "💼",
-     children: [
-      { id: 'jobs-analytics', label: 'Analytics', path: '/jobs/analytics' },
-      { id: 'jobs',   label: 'Jobs',   path: '/jobs' },
-      
+  {
+    id: "jobs",
+    label: "Job Management",
+    path: "/jobs",
+    icon: "💼",
+    children: [
+      { id: "jobs-analytics", label: "Analytics", path: "/jobs/analytics" },
+      { id: "jobs", label: "Jobs", path: "/jobs" },
     ],
-   },
+  },
+  // AFTER the jobs block, add:
+  {
+    id: "financials",
+    label: "Financials",
+    path: "/financials",
+    icon: "💰",
+    // children: [
+    //   {
+    //     id: "financials-dashboard",
+    //     label: "Financial Dashboard",
+    //     path: "/financials",
+    //   },
+    //   {
+    //     id: "financials-transactions",
+    //     label: "Transactions",
+    //     path: "/financials/transactions",
+    //   },
+    //   {
+    //     id: "financials-escrow",
+    //     label: "Escrow Management",
+    //     path: "/financials/escrow",
+    //   },
+    // ],
+  },
 ];
 
 // Flatten all nav items (including children) for tab tracking

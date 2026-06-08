@@ -1,13 +1,14 @@
 import React from "react";
-import { Status } from "./types";
+import { UserStatus } from "../users/types";
 
-const STATUS_STYLES: Record<Status, React.CSSProperties> = {
+const STATUS_STYLES: Record<UserStatus, React.CSSProperties> = {
   active:    { background: "#DCFCE7", color: "#16A34A" },
   suspended: { background: "#FEE2E2", color: "#DC2626" },
   pending:   { background: "#FEF9C3", color: "#CA8A04" },
+  dormant:   { background: "#F1F5F9", color: "#64748B" },
 };
 
-export const StatusBadge: React.FC<{ status: Status }> = ({ status }) => (
+export const StatusBadge: React.FC<{ status: UserStatus }> = ({ status }) => (
   <span style={{
     ...STATUS_STYLES[status],
     padding: "3px 12px", borderRadius: 20,
