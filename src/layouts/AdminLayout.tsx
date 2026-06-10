@@ -13,7 +13,6 @@ const NAV_FEATURES: NavGroup[] = [
     children: [
       { id: "users-analytics", label: "Analytics", path: "/users/analytics" },
       { id: "users", label: "Users", path: "/users" },
-      // { id: 'users-bidders',   label: 'Bidders',   path: '/users/bidders' },
     ],
   },
   {
@@ -26,35 +25,19 @@ const NAV_FEATURES: NavGroup[] = [
       { id: "jobs", label: "Jobs", path: "/jobs" },
     ],
   },
-  // AFTER the jobs block, add:
   {
     id: "financials",
     label: "Financials",
     path: "/financials",
     icon: "💰",
-    // children: [
-    //   {
-    //     id: "financials-dashboard",
-    //     label: "Financial Dashboard",
-    //     path: "/financials",
-    //   },
-    //   {
-    //     id: "financials-transactions",
-    //     label: "Transactions",
-    //     path: "/financials/transactions",
-    //   },
-    //   {
-    //     id: "financials-escrow",
-    //     label: "Escrow Management",
-    //     path: "/financials/escrow",
-    //   },
-    // ],
+  },
+  {
+    id: "skills",
+    label: "Skills",
+    path: "/skills",
+    icon: "🎯",
   },
 ];
-
-// Flatten all nav items (including children) for tab tracking
-// const flattenNav = (groups: NavGroup[]): NavItem[] =>
-//   groups.flatMap(g => (g.children ? g.children : [{ id: g.id, label: g.label, path: g.path, icon: g.icon }]));
 
 export const AdminLayout: React.FC<React.PropsWithChildren<{}>> = ({
   children,

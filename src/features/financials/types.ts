@@ -53,3 +53,8 @@ export interface MonthlyRevenue {
   revenue: number;
   escrow: number;
 }
+export interface MonthlyCommission {
+  month: string;        // e.g. "Jan", "Feb"
+  commission: number;   // platform fee earned
+  feeRate?: number;     // optional — e.g. 5 (for 5%)
+}

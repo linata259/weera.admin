@@ -8,12 +8,14 @@ import JobAnalytics from "./features/jobs/pages/JobAnalytics";
 import { LoginPage } from "./features/auth/components/LoginPage";
 import { AuthGuard } from "./features/auth/components/AuthGuard";
 import FinancialsPage from "./features/financials/pages/FinancialsPage";
+import SkillsPage from "./features/skills/pages/SkillsPage";
 
 export default function App() {
   return (
-    <AuthGuard>
-      <BrowserRouter>
+    <BrowserRouter>
+      <AuthGuard>
         <Routes>
+          <Route path="/login" element={<LoginPage onLogin={() => {}} />} />
           <Route
             path="/"
             element={
@@ -22,7 +24,6 @@ export default function App() {
               </AdminLayout>
             }
           />
-          <Route path="/login" element={<LoginPage onLogin={() => {}} />} />
           <Route
             path="/dashboard"
             element={
@@ -31,7 +32,6 @@ export default function App() {
               </AdminLayout>
             }
           />
-
           <Route
             path="/users"
             element={
@@ -40,7 +40,6 @@ export default function App() {
               </AdminLayout>
             }
           />
-
           <Route
             path="/jobs"
             element={
@@ -81,24 +80,16 @@ export default function App() {
               </AdminLayout>
             }
           />
-          {/* <Route
-            path="/financials/transactions"
+          <Route
+            path="/skills"
             element={
               <AdminLayout>
-                <FinancialsPage />
+                <SkillsPage />
               </AdminLayout>
             }
           />
-          <Route
-            path="/financials/escrow"
-            element={
-              <AdminLayout>
-                <FinancialsPage />
-              </AdminLayout>
-            }
-          /> */}
         </Routes>
-      </BrowserRouter>
-    </AuthGuard>
+      </AuthGuard>
+    </BrowserRouter>
   );
 }
