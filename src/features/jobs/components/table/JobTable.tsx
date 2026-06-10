@@ -3,6 +3,8 @@ import { Job } from "../../pages/Jobs";
 import { JobColumn } from "./TableToolbar";
 import { Avatar } from "../../../shared/Avatar";
 import { JobStatusBadge } from "./JobStatusBadge";
+import { JobDetailPanel } from "./JobDetailPanel";
+import { JobBanModal } from "./JobBanModal";
 import { SortIcon } from "../../../shared/SortIcon";
 import { IconBtn } from "../../../shared/IconBtn";
 import { PageBtn } from "../../../shared/PageBtn";
@@ -14,7 +16,7 @@ interface Props {
     sortConfig?: { key: keyof Job; direction: "asc" | "desc" } | null;
     rowsPerPage?: number;
     onViewJob?: (job: Job) => void;
-    onSuspendJob?: (job: Job) => void;
+    onSuspendJob?: (job: Job, reason?: string) => void;
 }
 
 /* ─── Style constants ────────────────────────────────────────── */
@@ -52,7 +54,8 @@ export const JobTable: React.FC<Props> = ({
 }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-    const [, setSelectedJob] = useState<Job | null>(null);
+    const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+    const [jobToBan, setJobToBan] = useState<Job | null>(null);
     const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
@@ -220,7 +223,10 @@ export const JobTable: React.FC<Props> = ({
                                         return (
                                             <tr
                                                 key={job.id}
-                                                onClick={() => setSelectedJob(job)}
+                                                onClick={() => {
+                                                    onViewJob?.(job);
+                                                    setSelectedJob(job);
+                                                }}
                                                 style={{
                                                     background: isSelected ? "#FFF7ED" : "#fff",
                                                     transition: "background 0.12s",
@@ -339,7 +345,7 @@ export const JobTable: React.FC<Props> = ({
                                                         </IconBtn>
                                                         <IconBtn
                                                             title="Suspend job"
-                                                            onClick={() => onSuspendJob?.(job)}
+                                                            onClick={() => setJobToBan(job)}
                                                         >
                                                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                                                                 <circle cx="8" cy="8" r="7" stroke="#94A3B8" strokeWidth="1.5" />
@@ -438,6 +444,26 @@ export const JobTable: React.FC<Props> = ({
                     </div>
                 )}
             </div>
+            {selectedJob && (
+                <JobDetailPanel
+                    job={selectedJob}
+                    onClose={() => setSelectedJob(null)}
+                    onSuspend={(job) => {
+                        setSelectedJob(null);
+                        setJobToBan(job);
+                    }}
+                />
+            )}
+            {jobToBan && (
+                <JobBanModal
+                    job={jobToBan}
+                    onClose={() => setJobToBan(null)}
+                    onConfirm={(job, reason) => {
+                        onSuspendJob?.(job, reason);
+                        setJobToBan(null);
+                    }}
+                />
+            )}
         </>
     );
 };
