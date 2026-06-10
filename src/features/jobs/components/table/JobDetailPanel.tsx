@@ -343,7 +343,7 @@ export const JobDetailPanel: React.FC<Props> = ({
                             fontFamily: "inherit",
                         }}
                     >
-                        {job.status.toLowerCase() === "suspended" ? "Unsuspend Job" : "Suspend Job"}
+                        {job.status.toLowerCase() === "Banned" ? "Unsuspend Job" : "Ban Job"}
                     </button>
                     <button
                         onClick={onClose}
