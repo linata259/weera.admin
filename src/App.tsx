@@ -9,6 +9,7 @@ import { LoginPage } from "./features/auth/components/LoginPage";
 import { AuthGuard } from "./features/auth/components/AuthGuard";
 import FinancialsPage from "./features/financials/pages/FinancialsPage";
 import SkillsPage from "./features/skills/pages/SkillsPage";
+import JobReports from "./features/jobs/pages/JobReports";
 
 export default function App() {
   return (
@@ -69,6 +70,14 @@ export default function App() {
             element={
               <AdminLayout>
                 <JobAnalytics />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/jobs/reports"
+            element={
+              <AdminLayout>
+                <JobReports />
               </AdminLayout>
             }
           />

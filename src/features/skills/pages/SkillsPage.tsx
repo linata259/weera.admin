@@ -16,6 +16,8 @@ const BORDER = '#E2E8F0';
 const BG     = '#F8FAFC';
 const RED    = '#DC2626';
 
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+
 /* ── Modal ──────────────────────────────────────────────────── */
 const Modal: React.FC<{
   title: string;
@@ -133,7 +135,6 @@ const IconBtn: React.FC<{
   >{children}</button>
 );
 
-/* ── EditIcon / TrashIcon ────────────────────────────────────── */
 const EditIcon = () => (
   <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
     <path d="M11.5 2.5a2.121 2.121 0 013 3L5 15l-4 1 1-4L11.5 2.5z"
@@ -147,13 +148,118 @@ const TrashIcon = () => (
   </svg>
 );
 
+/* ── Pagination ──────────────────────────────────────────────── */
+const Pagination: React.FC<{
+  page: number;
+  totalPages: number;
+  pageSize: number;
+  totalItems: number;
+  onPage: (p: number) => void;
+  onPageSize: (n: number) => void;
+}> = ({ page, totalPages, pageSize, totalItems, onPage, onPageSize }) => {
+  /* build page number buttons: always show first, last, current ±1 */
+  const pages: (number | '…')[] = [];
+  if (totalPages <= 7) {
+    for (let i = 1; i <= totalPages; i++) pages.push(i);
+  } else {
+    pages.push(1);
+    if (page > 3) pages.push('…');
+    for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) pages.push(i);
+    if (page < totalPages - 2) pages.push('…');
+    pages.push(totalPages);
+  }
+
+  const btnBase: React.CSSProperties = {
+    minWidth: 32, height: 32, borderRadius: 8, border: `1px solid ${BORDER}`,
+    background: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    padding: '0 8px', fontFamily: 'inherit', color: NAVY, transition: 'all 0.15s',
+  };
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      flexWrap: 'wrap', gap: 12, padding: '14px 20px',
+      borderTop: `1px solid ${BORDER}`, background: BG,
+    }}>
+      {/* left: rows per page */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontSize: 13, color: SLATE }}>Rows per page</span>
+        <select
+          value={pageSize}
+          onChange={(e) => onPageSize(Number(e.target.value))}
+          style={{
+            padding: '5px 10px', borderRadius: 8, border: `1px solid ${BORDER}`,
+            fontSize: 13, color: NAVY, background: '#fff',
+            cursor: 'pointer', fontFamily: 'inherit', outline: 'none',
+          }}
+        >
+          {PAGE_SIZE_OPTIONS.map((n) => (
+            <option key={n} value={n}>{n}</option>
+          ))}
+        </select>
+        <span style={{ fontSize: 13, color: SLATE }}>
+          {totalItems === 0 ? '0' : `${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, totalItems)}`}
+          {' '}of {totalItems}
+        </span>
+      </div>
+
+      {/* right: page buttons */}
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', gap: 4 }}>
+          {/* prev */}
+          <button
+            onClick={() => onPage(page - 1)} disabled={page === 1}
+            style={{ ...btnBase, opacity: page === 1 ? 0.4 : 1, cursor: page === 1 ? 'not-allowed' : 'pointer' }}
+          >
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+              <path d="M9 2L4 7l5 5" stroke={NAVY} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+
+          {pages.map((p, i) =>
+            p === '…' ? (
+              <span key={`ellipsis-${i}`} style={{ ...btnBase, cursor: 'default', border: 'none', color: SLATE }}>…</span>
+            ) : (
+              <button
+                key={p}
+                onClick={() => onPage(p as number)}
+                style={{
+                  ...btnBase,
+                  background: page === p ? ORANGE : '#fff',
+                  color: page === p ? '#fff' : NAVY,
+                  border: page === p ? `1px solid ${ORANGE}` : `1px solid ${BORDER}`,
+                }}
+                onMouseEnter={(e) => { if (page !== p) e.currentTarget.style.background = BG; }}
+                onMouseLeave={(e) => { if (page !== p) e.currentTarget.style.background = '#fff'; }}
+              >
+                {p}
+              </button>
+            )
+          )}
+
+          {/* next */}
+          <button
+            onClick={() => onPage(page + 1)} disabled={page === totalPages}
+            style={{ ...btnBase, opacity: page === totalPages ? 0.4 : 1, cursor: page === totalPages ? 'not-allowed' : 'pointer' }}
+          >
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+              <path d="M5 2l5 5-5 5" stroke={NAVY} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 /* ══════════════════════════════════════════════════════════════
    MAIN PAGE
 ══════════════════════════════════════════════════════════════ */
 type Tab = 'skills' | 'categories';
 
-type SkillModal  = { type: 'create' } | { type: 'edit'; item: Skill }    | { type: 'delete'; item: Skill };
-type CatModal    = { type: 'create' } | { type: 'edit'; item: JobCategory } | { type: 'delete'; item: JobCategory };
+type SkillModal  = { type: 'create' } | { type: 'edit'; item: Skill }       | { type: 'delete'; item: Skill };
+type CatModal    = { type: 'create' } | { type: 'edit'; item: JobCategory }  | { type: 'delete'; item: JobCategory };
 
 const SkillsPage: React.FC = () => {
   const [tab,        setTab]        = useState<Tab>('skills');
@@ -162,6 +268,12 @@ const SkillsPage: React.FC = () => {
   const [loading,    setLoading]    = useState(true);
   const [saving,     setSaving]     = useState(false);
   const [search,     setSearch]     = useState('');
+
+  /* pagination state — separate per tab */
+  const [skillPage,     setSkillPage]     = useState(1);
+  const [skillPageSize, setSkillPageSize] = useState(25);
+  const [catPage,       setCatPage]       = useState(1);
+  const [catPageSize,   setCatPageSize]   = useState(25);
 
   const [skillModal, setSkillModal] = useState<SkillModal | null>(null);
   const [catModal,   setCatModal]   = useState<CatModal   | null>(null);
@@ -174,6 +286,9 @@ const SkillsPage: React.FC = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  /* reset to page 1 when search changes */
+  useEffect(() => { setSkillPage(1); setCatPage(1); }, [search]);
+
   /* filtered lists */
   const filteredSkills = useMemo(() => {
     const q = search.toLowerCase();
@@ -185,19 +300,27 @@ const SkillsPage: React.FC = () => {
     return categories.filter((c) => c.name.toLowerCase().includes(q));
   }, [categories, search]);
 
+  /* paginated slices */
+  const pagedSkills = useMemo(() => {
+    const start = (skillPage - 1) * skillPageSize;
+    return filteredSkills.slice(start, start + skillPageSize);
+  }, [filteredSkills, skillPage, skillPageSize]);
+
+  const pagedCats = useMemo(() => {
+    const start = (catPage - 1) * catPageSize;
+    return filteredCats.slice(start, start + catPageSize);
+  }, [filteredCats, catPage, catPageSize]);
+
+  const skillTotalPages = Math.max(1, Math.ceil(filteredSkills.length / skillPageSize));
+  const catTotalPages   = Math.max(1, Math.ceil(filteredCats.length   / catPageSize));
+
   /* open helpers */
   const openCreate = () => {
     setFormName('');
     tab === 'skills' ? setSkillModal({ type: 'create' }) : setCatModal({ type: 'create' });
   };
-  const openEditSkill = (item: Skill) => {
-    setFormName(item.name);
-    setSkillModal({ type: 'edit', item });
-  };
-  const openEditCat = (item: JobCategory) => {
-    setFormName(item.name);
-    setCatModal({ type: 'edit', item });
-  };
+  const openEditSkill = (item: Skill) => { setFormName(item.name); setSkillModal({ type: 'edit', item }); };
+  const openEditCat   = (item: JobCategory) => { setFormName(item.name); setCatModal({ type: 'edit', item }); };
 
   /* skill CRUD */
   const handleSkillSave = async () => {
@@ -276,8 +399,21 @@ const SkillsPage: React.FC = () => {
       </div>
     );
 
-  const activeList  = tab === 'skills' ? filteredSkills : filteredCats;
-  const totalCount  = tab === 'skills' ? skills.length  : categories.length;
+  /* current tab helpers */
+  const isSkills      = tab === 'skills';
+  const activeList    = isSkills ? pagedSkills    : pagedCats;
+  const filteredCount = isSkills ? filteredSkills.length : filteredCats.length;
+  const totalCount    = isSkills ? skills.length  : categories.length;
+  const currentPage   = isSkills ? skillPage      : catPage;
+  const currentSize   = isSkills ? skillPageSize  : catPageSize;
+  const totalPages    = isSkills ? skillTotalPages : catTotalPages;
+  const globalOffset  = (currentPage - 1) * currentSize; // for row numbering
+
+  const handlePage     = (p: number) => isSkills ? setSkillPage(p)     : setCatPage(p);
+  const handlePageSize = (n: number) => {
+    if (isSkills) { setSkillPageSize(n); setSkillPage(1); }
+    else          { setCatPageSize(n);   setCatPage(1); }
+  };
 
   return (
     <div style={{ fontFamily: "'DM Sans','Helvetica Neue',sans-serif", display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -299,15 +435,15 @@ const SkillsPage: React.FC = () => {
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M7 1v12M1 7h12" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
           </svg>
-          {tab === 'skills' ? 'Add Skill' : 'Add Category'}
+          {isSkills ? 'Add Skill' : 'Add Category'}
         </button>
       </div>
 
       {/* stat chips */}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
         {[
-          { label: 'Total Skills',     value: skills.length,      color: ORANGE },
-          { label: 'Categories',       value: categories.length,  color: '#2563EB' },
+          { label: 'Total Skills',  value: skills.length,     color: ORANGE },
+          { label: 'Categories',    value: categories.length, color: '#2563EB' },
         ].map(({ label, value, color }) => (
           <div key={label} style={{
             background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 12,
@@ -363,7 +499,7 @@ const SkillsPage: React.FC = () => {
             />
           </div>
           <span style={{ fontSize: 13, color: SLATE, marginLeft: 'auto' }}>
-            {activeList.length} of {totalCount}
+            {filteredCount} of {totalCount}
           </span>
         </div>
 
@@ -387,14 +523,14 @@ const SkillsPage: React.FC = () => {
                       : `No ${tab} yet — add one above.`}
                   </td>
                 </tr>
-              ) : tab === 'skills' ? (
+              ) : isSkills ? (
                 (activeList as Skill[]).map((item, idx) => (
                   <tr key={item.id}
                     onMouseEnter={(e) => (e.currentTarget.style.background = BG)}
                     onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
                     style={{ transition: 'background 0.1s' }}>
                     <td style={{ ...td, textAlign: 'center', color: '#94A3B8', fontSize: 12 }}>
-                      {String(idx + 1).padStart(2, '0')}
+                      {String(globalOffset + idx + 1).padStart(2, '0')}
                     </td>
                     <td style={td}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -425,7 +561,7 @@ const SkillsPage: React.FC = () => {
                     onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
                     style={{ transition: 'background 0.1s' }}>
                     <td style={{ ...td, textAlign: 'center', color: '#94A3B8', fontSize: 12 }}>
-                      {String(idx + 1).padStart(2, '0')}
+                      {String(globalOffset + idx + 1).padStart(2, '0')}
                     </td>
                     <td style={td}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -456,9 +592,19 @@ const SkillsPage: React.FC = () => {
             </tbody>
           </table>
         </div>
+
+        {/* pagination */}
+        <Pagination
+          page={currentPage}
+          totalPages={totalPages}
+          pageSize={currentSize}
+          totalItems={filteredCount}
+          onPage={handlePage}
+          onPageSize={handlePageSize}
+        />
       </div>
 
-      {/* ── skill modals ──────────────────────────────────────── */}
+      {/* ── skill modals ─────────────────────────────────────── */}
       {(skillModal?.type === 'create' || skillModal?.type === 'edit') && (
         <Modal
           title={skillModal.type === 'create' ? 'Add Skill' : 'Edit Skill'}
@@ -473,7 +619,7 @@ const SkillsPage: React.FC = () => {
           onClose={() => setSkillModal(null)} onConfirm={handleSkillDelete} loading={saving} />
       )}
 
-      {/* ── category modals ───────────────────────────────────── */}
+      {/* ── category modals ──────────────────────────────────── */}
       {(catModal?.type === 'create' || catModal?.type === 'edit') && (
         <Modal
           title={catModal.type === 'create' ? 'Add Category' : 'Edit Category'}

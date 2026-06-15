@@ -23,6 +23,7 @@ const NAV_FEATURES: NavGroup[] = [
     children: [
       { id: "jobs-analytics", label: "Analytics", path: "/jobs/analytics" },
       { id: "jobs", label: "Jobs", path: "/jobs" },
+      { id: "reports", label: "Reports", path: "/jobs/reports" },
     ],
   },
   {
