@@ -6,6 +6,7 @@ import UserAnalytics from './features/users/pages/UserAnalytics';
 import Jobs from './features/jobs/pages/Jobs';
 import JobAnalytics from './features/jobs/pages/JobAnalytics';
 import Notifications from './features/notifications/pages/Notifications';
+import Reports from './features/reports/pages/Reports';
 
 
 export default function App() {
@@ -77,6 +78,15 @@ export default function App() {
           element={
             <AdminLayout>
               <Notifications />
+            </AdminLayout>
+          }
+        />
+
+        <Route
+          path="/reports"
+          element={
+            <AdminLayout>
+              <Reports />
             </AdminLayout>
           }
         />

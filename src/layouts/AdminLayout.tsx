@@ -24,6 +24,7 @@ const NAV_FEATURES: NavGroup[] = [
     ],
    },
   { id: "notifications", label: "Notifications", path: "/notifications", icon: "🔔" },
+  { id: "reports", label: "Reports", path: "/reports", icon: "◉" },
 ];
 
 // Flatten all nav items (including children) for tab tracking
