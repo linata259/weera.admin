@@ -38,6 +38,12 @@ const NAV_FEATURES: NavGroup[] = [
     path: "/skills",
     icon: "🎯",
   },
+  // {
+  //   id: "logs",
+  //   label: "Error Logs",
+  //   path: "/logs",
+  //   icon: "📝",
+  // },
 ];
 
 export const AdminLayout: React.FC<React.PropsWithChildren<{}>> = ({

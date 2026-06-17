@@ -10,6 +10,8 @@ import { AuthGuard } from "./features/auth/components/AuthGuard";
 import FinancialsPage from "./features/financials/pages/FinancialsPage";
 import SkillsPage from "./features/skills/pages/SkillsPage";
 import JobReports from "./features/jobs/pages/JobReports";
+import { DashboardPage } from "./features/dashboard/Dashboard";
+// import SentryLogsPage from "./features/logs/SentryLogsPage";
 
 export default function App() {
   return (
@@ -29,7 +31,7 @@ export default function App() {
             path="/dashboard"
             element={
               <AdminLayout>
-                <div>Dashboard Page</div>
+               <DashboardPage />
               </AdminLayout>
             }
           />
@@ -97,6 +99,14 @@ export default function App() {
               </AdminLayout>
             }
           />
+          {/* <Route
+            path="/logs"
+            element={
+              <AdminLayout>
+                <SentryLogsPage />
+              </AdminLayout>
+            }
+          /> */}
         </Routes>
       </AuthGuard>
     </BrowserRouter>
