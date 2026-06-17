@@ -5,6 +5,7 @@ import Users from './features/users/pages/Users';
 import UserAnalytics from './features/users/pages/UserAnalytics';
 import Jobs from './features/jobs/pages/Jobs';
 import JobAnalytics from './features/jobs/pages/JobAnalytics';
+import Notifications from './features/notifications/pages/Notifications';
 
 
 export default function App() {
@@ -67,6 +68,15 @@ export default function App() {
           element={
             <AdminLayout>
               <JobAnalytics />
+            </AdminLayout>
+          }
+        />
+
+        <Route
+          path="/notifications"
+          element={
+            <AdminLayout>
+              <Notifications />
             </AdminLayout>
           }
         />

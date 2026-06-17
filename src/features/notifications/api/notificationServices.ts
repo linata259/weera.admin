@@ -1,0 +1,98 @@
+import type { NotificationItem } from "../pages/Notifications";
+
+const notifications: NotificationItem[] = [
+  {
+    id: "notification-001",
+    notificationType: "New Message",
+    description: "Alerts a user when they receive a new message.",
+    targetedUser: "Bidder",
+    channel: ["Email", "In-App", "Push"],
+    createdAt: "2025-08-12T13:00:00",
+    fixed: true,
+  },
+  {
+    id: "notification-002",
+    notificationType: "New Proposal",
+    description: "Notifies a client when a new proposal is submitted for their job post.",
+    targetedUser: "Client",
+    channel: ["Email", "In-App", "Push"],
+    createdAt: "2025-11-15T17:30:00",
+    fixed: true,
+  },
+  {
+    id: "notification-003",
+    notificationType: "Proposal Accepted/Rejected",
+    description: "Alerts a freelancer on the status of their bid.",
+    targetedUser: "Bidder",
+    channel: ["Email", "In-App", "Push"],
+    createdAt: "2025-06-30T11:45:00",
+    fixed: true,
+  },
+  {
+    id: "notification-004",
+    notificationType: "Payment Received",
+    description: "Notifies a freelancer when a payment is deposited into their account.",
+    targetedUser: "Bidder",
+    channel: ["Email", "In-App", "Push"],
+    createdAt: "2025-05-10T09:00:00",
+    fixed: true,
+  },
+  {
+    id: "notification-005",
+    notificationType: "Milestone Approved",
+    description: "Alerts both parties when a project milestone is funded or approved.",
+    targetedUser: "Client",
+    channel: ["In-App", "Push"],
+    createdAt: "2025-04-22T14:15:00",
+    fixed: true,
+  },
+  {
+    id: "notification-006",
+    notificationType: "New Job Recommendation",
+    description: "Notifies a freelancer of new jobs that match their skills.",
+    targetedUser: "Client",
+    channel: ["In-App", "Push"],
+    createdAt: "2025-12-01T12:00:00",
+    fixed: true,
+  },
+  {
+    id: "notification-007",
+    notificationType: "Email Notifications",
+    description: "Master toggle to enable or disable all automated emails sent to users.",
+    targetedUser: "All",
+    channel: ["Push"],
+    createdAt: "2025-10-25T08:00:00",
+    fixed: false,
+  },
+  {
+    id: "notification-008",
+    notificationType: "Push Notifications",
+    description: "Master toggle to enable or disable all push notifications via the app.",
+    targetedUser: "Client",
+    channel: ["Push"],
+    createdAt: "2025-09-20T16:15:00",
+    fixed: false,
+  },
+  {
+    id: "notification-009",
+    notificationType: "Push Notifications",
+    description: "Master toggle to enable or disable all automated emails sent to users.",
+    targetedUser: "Bidder",
+    channel: ["Push"],
+    createdAt: "2025-07-05T15:30:00",
+    fixed: false,
+  },
+  {
+    id: "notification-010",
+    notificationType: "Push Notifications",
+    description: "Alerts a freelancer on the status of their bid.",
+    targetedUser: "Client",
+    channel: ["Email"],
+    createdAt: "2025-03-15T10:30:00",
+    fixed: false,
+  },
+];
+
+export const fetchNotifications = async (): Promise<NotificationItem[]> => {
+  return notifications;
+};
