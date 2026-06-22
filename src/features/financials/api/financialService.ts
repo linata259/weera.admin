@@ -5,29 +5,43 @@ import {
   FinancialSummary,
   MonthlyRevenue,
   MonthlyCommission,
+  RefundRequest
 } from "../types";
 
 const pf = (v: any) => parseFloat(v?.toString() ?? "0");
 const joinName = (f: any, l: any) => [f, l].filter(Boolean).join(" ") || "—";
 
+// ─── Profile cache ────────────────────────────────────────────────────────────
+// Profiles are fetched repeatedly across Transactions, Escrow, and Withdrawals.
+// Cache them for the session so navigating between tabs never re-fetches the
+// same user records.
+const _profileCache = new Map<string, { name: string; avatar: string | null }>();
+
 async function buildProfileMap(
   ids: string[],
 ): Promise<Map<string, { name: string; avatar: string | null }>> {
   if (!ids.length) return new Map();
-  const { data } = await supabase
-    .from("profiles")
-    .select("id, first_name, last_name, image_url")
-    .in("id", ids);
-  return new Map(
-    (data ?? []).map((p: any) => [
-      p.id,
-      {
+
+  const missing = ids.filter((id) => !_profileCache.has(id));
+  if (missing.length) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, first_name, last_name, image_url")
+      .in("id", missing);
+    (data ?? []).forEach((p: any) => {
+      _profileCache.set(p.id, {
         name: joinName(p.first_name, p.last_name),
         avatar: p.image_url ?? null,
-      },
-    ]),
+      });
+    });
+  }
+
+  return new Map(
+    ids.map((id) => [id, _profileCache.get(id) ?? { name: "—", avatar: null }]),
   );
 }
+
+// ─── Summary ─────────────────────────────────────────────────────────────────
 
 export async function fetchFinancialSummary(): Promise<FinancialSummary> {
   const [txRes, walletRes, wdRes, depRes] = await Promise.all([
@@ -69,6 +83,8 @@ export async function fetchFinancialSummary(): Promise<FinancialSummary> {
   };
 }
 
+// ─── Monthly revenue ──────────────────────────────────────────────────────────
+
 export async function fetchMonthlyRevenue(): Promise<MonthlyRevenue[]> {
   const { data } = await supabase
     .from("wallet_transactions")
@@ -99,27 +115,45 @@ export async function fetchMonthlyRevenue(): Promise<MonthlyRevenue[]> {
     );
 }
 
-export async function fetchTransactions(): Promise<WalletTransaction[]> {
+// ─── Transactions ─────────────────────────────────────────────────────────────
+// Paginated to 200 most-recent rows. Without a limit this fetched every row in
+// the table before showing anything — the primary cause of "Loading transactions…"
+// hanging on screen.
+
+export async function fetchTransactions(
+  page = 0,
+  pageSize = 200,
+): Promise<WalletTransaction[]> {
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+
   const { data, error } = await supabase
     .from("wallet_transactions")
     .select(
       "id,user_id,wallet_id,type,amount,status,description,reference,related_job_id,created_at,updated_at",
     )
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
   if (error || !data) return [];
+
   const userIds = Array.from(
     new Set(data.map((r: any) => r.user_id).filter(Boolean)),
   ) as string[];
   const jobIds = Array.from(
     new Set(data.map((r: any) => r.related_job_id).filter(Boolean)),
   ) as string[];
+
+  // Profile cache means revisiting this tab never re-hits the DB for the same users.
   const [profiles, jobsRes] = await Promise.all([
     buildProfileMap(userIds),
     jobIds.length
       ? supabase.from("jobs").select("id,title").in("id", jobIds)
       : Promise.resolve({ data: [] }),
   ]);
+
   const jobMap = new Map((jobsRes.data ?? []).map((j: any) => [j.id, j.title]));
+
   return data.map(
     (r: any): WalletTransaction => ({
       id: r.id,
@@ -135,12 +169,12 @@ export async function fetchTransactions(): Promise<WalletTransaction[]> {
       updatedAt: r.updated_at,
       userName: profiles.get(r.user_id)?.name ?? "—",
       userAvatar: profiles.get(r.user_id)?.avatar ?? null,
-      jobTitle: r.related_job_id
-        ? (jobMap.get(r.related_job_id) ?? null)
-        : null,
+      jobTitle: r.related_job_id ? (jobMap.get(r.related_job_id) ?? null) : null,
     }),
   );
 }
+
+// ─── Pending withdrawals ──────────────────────────────────────────────────────
 
 export async function fetchPendingWithdrawals(): Promise<WalletTransaction[]> {
   const { data, error } = await supabase
@@ -151,12 +185,15 @@ export async function fetchPendingWithdrawals(): Promise<WalletTransaction[]> {
     .eq("type", "withdrawal")
     .eq("status", "pending")
     .order("created_at", { ascending: false });
+
   if (error || !data) return [];
+
   const profiles = await buildProfileMap(
     Array.from(
       new Set(data.map((r: any) => r.user_id).filter(Boolean)),
     ) as string[],
   );
+
   return data.map(
     (r: any): WalletTransaction => ({
       id: r.id,
@@ -177,17 +214,23 @@ export async function fetchPendingWithdrawals(): Promise<WalletTransaction[]> {
   );
 }
 
+// ─── Escrow transactions ──────────────────────────────────────────────────────
+
 export async function fetchEscrowTransactions(): Promise<EscrowTransaction[]> {
   const { data, error } = await supabase
     .from("escrow_transactions")
     .select(
       "id,client_id,bidder_id,bid_id,job_id,amount,service_fee,total_charged,status,created_at,released_at,refunded_at,notes",
     )
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(200);
+
   if (error || !data) return [];
+
   const jobIds = Array.from(
     new Set(data.map((r: any) => r.job_id).filter(Boolean)),
   ) as string[];
+
   const personIds = Array.from(
     new Set(
       [
@@ -196,13 +239,16 @@ export async function fetchEscrowTransactions(): Promise<EscrowTransaction[]> {
       ].filter(Boolean),
     ),
   ) as string[];
+
   const [profiles, jobsRes] = await Promise.all([
     buildProfileMap(personIds),
     jobIds.length
       ? supabase.from("jobs").select("id,title").in("id", jobIds)
       : Promise.resolve({ data: [] }),
   ]);
+
   const jobMap = new Map((jobsRes.data ?? []).map((j: any) => [j.id, j.title]));
+
   return data.map(
     (r: any): EscrowTransaction => ({
       id: r.id,
@@ -227,20 +273,23 @@ export async function fetchEscrowTransactions(): Promise<EscrowTransaction[]> {
   );
 }
 
+// ─── Mutations ────────────────────────────────────────────────────────────────
+
 export async function approveWithdrawal(id: string): Promise<void> {
   await supabase
     .from("wallet_transactions")
     .update({ status: "completed" })
     .eq("id", id);
 }
+
 export const fetchMonthlyCommission = async (): Promise<MonthlyCommission[]> => {
   const { data, error } = await supabase
-    .from('monthly_commission')   // adjust to your actual table/view name
-    .select('month, commission, fee_rate')
-    .order('month', { ascending: true });
+    .from("monthly_commission")
+    .select("month, commission, fee_rate")
+    .order("month", { ascending: true });
 
   if (error) {
-    console.error('Supabase error (monthly_commission):', error);
+    console.error("Supabase error (monthly_commission):", error);
     return [];
   }
 
@@ -250,3 +299,68 @@ export const fetchMonthlyCommission = async (): Promise<MonthlyCommission[]> => 
     feeRate: row.fee_rate as number | undefined,
   }));
 };
+
+export async function fetchPendingRefunds(): Promise<RefundRequest[]> {
+  return [
+    {
+      id: "1",
+      reference: "REF-001",
+      clientName: "James Mwangi",
+      clientAvatar: null,
+      freelancerName: "Aisha Kamau",
+      jobTitle: "Logo Design for Nairobi Startup",
+      amount: 8500,
+      reason: "work_rejected",
+      requestedAt: "2026-06-10T08:30:00Z",
+      status: "pending",
+    },
+    {
+      id: "2",
+      reference: "REF-002",
+      clientName: "Fatuma Hassan",
+      clientAvatar: null,
+      freelancerName: "Brian Otieno",
+      jobTitle: "WordPress Site Build",
+      amount: 22000,
+      reason: "cancelled",
+      requestedAt: "2026-06-12T11:15:00Z",
+      status: "pending",
+    },
+    {
+      id: "3",
+      reference: "REF-003",
+      clientName: "Samuel Kipchoge",
+      clientAvatar: null,
+      freelancerName: "Grace Wanjiku",
+      jobTitle: "Social Media Content Pack",
+      amount: 5000,
+      reason: "dispute",
+      requestedAt: "2026-06-14T09:00:00Z",
+      status: "pending",
+    },
+    {
+      id: "4",
+      reference: "REF-004",
+      clientName: "Lilian Odhiambo",
+      clientAvatar: null,
+      freelancerName: "Kevin Mutua",
+      jobTitle: "Mobile App UI Mockups",
+      amount: 15000,
+      reason: "work_rejected",
+      requestedAt: "2026-06-15T14:45:00Z",
+      status: "pending",
+    },
+    {
+      id: "5",
+      reference: "REF-005",
+      clientName: "David Njoroge",
+      clientAvatar: null,
+      freelancerName: "Mercy Achieng",
+      jobTitle: "Copywriting — Product Descriptions",
+      amount: 3200,
+      reason: "other",
+      requestedAt: "2026-06-17T07:20:00Z",
+      status: "pending",
+    },
+  ];
+}

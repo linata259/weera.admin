@@ -3,12 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { supabase } from "services/supabaseClient";
 
-/* ─── brand tokens ───────────────────────────────────────────── */
-const ORANGE  = "#EA580C";
-const NAVY    = "#0F172A";
-const SLATE   = "#64748B";
-const BORDER  = "#E2E8F0";
-const BG      = "#F8FAFC";
+const ORANGE = "#EA580C";
+const NAVY   = "#0F172A";
+const SLATE  = "#64748B";
+const BORDER = "#E2E8F0";
+const BG     = "#F8FAFC";
 
 interface Props {
   onLogin?: () => void;
@@ -39,7 +38,6 @@ export const LoginPage: React.FC<Props> = ({ onLogin }) => {
       return;
     }
 
-    /* check admin role */
     const userId = data.user?.id;
     if (userId) {
       const { data: profile } = await supabase
@@ -75,21 +73,20 @@ export const LoginPage: React.FC<Props> = ({ onLogin }) => {
     }}>
       <div style={{ width: "100%", maxWidth: 440 }}>
 
-        {/* Logo / brand */}
-        <div style={{ textAlign: "center", marginBottom: 40 }}>
-          <div style={{
-            display: "inline-flex", alignItems: "center", justifyContent: "center",
-            width: 56, height: 56, borderRadius: 16,
-            background: NAVY, marginBottom: 16,
-          }}>
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-              <path d="M4 7h20M4 14h14M4 21h10" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" />
-            </svg>
-          </div>
-          <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: NAVY, letterSpacing: -0.5 }}>
-            WEERA
-          </h1>
-          <p style={{ margin: "6px 0 0", fontSize: 14, color: SLATE }}>
+        {/* Logo */}
+        <div style={{ textAlign: "center", marginBottom: 36 }}>
+          <img
+            src="/images/4.png"
+            alt="Weera"
+            style={{
+              height: 72,
+              objectFit: "contain",
+              marginBottom: 14,
+              display: "block",
+              margin: "0 auto 14px",
+            }}
+          />
+          <p style={{ margin: 0, fontSize: 14, color: SLATE }}>
             Admin Panel — Sign in to continue
           </p>
         </div>
@@ -113,7 +110,7 @@ export const LoginPage: React.FC<Props> = ({ onLogin }) => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="weera.admin@gmail.com"
+                placeholder="admin@weera.co.ke"
                 required
                 style={{
                   padding: "11px 14px",
@@ -126,8 +123,8 @@ export const LoginPage: React.FC<Props> = ({ onLogin }) => {
                   background: "#fff",
                   transition: "border-color 0.15s",
                 }}
-                onFocus={(e) => e.target.style.borderColor = ORANGE}
-                onBlur={(e)  => e.target.style.borderColor = error ? "#FCA5A5" : BORDER}
+                onFocus={(e) => (e.target.style.borderColor = ORANGE)}
+                onBlur={(e)  => (e.target.style.borderColor = error ? "#FCA5A5" : BORDER)}
               />
             </div>
 
@@ -156,8 +153,8 @@ export const LoginPage: React.FC<Props> = ({ onLogin }) => {
                     background: "#fff",
                     transition: "border-color 0.15s",
                   }}
-                  onFocus={(e) => e.target.style.borderColor = ORANGE}
-                  onBlur={(e)  => e.target.style.borderColor = error ? "#FCA5A5" : BORDER}
+                  onFocus={(e) => (e.target.style.borderColor = ORANGE)}
+                  onBlur={(e)  => (e.target.style.borderColor = error ? "#FCA5A5" : BORDER)}
                 />
                 <button
                   type="button"
@@ -170,12 +167,10 @@ export const LoginPage: React.FC<Props> = ({ onLogin }) => {
                   }}
                 >
                   {showPass ? (
-                    /* eye-off */
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                       <path d="M3 3l18 18M10.5 10.5A3 3 0 0013.5 13.5M9 4.2A10 10 0 0121 12a10 10 0 01-1.5 2.5M6.5 6.5A10 10 0 003 12a10 10 0 0010 5 10 10 0 004.5-1" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
                     </svg>
                   ) : (
-                    /* eye */
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
                       <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.7" />
@@ -185,7 +180,7 @@ export const LoginPage: React.FC<Props> = ({ onLogin }) => {
               </div>
             </div>
 
-            {/* Error */}
+            {/* Error banner */}
             {error && (
               <div style={{
                 padding: "10px 14px",
@@ -212,7 +207,7 @@ export const LoginPage: React.FC<Props> = ({ onLogin }) => {
               disabled={loading}
               style={{
                 padding: "12px 0",
-                background: loading ? "#94A3B8" : NAVY,
+                background: loading ? "#CBD5E1" : ORANGE,
                 color: "#fff",
                 border: "none",
                 borderRadius: 10,
@@ -225,16 +220,17 @@ export const LoginPage: React.FC<Props> = ({ onLogin }) => {
                 justifyContent: "center",
                 gap: 8,
                 transition: "background 0.15s",
+                boxShadow: loading ? "none" : `0 4px 14px ${ORANGE}40`,
               }}
             >
               {loading ? (
                 <>
                   <div style={{
                     width: 16, height: 16,
-                    border: "2px solid rgba(255,255,255,0.3)",
+                    border: "2px solid rgba(255,255,255,0.35)",
                     borderTop: "2px solid #fff",
                     borderRadius: "50%",
-                    animation: "spin 0.7s linear infinite",
+                    animation: "weera-spin 0.7s linear infinite",
                   }} />
                   Signing in…
                 </>
@@ -242,6 +238,7 @@ export const LoginPage: React.FC<Props> = ({ onLogin }) => {
                 "Sign in to Admin Panel"
               )}
             </button>
+
           </form>
         </div>
 
@@ -252,7 +249,7 @@ export const LoginPage: React.FC<Props> = ({ onLogin }) => {
       </div>
 
       <style>{`
-        @keyframes spin { to { transform: rotate(360deg) } }
+        @keyframes weera-spin { to { transform: rotate(360deg); } }
         input::placeholder { color: #CBD5E1; }
       `}</style>
     </div>

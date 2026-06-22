@@ -3,6 +3,7 @@ import { Column, User } from "../types";
 import { fetchUsers } from "../api/userServices";
 import { TableToolbar } from "../components/table/TableToolbar";
 import { UserTable } from "../components/table/UserTable";
+import { ExportReportModal } from "../components/ExportReportModal"; // NEW
 
 /* ── sanitise helpers (keep XSS out of rendered values) ─────── */
 const sanitizeText = (v: string | null | undefined): string => {
@@ -32,6 +33,7 @@ const UsersPage: React.FC = () => {
   const [locationFilter,  setLocationFilter]  = useState("all");
   const [userTypeFilter,  setUserTypeFilter]  = useState<"all" | "clients" | "bidders">("all");
   const [sortConfig, setSortConfig] = useState<{ key: keyof User; direction: "asc" | "desc" } | null>(null);
+  const [showExport, setShowExport] = useState(false); // NEW
 
   /* ── fetch ───────────────────────────────────────────────── */
   useEffect(() => {
@@ -145,6 +147,24 @@ const UsersPage: React.FC = () => {
 
   return (
     <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 20, fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif" }}>
+      {/* NEW — export trigger */}
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <button
+          onClick={() => setShowExport(true)}
+          style={{
+            padding: "10px 18px", borderRadius: 10, border: "1px solid #E2E8F0", background: "#fff",
+            fontSize: 14, fontWeight: 600, color: "#0F172A", cursor: "pointer", fontFamily: "inherit",
+            display: "flex", alignItems: "center", gap: 8,
+          }}
+        >
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+            <path d="M8 1.5v9M4.5 7l3.5 3.5L11.5 7" stroke="#EA580C" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M2.5 12.5v1a1 1 0 001 1h9a1 1 0 001-1v-1" stroke="#EA580C" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Export Report
+        </button>
+      </div>
+
       <TableToolbar
         searchTerm={searchTerm}
         onSearch={setSearchTerm}
@@ -167,6 +187,15 @@ const UsersPage: React.FC = () => {
         rowsPerPage={10}
         onSuspendUser={handleSuspendUser}
       />
+
+      {/* NEW */}
+      {showExport && (
+        <ExportReportModal
+          users={users}
+          locationOptions={locationOptions}
+          onClose={() => setShowExport(false)}
+        />
+      )}
     </div>
   );
 };

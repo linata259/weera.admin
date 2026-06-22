@@ -132,8 +132,18 @@ export const TransactionsTable: React.FC = () => {
   const [pageSize,setPageSize]= useState(25);
   const [sortKey, setSortKey] = useState<keyof WalletTransaction>('createdAt');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [isMobile, setIsMobile] = useState(false); // NEW
 
   useEffect(() => { fetchTransactions().then(setRows).finally(() => setLoading(false)); }, []);
+
+  // NEW — same mobile-detection pattern used elsewhere in the app
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   const handleSort = (k: keyof WalletTransaction) => {
     if (sortKey === k) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -180,10 +190,10 @@ export const TransactionsTable: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, fontFamily: "'DM Sans','Helvetica Neue',sans-serif" }}>
 
-      {/* toolbar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', flex: 1 }}>
-          <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: 300 }}>
+      {/* toolbar — CHANGED: stacks vertically on mobile */}
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 10, flexWrap: 'wrap', flex: 1 }}>
+          <div style={{ position: 'relative', flex: isMobile ? 'unset' : '1 1 200px', width: isMobile ? '100%' : undefined, maxWidth: isMobile ? '100%' : 300 }}>
             <svg width="15" height="15" viewBox="0 0 16 16" fill="none" style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
               <circle cx="7" cy="7" r="5" stroke="#94A3B8" strokeWidth="1.5"/>
               <path d="M11 11l2.5 2.5" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round"/>
@@ -191,64 +201,115 @@ export const TransactionsTable: React.FC = () => {
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search transactions…"
               style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px 9px 34px', border: `1px solid ${BORDER}`, borderRadius: 10, fontSize: 13, outline: 'none', fontFamily: 'inherit' }}/>
           </div>
-          <select value={typeF} onChange={e => setTypeF(e.target.value)} style={{ padding: '9px 14px', border: `1px solid ${BORDER}`, borderRadius: 10, fontSize: 13, outline: 'none', color: NAVY, background: '#fff', fontFamily: 'inherit', minWidth: 160 }}>
+          <select value={typeF} onChange={e => setTypeF(e.target.value)} style={{ padding: '9px 14px', border: `1px solid ${BORDER}`, borderRadius: 10, fontSize: 13, outline: 'none', color: NAVY, background: '#fff', fontFamily: 'inherit', width: isMobile ? '100%' : undefined, minWidth: isMobile ? undefined : 160 }}>
             <option value="all">All Types</option>
             {typeOpts.map(t => <option key={t} value={t}>{txS(t).label}</option>)}
           </select>
-          <select value={statusF} onChange={e => setStatusF(e.target.value)} style={{ padding: '9px 14px', border: `1px solid ${BORDER}`, borderRadius: 10, fontSize: 13, outline: 'none', color: NAVY, background: '#fff', fontFamily: 'inherit', minWidth: 130 }}>
+          <select value={statusF} onChange={e => setStatusF(e.target.value)} style={{ padding: '9px 14px', border: `1px solid ${BORDER}`, borderRadius: 10, fontSize: 13, outline: 'none', color: NAVY, background: '#fff', fontFamily: 'inherit', width: isMobile ? '100%' : undefined, minWidth: isMobile ? undefined : 130 }}>
             <option value="all">All Statuses</option>
             {['completed', 'pending', 'failed'].map(s => <option key={s} value={s} style={{ textTransform: 'capitalize' }}>{s}</option>)}
           </select>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '6px 12px', background: '#fff' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '6px 12px', background: '#fff', width: isMobile ? '100%' : undefined, boxSizing: 'border-box' }}>
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="12" rx="2" stroke="#94A3B8" strokeWidth="1.4"/><path d="M1 7h14M5 1v4M11 1v4" stroke="#94A3B8" strokeWidth="1.4" strokeLinecap="round"/></svg>
-            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={{ border: 'none', outline: 'none', fontSize: 12, color: SLATE, fontFamily: 'inherit', background: 'transparent' }}/>
+            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={{ border: 'none', outline: 'none', fontSize: 12, color: SLATE, fontFamily: 'inherit', background: 'transparent', flex: isMobile ? 1 : undefined }}/>
             <span style={{ color: '#CBD5E1' }}>–</span>
-            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} style={{ border: 'none', outline: 'none', fontSize: 12, color: SLATE, fontFamily: 'inherit', background: 'transparent' }}/>
+            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} style={{ border: 'none', outline: 'none', fontSize: 12, color: SLATE, fontFamily: 'inherit', background: 'transparent', flex: isMobile ? 1 : undefined }}/>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, justifyContent: isMobile ? 'flex-end' : undefined }}>
           <ExBtn label="CSV" onClick={() => exportCsv('transactions', exportHeaders, exportRows)}/>
           <ExBtn label="PDF" onClick={() => exportPdf('Transaction History', exportHeaders, exportRows)}/>
         </div>
       </div>
 
-      {/* table */}
+      {/* table / cards */}
       <div style={{ border: `1px solid ${BORDER}`, borderRadius: 14, overflow: 'hidden', background: '#fff' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 800 }}>
-            <thead>
-              <tr>
-                <th style={{ ...th, width: 56 }}>Sr. No.</th>
-                <th style={th} onClick={() => handleSort('reference')}>Reference <SortArrow k="reference"/></th>
-                <th style={th} onClick={() => handleSort('type')}>Type <SortArrow k="type"/></th>
-                <th style={th} onClick={() => handleSort('createdAt')}>Date <SortArrow k="createdAt"/></th>
-                <th style={th} onClick={() => handleSort('userName')}>User <SortArrow k="userName"/></th>
-                <th style={th} onClick={() => handleSort('jobTitle')}>Project <SortArrow k="jobTitle"/></th>
-                <th style={th} onClick={() => handleSort('amount')}>Amount <SortArrow k="amount"/></th>
-                <th style={th} onClick={() => handleSort('status')}>Status <SortArrow k="status"/></th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginated.length === 0 ? (
-                <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: '#94A3B8', padding: '48px 0' }}>No transactions found</td></tr>
-              ) : paginated.map((r, idx) => {
-                const ts = txS(r.type); const ss = stS(r.status); const credit = isCredit(r.type);
-                return (
-                  <tr key={r.id} onMouseEnter={e => e.currentTarget.style.background = BG} onMouseLeave={e => e.currentTarget.style.background = '#fff'} style={{ transition: 'background 0.1s' }}>
-                    <td style={{ ...td, color: '#94A3B8', fontSize: 13 }}>{String((page - 1) * pageSize + idx + 1).padStart(2, '0')}</td>
-                    <td style={{ ...td, fontSize: 12, color: SLATE, fontFamily: 'monospace' }}>{r.reference ?? r.id.slice(0, 8).toUpperCase()}</td>
-                    <td style={td}><span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: ts.bg, color: ts.color, whiteSpace: 'nowrap' }}>{ts.label}</span></td>
-                    <td style={{ ...td, color: SLATE, whiteSpace: 'nowrap' }}>{fmt(r.createdAt)}</td>
-                    <td style={td}><div style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Avatar src={r.userAvatar} name={r.userName} size={30}/><span style={{ fontSize: 13 }}>{r.userName}</span></div></td>
-                    <td style={{ ...td, maxWidth: 160, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.jobTitle ?? r.description ?? <span style={{ color: '#CBD5E1' }}>—</span>}</td>
-                    <td style={{ ...td, fontWeight: 700, color: credit ? '#16A34A' : '#DC2626' }}>{credit ? '+' : '-'}{r.amount.toFixed(2)}</td>
-                    <td style={td}><span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: ss.bg, color: ss.color, whiteSpace: 'nowrap' }}>{r.status}</span></td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        {isMobile ? (
+          /* ── MOBILE: stacked cards — NEW ── */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 16 }}>
+            {paginated.length === 0 ? (
+              <div style={{ textAlign: 'center', color: '#94A3B8', padding: '32px 0', fontSize: 14 }}>No transactions found</div>
+            ) : paginated.map((r) => {
+              const ts = txS(r.type); const ss = stS(r.status); const credit = isCredit(r.type);
+              return (
+                <div key={r.id} style={{ border: `1px solid ${BORDER}`, borderRadius: 14, padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                    <div>
+                      <div style={{ fontSize: 11, color: '#94A3B8', fontFamily: 'monospace' }}>
+                        {r.reference ?? r.id.slice(0, 8).toUpperCase()}
+                      </div>
+                      <span style={{ display: 'inline-block', marginTop: 4, padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: ts.bg, color: ts.color }}>
+                        {ts.label}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: credit ? '#16A34A' : '#DC2626', whiteSpace: 'nowrap' }}>
+                      {credit ? '+' : '-'}{r.amount.toFixed(2)}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <Avatar src={r.userAvatar} name={r.userName} size={30}/>
+                    <span style={{ fontSize: 13, color: NAVY }}>{r.userName}</span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: 13 }}>
+                    <div>
+                      <div style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase' }}>Project</div>
+                      <div style={{ color: '#475569' }}>{r.jobTitle ?? r.description ?? '—'}</div>
+                    </div>
+                    <div>
+                      <div style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase' }}>Date</div>
+                      <div style={{ color: '#475569' }}>{fmt(r.createdAt)}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #F1F5F9', paddingTop: 10, marginTop: 4 }}>
+                    <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: ss.bg, color: ss.color }}>
+                      {r.status}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* ── DESKTOP TABLE ── */
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 800 }}>
+              <thead>
+                <tr>
+                  <th style={{ ...th, width: 56 }}>Sr. No.</th>
+                  <th style={th} onClick={() => handleSort('reference')}>Reference <SortArrow k="reference"/></th>
+                  <th style={th} onClick={() => handleSort('type')}>Type <SortArrow k="type"/></th>
+                  <th style={th} onClick={() => handleSort('createdAt')}>Date <SortArrow k="createdAt"/></th>
+                  <th style={th} onClick={() => handleSort('userName')}>User <SortArrow k="userName"/></th>
+                  <th style={th} onClick={() => handleSort('jobTitle')}>Project <SortArrow k="jobTitle"/></th>
+                  <th style={th} onClick={() => handleSort('amount')}>Amount <SortArrow k="amount"/></th>
+                  <th style={th} onClick={() => handleSort('status')}>Status <SortArrow k="status"/></th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginated.length === 0 ? (
+                  <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: '#94A3B8', padding: '48px 0' }}>No transactions found</td></tr>
+                ) : paginated.map((r, idx) => {
+                  const ts = txS(r.type); const ss = stS(r.status); const credit = isCredit(r.type);
+                  return (
+                    <tr key={r.id} onMouseEnter={e => e.currentTarget.style.background = BG} onMouseLeave={e => e.currentTarget.style.background = '#fff'} style={{ transition: 'background 0.1s' }}>
+                      <td style={{ ...td, color: '#94A3B8', fontSize: 13 }}>{String((page - 1) * pageSize + idx + 1).padStart(2, '0')}</td>
+                      <td style={{ ...td, fontSize: 12, color: SLATE, fontFamily: 'monospace' }}>{r.reference ?? r.id.slice(0, 8).toUpperCase()}</td>
+                      <td style={td}><span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: ts.bg, color: ts.color, whiteSpace: 'nowrap' }}>{ts.label}</span></td>
+                      <td style={{ ...td, color: SLATE, whiteSpace: 'nowrap' }}>{fmt(r.createdAt)}</td>
+                      <td style={td}><div style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Avatar src={r.userAvatar} name={r.userName} size={30}/><span style={{ fontSize: 13 }}>{r.userName}</span></div></td>
+                      <td style={{ ...td, maxWidth: 160, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.jobTitle ?? r.description ?? <span style={{ color: '#CBD5E1' }}>—</span>}</td>
+                      <td style={{ ...td, fontWeight: 700, color: credit ? '#16A34A' : '#DC2626' }}>{credit ? '+' : '-'}{r.amount.toFixed(2)}</td>
+                      <td style={td}><span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: ss.bg, color: ss.color, whiteSpace: 'nowrap' }}>{r.status}</span></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         <Pagination
           page={page} totalPages={totalPages} pageSize={pageSize}

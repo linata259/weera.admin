@@ -46,6 +46,8 @@ export interface FinancialSummary {
   pendingWithdrawalsCount: number;
   pendingWithdrawalsAmount: number;
   newDeposits: number;
+   pendingRefundsCount?: number;
+  pendingRefundsAmount?: number;
 }
 
 export interface MonthlyRevenue {
@@ -57,4 +59,17 @@ export interface MonthlyCommission {
   month: string;        // e.g. "Jan", "Feb"
   commission: number;   // platform fee earned
   feeRate?: number;     // optional — e.g. 5 (for 5%)
+}
+
+export interface RefundRequest {
+  id: string;
+  reference?: string;
+  clientName: string;
+  clientAvatar?: string | null;
+  freelancerName: string;
+  jobTitle: string;
+  amount: number;
+  reason: 'cancelled' | 'dispute' | 'work_rejected' | 'other';
+  requestedAt: string;
+  status: 'pending';
 }

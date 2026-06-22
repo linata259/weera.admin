@@ -268,6 +268,7 @@ const SkillsPage: React.FC = () => {
   const [loading,    setLoading]    = useState(true);
   const [saving,     setSaving]     = useState(false);
   const [search,     setSearch]     = useState('');
+  const [isMobile,   setIsMobile]   = useState(false); // NEW
 
   /* pagination state — separate per tab */
   const [skillPage,     setSkillPage]     = useState(1);
@@ -278,6 +279,15 @@ const SkillsPage: React.FC = () => {
   const [skillModal, setSkillModal] = useState<SkillModal | null>(null);
   const [catModal,   setCatModal]   = useState<CatModal   | null>(null);
   const [formName,   setFormName]   = useState('');
+
+  // NEW — same mobile-detection pattern used elsewhere in the app
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   /* load */
   useEffect(() => {
@@ -418,8 +428,8 @@ const SkillsPage: React.FC = () => {
   return (
     <div style={{ fontFamily: "'DM Sans','Helvetica Neue',sans-serif", display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-      {/* page header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+      {/* page header — CHANGED: stacks on mobile, button goes full width */}
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: NAVY }}>Skills & Categories</h1>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: SLATE }}>
@@ -430,7 +440,7 @@ const SkillsPage: React.FC = () => {
           padding: '10px 20px', borderRadius: 10, border: 'none',
           background: ORANGE, color: '#fff', fontWeight: 700,
           fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
-          display: 'flex', alignItems: 'center', gap: 7,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
         }}>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M7 1v12M1 7h12" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
@@ -448,6 +458,7 @@ const SkillsPage: React.FC = () => {
           <div key={label} style={{
             background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 12,
             padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 12,
+            flex: isMobile ? '1 1 45%' : undefined,
           }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
             <span style={{ fontSize: 13, color: SLATE, fontWeight: 500 }}>{label}</span>
@@ -475,12 +486,12 @@ const SkillsPage: React.FC = () => {
           ))}
         </div>
 
-        {/* toolbar */}
+        {/* toolbar — CHANGED: stacks on mobile */}
         <div style={{
-          padding: '12px 20px', display: 'flex', gap: 10,
-          alignItems: 'center', borderBottom: `1px solid ${BORDER}`, background: BG,
+          padding: '12px 20px', display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 10,
+          alignItems: isMobile ? 'stretch' : 'center', borderBottom: `1px solid ${BORDER}`, background: BG,
         }}>
-          <div style={{ position: 'relative', flex: 1, maxWidth: 320 }}>
+          <div style={{ position: 'relative', flex: isMobile ? 'unset' : 1, maxWidth: isMobile ? '100%' : 320 }}>
             <svg style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
               width="14" height="14" viewBox="0 0 16 16" fill="none">
               <circle cx="7" cy="7" r="5" stroke={SLATE} strokeWidth="1.5"/>
@@ -498,100 +509,119 @@ const SkillsPage: React.FC = () => {
               }}
             />
           </div>
-          <span style={{ fontSize: 13, color: SLATE, marginLeft: 'auto' }}>
+          <span style={{ fontSize: 13, color: SLATE, marginLeft: isMobile ? 0 : 'auto' }}>
             {filteredCount} of {totalCount}
           </span>
         </div>
 
-        {/* table */}
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 480 }}>
-            <thead>
-              <tr>
-                <th style={{ ...th, width: 52, textAlign: 'center' }}>#</th>
-                <th style={th}>Name</th>
-                <th style={th}>Added</th>
-                <th style={{ ...th, textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {activeList.length === 0 ? (
+        {/* table / cards */}
+        {isMobile ? (
+          /* ── MOBILE: stacked cards — NEW ── */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 16 }}>
+            {activeList.length === 0 ? (
+              <div style={{ textAlign: 'center', color: '#94A3B8', padding: '32px 0', fontSize: 14 }}>
+                {search ? `No ${tab} match your search.` : `No ${tab} yet — add one above.`}
+              </div>
+            ) : isSkills ? (
+              (activeList as Skill[]).map((item) => (
+                <div key={item.id} style={{ border: `1px solid ${BORDER}`, borderRadius: 12, padding: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, color: NAVY, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {item.name}
+                    </div>
+                    <div style={{ fontSize: 12, color: SLATE, marginTop: 2 }}>Added {fmtDate(item.created_at)}</div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                    <IconBtn onClick={() => openEditSkill(item)} title="Edit" color={SLATE}><EditIcon /></IconBtn>
+                    <IconBtn onClick={() => setSkillModal({ type: 'delete', item })} title="Delete" color={RED}><TrashIcon /></IconBtn>
+                  </div>
+                </div>
+              ))
+            ) : (
+              (activeList as JobCategory[]).map((item) => (
+                <div key={item.id} style={{ border: `1px solid ${BORDER}`, borderRadius: 12, padding: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, color: NAVY, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {item.name}
+                    </div>
+                    <div style={{ fontSize: 12, color: SLATE, marginTop: 2 }}>Added {fmtDate(item.created_at)}</div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                    <IconBtn onClick={() => openEditCat(item)} title="Edit" color={SLATE}><EditIcon /></IconBtn>
+                    <IconBtn onClick={() => setCatModal({ type: 'delete', item })} title="Delete" color={RED}><TrashIcon /></IconBtn>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        ) : (
+          /* ── DESKTOP TABLE ── */
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 480 }}>
+              <thead>
                 <tr>
-                  <td colSpan={4} style={{ ...td, textAlign: 'center', color: '#94A3B8', padding: '48px 0' }}>
-                    {search
-                      ? `No ${tab} match your search.`
-                      : `No ${tab} yet — add one above.`}
-                  </td>
+                  <th style={{ ...th, width: 52, textAlign: 'center' }}>#</th>
+                  <th style={th}>Name</th>
+                  <th style={th}>Added</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Actions</th>
                 </tr>
-              ) : isSkills ? (
-                (activeList as Skill[]).map((item, idx) => (
-                  <tr key={item.id}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = BG)}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
-                    style={{ transition: 'background 0.1s' }}>
-                    <td style={{ ...td, textAlign: 'center', color: '#94A3B8', fontSize: 12 }}>
-                      {String(globalOffset + idx + 1).padStart(2, '0')}
-                    </td>
-                    <td style={td}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{
-                          width: 32, height: 32, borderRadius: 8, background: '#FFF7ED',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                        }}>
-                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                            <path d="M3 8h10M8 3l5 5-5 5" stroke={ORANGE} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </div>
-                        <span style={{ fontWeight: 600 }}>{item.name}</span>
-                      </div>
-                    </td>
-                    <td style={{ ...td, color: SLATE, fontSize: 13 }}>{fmtDate(item.created_at)}</td>
-                    <td style={{ ...td, textAlign: 'right' }}>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
-                        <IconBtn onClick={() => openEditSkill(item)} title="Edit" color={SLATE}><EditIcon /></IconBtn>
-                        <IconBtn onClick={() => setSkillModal({ type: 'delete', item })} title="Delete" color={RED}><TrashIcon /></IconBtn>
-                      </div>
+              </thead>
+              <tbody>
+                {activeList.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} style={{ ...td, textAlign: 'center', color: '#94A3B8', padding: '48px 0' }}>
+                      {search
+                        ? `No ${tab} match your search.`
+                        : `No ${tab} yet — add one above.`}
                     </td>
                   </tr>
-                ))
-              ) : (
-                (activeList as JobCategory[]).map((item, idx) => (
-                  <tr key={item.id}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = BG)}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
-                    style={{ transition: 'background 0.1s' }}>
-                    <td style={{ ...td, textAlign: 'center', color: '#94A3B8', fontSize: 12 }}>
-                      {String(globalOffset + idx + 1).padStart(2, '0')}
-                    </td>
-                    <td style={td}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{
-                          width: 32, height: 32, borderRadius: 8, background: '#EFF6FF',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                        }}>
-                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                            <rect x="2" y="2" width="5" height="5" rx="1" stroke="#2563EB" strokeWidth="1.4"/>
-                            <rect x="9" y="2" width="5" height="5" rx="1" stroke="#2563EB" strokeWidth="1.4"/>
-                            <rect x="2" y="9" width="5" height="5" rx="1" stroke="#2563EB" strokeWidth="1.4"/>
-                            <rect x="9" y="9" width="5" height="5" rx="1" stroke="#2563EB" strokeWidth="1.4"/>
-                          </svg>
-                        </div>
+                ) : isSkills ? (
+                  (activeList as Skill[]).map((item, idx) => (
+                    <tr key={item.id}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = BG)}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
+                      style={{ transition: 'background 0.1s' }}>
+                      <td style={{ ...td, textAlign: 'center', color: '#94A3B8', fontSize: 12 }}>
+                        {String(globalOffset + idx + 1).padStart(2, '0')}
+                      </td>
+                      <td style={td}>
                         <span style={{ fontWeight: 600 }}>{item.name}</span>
-                      </div>
-                    </td>
-                    <td style={{ ...td, color: SLATE, fontSize: 13 }}>{fmtDate(item.created_at)}</td>
-                    <td style={{ ...td, textAlign: 'right' }}>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
-                        <IconBtn onClick={() => openEditCat(item)} title="Edit" color={SLATE}><EditIcon /></IconBtn>
-                        <IconBtn onClick={() => setCatModal({ type: 'delete', item })} title="Delete" color={RED}><TrashIcon /></IconBtn>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                      </td>
+                      <td style={{ ...td, color: SLATE, fontSize: 13 }}>{fmtDate(item.created_at)}</td>
+                      <td style={{ ...td, textAlign: 'right' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
+                          <IconBtn onClick={() => openEditSkill(item)} title="Edit" color={SLATE}><EditIcon /></IconBtn>
+                          <IconBtn onClick={() => setSkillModal({ type: 'delete', item })} title="Delete" color={RED}><TrashIcon /></IconBtn>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  (activeList as JobCategory[]).map((item, idx) => (
+                    <tr key={item.id}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = BG)}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
+                      style={{ transition: 'background 0.1s' }}>
+                      <td style={{ ...td, textAlign: 'center', color: '#94A3B8', fontSize: 12 }}>
+                        {String(globalOffset + idx + 1).padStart(2, '0')}
+                      </td>
+                      <td style={td}>
+                        <span style={{ fontWeight: 600 }}>{item.name}</span>
+                      </td>
+                      <td style={{ ...td, color: SLATE, fontSize: 13 }}>{fmtDate(item.created_at)}</td>
+                      <td style={{ ...td, textAlign: 'right' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
+                          <IconBtn onClick={() => openEditCat(item)} title="Edit" color={SLATE}><EditIcon /></IconBtn>
+                          <IconBtn onClick={() => setCatModal({ type: 'delete', item })} title="Delete" color={RED}><TrashIcon /></IconBtn>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {/* pagination */}
         <Pagination

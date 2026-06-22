@@ -125,6 +125,16 @@ export const EscrowManagement: React.FC = () => {
   const [sortKey,     setSortKey]     = useState<keyof EscrowTransaction>('createdAt');
   const [sortDir,     setSortDir]     = useState<'asc' | 'desc'>('desc');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isMobile,    setIsMobile]    = useState(false); // NEW
+
+  // NEW — same mobile-detection pattern used elsewhere in the app
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   useEffect(() => { fetchEscrowTransactions().then(setRows).finally(() => setLoading(false)); }, []);
 
@@ -168,6 +178,8 @@ export const EscrowManagement: React.FC = () => {
   const td: React.CSSProperties = { padding: '14px 16px', fontSize: 14, color: NAVY, borderBottom: '1px solid #F1F5F9', verticalAlign: 'middle' };
   const SA = ({ k }: { k: keyof EscrowTransaction }) => sortKey === k ? <span style={{ marginLeft: 4, fontSize: 10 }}>{sortDir === 'asc' ? '↑' : '↓'}</span> : null;
 
+  const toggleOne = (id: string) => setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
   if (loading) return <div style={{ padding: '48px 0', textAlign: 'center', color: SLATE, fontSize: 14 }}>Loading escrow data…</div>;
 
   return (
@@ -181,17 +193,17 @@ export const EscrowManagement: React.FC = () => {
           { label: 'Held',         value: fmtAmt(rows.filter(r => r.status === 'held').reduce((s, r) => s + r.amount, 0)),     color: '#CA8A04' },
           { label: 'Refunded',     value: fmtAmt(rows.filter(r => r.status === 'refunded').reduce((s, r) => s + r.amount, 0)), color: '#2563EB' },
         ].map(({ label, value, color }) => (
-          <div key={label} style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 12, padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 160px' }}>
+          <div key={label} style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 12, padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 4, flex: isMobile ? '1 1 45%' : '1 1 160px' }}>
             <span style={{ fontSize: 11, fontWeight: 600, color: SLATE, textTransform: 'uppercase', letterSpacing: 0.8 }}>{label}</span>
             <span style={{ fontSize: 18, fontWeight: 700, color }}>{value}</span>
           </div>
         ))}
       </div>
 
-      {/* toolbar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', flex: 1 }}>
-          <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: 300 }}>
+      {/* toolbar — CHANGED: stacks vertically on mobile */}
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 10, flexWrap: 'wrap', flex: 1 }}>
+          <div style={{ position: 'relative', flex: isMobile ? 'unset' : '1 1 200px', width: isMobile ? '100%' : undefined, maxWidth: isMobile ? '100%' : 300 }}>
             <svg width="15" height="15" viewBox="0 0 16 16" fill="none" style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
               <circle cx="7" cy="7" r="5" stroke="#94A3B8" strokeWidth="1.5"/>
               <path d="M11 11l2.5 2.5" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round"/>
@@ -199,68 +211,120 @@ export const EscrowManagement: React.FC = () => {
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search client, bidder, project…"
               style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px 9px 34px', border: `1px solid ${BORDER}`, borderRadius: 10, fontSize: 13, outline: 'none', fontFamily: 'inherit' }}/>
           </div>
-          <select value={statusF} onChange={e => setStatusF(e.target.value)} style={{ padding: '9px 14px', border: `1px solid ${BORDER}`, borderRadius: 10, fontSize: 13, outline: 'none', color: NAVY, background: '#fff', fontFamily: 'inherit', minWidth: 130 }}>
+          <select value={statusF} onChange={e => setStatusF(e.target.value)} style={{ padding: '9px 14px', border: `1px solid ${BORDER}`, borderRadius: 10, fontSize: 13, outline: 'none', color: NAVY, background: '#fff', fontFamily: 'inherit', width: isMobile ? '100%' : undefined, minWidth: isMobile ? undefined : 130 }}>
             <option value="all">All Statuses</option>
             {statusOpts.map(s => <option key={s} value={s}>{escS(s).label}</option>)}
           </select>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '6px 12px', background: '#fff' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '6px 12px', background: '#fff', width: isMobile ? '100%' : undefined, boxSizing: 'border-box' }}>
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="12" rx="2" stroke="#94A3B8" strokeWidth="1.4"/><path d="M1 7h14M5 1v4M11 1v4" stroke="#94A3B8" strokeWidth="1.4" strokeLinecap="round"/></svg>
-            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={{ border: 'none', outline: 'none', fontSize: 12, color: SLATE, fontFamily: 'inherit', background: 'transparent' }}/>
+            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={{ border: 'none', outline: 'none', fontSize: 12, color: SLATE, fontFamily: 'inherit', background: 'transparent', flex: isMobile ? 1 : undefined }}/>
             <span style={{ color: '#CBD5E1' }}>–</span>
-            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} style={{ border: 'none', outline: 'none', fontSize: 12, color: SLATE, fontFamily: 'inherit', background: 'transparent' }}/>
+            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} style={{ border: 'none', outline: 'none', fontSize: 12, color: SLATE, fontFamily: 'inherit', background: 'transparent', flex: isMobile ? 1 : undefined }}/>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, justifyContent: isMobile ? 'flex-end' : undefined }}>
           <ExBtn label="CSV" onClick={() => exportCsv('escrow_transactions', exportHeaders, exportRows)}/>
           <ExBtn label="PDF" onClick={() => exportPdf('Escrow Management', exportHeaders, exportRows)}/>
         </div>
       </div>
 
-      {/* table */}
+      {/* table / cards */}
       <div style={{ border: `1px solid ${BORDER}`, borderRadius: 14, overflow: 'hidden', background: '#fff' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
-            <thead>
-              <tr>
-                <th style={{ ...th, width: 48 }}>
-                  <input type="checkbox" checked={allSelected} onChange={() => setSelectedIds(() => allSelected ? new Set() : new Set(paginated.map(r => r.id)))} style={{ accentColor: ORANGE }}/>
-                </th>
-                <th style={{ ...th, width: 56 }}>Sr. No.</th>
-                <th style={th} onClick={() => handleSort('jobTitle')}>Project Title <SA k="jobTitle"/></th>
-                <th style={th} onClick={() => handleSort('clientName')}>Client <SA k="clientName"/></th>
-                <th style={th} onClick={() => handleSort('bidderName')}>Bidder <SA k="bidderName"/></th>
-                <th style={th} onClick={() => handleSort('amount')}>Amount <SA k="amount"/></th>
-                <th style={th} onClick={() => handleSort('status')}>Status <SA k="status"/></th>
-                <th style={th} onClick={() => handleSort('createdAt')}>Last Updated <SA k="createdAt"/></th>
-                <th style={{ ...th, textAlign: 'right' }}>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginated.length === 0 ? (
-                <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: '#94A3B8', padding: '48px 0' }}>No escrow transactions found</td></tr>
-              ) : paginated.map((r, idx) => {
-                const ss = escS(r.status);
-                return (
-                  <tr key={r.id} onMouseEnter={e => e.currentTarget.style.background = BG} onMouseLeave={e => e.currentTarget.style.background = '#fff'} style={{ transition: 'background 0.1s' }}>
-                    <td style={td}><input type="checkbox" checked={selectedIds.has(r.id)} onChange={() => setSelectedIds(prev => { const n = new Set(prev); n.has(r.id) ? n.delete(r.id) : n.add(r.id); return n; })} style={{ accentColor: ORANGE }}/></td>
-                    <td style={{ ...td, color: '#94A3B8', fontSize: 13 }}>{String((page - 1) * pageSize + idx + 1).padStart(2, '0')}</td>
-                    <td style={{ ...td, maxWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>{r.jobTitle ?? <span style={{ color: '#CBD5E1' }}>—</span>}</td>
-                    <td style={td}><div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Avatar src={r.clientAvatar} name={r.clientName} size={30}/><span style={{ fontSize: 13 }}>{r.clientName}</span></div></td>
-                    <td style={td}><div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Avatar src={r.bidderAvatar} name={r.bidderName} size={30}/><span style={{ fontSize: 13 }}>{r.bidderName}</span></div></td>
-                    <td style={{ ...td, fontWeight: 700 }}>{fmtAmt(r.amount)}</td>
-                    <td style={td}><span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: ss.bg, color: ss.color, whiteSpace: 'nowrap' }}>{ss.label}</span></td>
-                    <td style={{ ...td, color: SLATE, whiteSpace: 'nowrap', fontSize: 12 }}>{fmt(r.releasedAt ?? r.createdAt)}</td>
-                    <td style={{ ...td, textAlign: 'right' }}>
-                      <button style={{ width: 28, height: 28, border: `1px solid ${BORDER}`, borderRadius: 6, background: '#fff', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="3" r="1" fill={SLATE}/><circle cx="7" cy="7" r="1" fill={SLATE}/><circle cx="7" cy="11" r="1" fill={SLATE}/></svg>
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        {isMobile ? (
+          /* ── MOBILE: stacked cards — NEW ── */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 16 }}>
+            {paginated.length === 0 ? (
+              <div style={{ textAlign: 'center', color: '#94A3B8', padding: '32px 0', fontSize: 14 }}>No escrow transactions found</div>
+            ) : paginated.map((r) => {
+              const ss = escS(r.status);
+              const isSelected = selectedIds.has(r.id);
+              return (
+                <div key={r.id} style={{ border: `1px solid ${BORDER}`, borderRadius: 14, padding: 16, background: isSelected ? '#FFF7ED' : '#fff', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                      <input type="checkbox" checked={isSelected} onChange={() => toggleOne(r.id)} style={{ marginTop: 3, cursor: 'pointer', accentColor: ORANGE }}/>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: NAVY, lineHeight: 1.3 }}>
+                        {r.jobTitle ?? <span style={{ color: '#CBD5E1' }}>Untitled project</span>}
+                      </div>
+                    </div>
+                    <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: ss.bg, color: ss.color, whiteSpace: 'nowrap' }}>
+                      {ss.label}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 11, color: '#94A3B8', textTransform: 'uppercase', width: 50 }}>Client</span>
+                      <Avatar src={r.clientAvatar} name={r.clientName} size={26}/>
+                      <span style={{ fontSize: 13, color: NAVY }}>{r.clientName}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 11, color: '#94A3B8', textTransform: 'uppercase', width: 50 }}>Bidder</span>
+                      <Avatar src={r.bidderAvatar} name={r.bidderName} size={26}/>
+                      <span style={{ fontSize: 13, color: NAVY }}>{r.bidderName}</span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: 13 }}>
+                    <div>
+                      <div style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase' }}>Amount</div>
+                      <div style={{ color: '#475569', fontWeight: 700 }}>{fmtAmt(r.amount)}</div>
+                    </div>
+                    <div>
+                      <div style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase' }}>Updated</div>
+                      <div style={{ color: '#475569' }}>{fmt(r.releasedAt ?? r.createdAt)}</div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* ── DESKTOP TABLE ── */
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
+              <thead>
+                <tr>
+                  <th style={{ ...th, width: 48 }}>
+                    <input type="checkbox" checked={allSelected} onChange={() => setSelectedIds(() => allSelected ? new Set() : new Set(paginated.map(r => r.id)))} style={{ accentColor: ORANGE }}/>
+                  </th>
+                  <th style={{ ...th, width: 56 }}>Sr. No.</th>
+                  <th style={th} onClick={() => handleSort('jobTitle')}>Project Title <SA k="jobTitle"/></th>
+                  <th style={th} onClick={() => handleSort('clientName')}>Client <SA k="clientName"/></th>
+                  <th style={th} onClick={() => handleSort('bidderName')}>Bidder <SA k="bidderName"/></th>
+                  <th style={th} onClick={() => handleSort('amount')}>Amount <SA k="amount"/></th>
+                  <th style={th} onClick={() => handleSort('status')}>Status <SA k="status"/></th>
+                  <th style={th} onClick={() => handleSort('createdAt')}>Last Updated <SA k="createdAt"/></th>
+                  <th style={{ ...th, textAlign: 'right' }}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginated.length === 0 ? (
+                  <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: '#94A3B8', padding: '48px 0' }}>No escrow transactions found</td></tr>
+                ) : paginated.map((r, idx) => {
+                  const ss = escS(r.status);
+                  return (
+                    <tr key={r.id} onMouseEnter={e => e.currentTarget.style.background = BG} onMouseLeave={e => e.currentTarget.style.background = '#fff'} style={{ transition: 'background 0.1s' }}>
+                      <td style={td}><input type="checkbox" checked={selectedIds.has(r.id)} onChange={() => toggleOne(r.id)} style={{ accentColor: ORANGE }}/></td>
+                      <td style={{ ...td, color: '#94A3B8', fontSize: 13 }}>{String((page - 1) * pageSize + idx + 1).padStart(2, '0')}</td>
+                      <td style={{ ...td, maxWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>{r.jobTitle ?? <span style={{ color: '#CBD5E1' }}>—</span>}</td>
+                      <td style={td}><div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Avatar src={r.clientAvatar} name={r.clientName} size={30}/><span style={{ fontSize: 13 }}>{r.clientName}</span></div></td>
+                      <td style={td}><div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Avatar src={r.bidderAvatar} name={r.bidderName} size={30}/><span style={{ fontSize: 13 }}>{r.bidderName}</span></div></td>
+                      <td style={{ ...td, fontWeight: 700 }}>{fmtAmt(r.amount)}</td>
+                      <td style={td}><span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: ss.bg, color: ss.color, whiteSpace: 'nowrap' }}>{ss.label}</span></td>
+                      <td style={{ ...td, color: SLATE, whiteSpace: 'nowrap', fontSize: 12 }}>{fmt(r.releasedAt ?? r.createdAt)}</td>
+                      <td style={{ ...td, textAlign: 'right' }}>
+                        <button style={{ width: 28, height: 28, border: `1px solid ${BORDER}`, borderRadius: 6, background: '#fff', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="3" r="1" fill={SLATE}/><circle cx="7" cy="7" r="1" fill={SLATE}/><circle cx="7" cy="11" r="1" fill={SLATE}/></svg>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         <Pagination
           page={page} totalPages={totalPages} pageSize={pageSize}
