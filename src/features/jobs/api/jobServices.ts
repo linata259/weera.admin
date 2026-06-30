@@ -3,7 +3,22 @@ import type { Job } from '../pages/Jobs';
 
 type DBJob = {
     id: string;
-    [key: string]: unknown;
+    title: string | null;
+    status: string | null;
+    applicants: number | null;
+    posted_at: string | null;
+    posted_by_user_id: string | null;
+    categories: string[] | null;
+    description: string | null;
+    location_id: string | null;
+    location_type_id: string | null;
+    budget: number | null;
+    skills: string[] | null;
+    project_timeline: string | null;
+    payment_type_id: string | null;
+    attachments: string[] | null;
+    is_sponsored: boolean | null;
+    is_deleted: boolean | null;
 };
 
 type DBProfile = {
@@ -13,217 +28,273 @@ type DBProfile = {
     image_url: string | null;
 };
 
-type DBCategory = {
-    id: string;
-    name: string;
-};
+type DBCategory = { id: string; name: string };
+type DBLocation = { id: string; location: string };
+type DBLocationType = { id: string; type: string };
+type DBPaymentType = { id: string; type: string };
+type DBProjectTimeline = { id: string; timeline: string };
+type DBSkill = { id: string; name: string };
 
-async function fetchCategoryMap(): Promise<Map<string, string>> {
-    const { data, error } = await supabase
-        .from("job_categories")
-        .select("id, name");
+const ATTACHMENTS_BUCKET = "attachments";
 
-    if (error) {
-        console.warn("Supabase error fetching job_categories:", error);
-        return new Map();
-    }
+// ─── TTL cache for static reference tables ────────────────────────────────────
+// Categories, locations, skills etc. change very rarely. Cache them for 5 min
+// so navigating away and back to Jobs costs zero extra round trips.
+const _cache = new Map<string, { value: unknown; exp: number }>();
 
-    return new Map(
-        ((data ?? []) as DBCategory[]).map((row) => [row.id, row.name])
-    );
+function withCache<T>(key: string, fn: () => Promise<T>, ttl = 300_000): Promise<T> {
+    const hit = _cache.get(key);
+    if (hit && Date.now() < hit.exp) return Promise.resolve(hit.value as T);
+    return fn().then((v) => {
+        _cache.set(key, { value: v, exp: Date.now() + ttl });
+        return v;
+    });
 }
 
-async function fetchLocationMap(): Promise<Map<string, string>> {
-    const { data, error } = await supabase
-        .from("locations")
-        .select("id, location");
+// ─── Reference table fetchers (all cached) ────────────────────────────────────
 
-    if (error) {
-        console.warn("Supabase error fetching locations:", error);
-        return new Map();
-    }
+function fetchCategoryMap(): Promise<Map<string, string>> {
+    return withCache("categories", async () => {
+        const { data, error } = await supabase.from("job_categories").select("id, name");
+        if (error) console.warn("Supabase error fetching job_categories:", error);
+        return new Map(((data ?? []) as DBCategory[]).map((row) => [row.id, row.name]));
+    });
+}
 
-    return new Map(
-        ((data ?? []) as { id: string; location: string }[]).map((row) => [
-            row.id,
-            row.location,
-        ])
-    );
+function fetchLocationMap(): Promise<Map<string, string>> {
+    return withCache("locations", async () => {
+        const { data, error } = await supabase.from("locations").select("id, location");
+        if (error) console.warn("Supabase error fetching locations:", error);
+        return new Map(((data ?? []) as DBLocation[]).map((row) => [row.id, row.location]));
+    });
+}
+
+function fetchLocationTypeMap(): Promise<Map<string, string>> {
+    return withCache("location_types", async () => {
+        const { data, error } = await supabase.from("location_types").select("id, type");
+        if (error) console.warn("Supabase error fetching location_types:", error);
+        return new Map(((data ?? []) as DBLocationType[]).map((row) => [row.id, row.type]));
+    });
+}
+
+function fetchPaymentTypeMap(): Promise<Map<string, string>> {
+    return withCache("payment_types", async () => {
+        const { data, error } = await supabase.from("payment_types").select("id, type");
+        if (error) console.warn("Supabase error fetching payment_types:", error);
+        return new Map(((data ?? []) as DBPaymentType[]).map((row) => [row.id, row.type]));
+    });
+}
+
+function fetchTimelineMap(): Promise<Map<string, string>> {
+    return withCache("project_timeline", async () => {
+        const { data, error } = await supabase.from("project_timeline").select("id, timeline");
+        if (error) console.warn("Supabase error fetching project_timeline:", error);
+        return new Map(((data ?? []) as DBProjectTimeline[]).map((row) => [row.id, row.timeline]));
+    });
+}
+
+function fetchSkillMap(): Promise<Map<string, string>> {
+    return withCache("skills", async () => {
+        const { data, error } = await supabase.from("skills").select("id, name");
+        if (error) console.warn("Supabase error fetching skills:", error);
+        return new Map(((data ?? []) as DBSkill[]).map((row) => [row.id, row.name]));
+    });
 }
 
 async function fetchProfileMap(userIds: string[]): Promise<Map<string, DBProfile>> {
-    if (userIds.length === 0) {
-        return new Map();
-    }
-
+    if (!userIds.length) return new Map();
     const { data, error } = await supabase
         .from("profiles")
         .select("id, first_name, last_name, image_url")
         .in("id", userIds);
-
-    if (error) {
-        console.warn("Supabase error fetching profiles:", error);
-        return new Map();
-    }
-
-    return new Map(
-        ((data ?? []) as DBProfile[]).map((profile) => [profile.id, profile])
-    );
+    if (error) console.warn("Supabase error fetching profiles:", error);
+    return new Map(((data ?? []) as DBProfile[]).map((profile) => [profile.id, profile]));
 }
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function makeDisplayJobId(id: string): string {
     return id.replace(/[^0-9]/g, "").substring(0, 10).padStart(10, "0");
 }
 
-function getString(row: DBJob, keys: string[]): string | null {
-    for (const key of keys) {
-        const value = row[key];
-        if (typeof value === "string" && value.trim()) {
-            return value;
-        }
-    }
-    return null;
+function cleanAttachmentFilename(path: string): string {
+    const rawName = path.split("/").pop() ?? path;
+    return rawName.replace(/^(\d+_)+/, "");
 }
 
-function getNumber(row: DBJob, key: string): number | null {
-    const value = row[key];
-    if (typeof value === "number") return value;
-    if (typeof value === "string" && value.trim() && !Number.isNaN(Number(value))) {
-        return Number(value);
-    }
-    return null;
-}
-
-function getStringArray(row: DBJob, keys: string[]): string[] {
-    for (const key of keys) {
-        const value = row[key];
-        if (Array.isArray(value)) {
-            return value
-                .map((item) => {
-                    if (typeof item === "string") return item;
-                    if (typeof item === "number") return String(item);
-                    return "";
-                })
-                .filter(Boolean);
-        }
-        if (typeof value === "string" && value.trim()) {
-            return value
-                .split(/\r?\n|,/)
-                .map((item) => item.trim())
-                .filter(Boolean);
-        }
-    }
-    return [];
+function resolveAttachment(path: string): { url: string; name: string } {
+    const { data } = supabase.storage.from(ATTACHMENTS_BUCKET).getPublicUrl(path);
+    return { url: data.publicUrl, name: cleanAttachmentFilename(path) };
 }
 
 function mapDBJobToJob(
     row: DBJob,
     categoryMap: Map<string, string>,
     profileMap: Map<string, DBProfile>,
-    locationMap: Map<string, string>
+    locationMap: Map<string, string>,
+    locationTypeMap: Map<string, string>,
+    paymentTypeMap: Map<string, string>,
+    timelineMap: Map<string, string>,
+    skillMap: Map<string, string>
 ): Job {
-    const categoriesId = getStringArray(row, ["categories", "category_ids"]);
-
+    const categoriesId = Array.isArray(row.categories) ? row.categories : [];
     const categoryNames = categoriesId
-        .map((id) => categoryMap.get(id) ?? id)
+        .map((id) => categoryMap.get(id))
         .filter((name): name is string => Boolean(name));
 
-    const postedByUserId = getString(row, [
-        "posted_by_user_id",
-        "posted_by",
-        "user_id",
-        "client_id",
-    ]);
-
-    const profile = postedByUserId
-        ? profileMap.get(postedByUserId)
+    const profile = row.posted_by_user_id
+        ? profileMap.get(row.posted_by_user_id)
         : null;
 
     const postedByName = profile
         ? [profile.first_name, profile.last_name].filter(Boolean).join(" ")
         : "";
 
-    const locationIds = getStringArray(row, ["location_id", "location_ids", "locations"]);
-    const locationFromIds = locationIds
-        .map((id) => locationMap.get(id))
-        .filter((name): name is string => Boolean(name))
-        .join(", ");
+    const attachments = Array.isArray(row.attachments)
+        ? row.attachments.map(resolveAttachment)
+        : [];
+
+    const skillIds = Array.isArray(row.skills) ? row.skills : [];
+    const skillNames = skillIds
+        .map((id) => skillMap.get(id))
+        .filter((name): name is string => Boolean(name));
 
     return {
         id: row.id,
         jobId: makeDisplayJobId(row.id),
-        title: getString(row, ["title", "job_title"]) ?? "",
+        title: row.title ?? "",
         jobType: categoryNames[0] ?? "General",
         categories: categoryNames,
-        status: getString(row, ["status"]) ?? "pending",
-        applicants: getNumber(row, "applicants") ?? 0,
-        posted_at: getString(row, ["posted_at", "created_at"]) ?? null,
-        description: getString(row, [
-            "description",
-            "job_description",
-            "details",
-            "job_details",
-        ]) ?? "",
-        specifications: getStringArray(row, [
-            "specifications",
-            "requirements",
-            "job_specifications",
-            "skills_required",
-        ]),
-        attachments: getStringArray(row, [
-            "attachments",
-            "job_attachments",
-            "attachment_urls",
-            "files",
-        ]),
-        location: getString(row, ["location", "location_name", "address"]) ?? locationFromIds,
-
-        posted_by_user_id: postedByUserId,
-        posted_by_name:
-            postedByName ||
-            getString(row, ["posted_by_name", "client_name", "poster_name"]) ||
-            "Unknown",
+        status: row.status ?? "pending",
+        applicants: row.applicants ?? 0,
+        posted_at: row.posted_at ?? null,
+        posted_by_user_id: row.posted_by_user_id ?? null,
+        posted_by_name: postedByName || "Unknown",
         posted_by_image: profile?.image_url ?? null,
+        description: row.description ?? "",
+        location: row.location_id ? locationMap.get(row.location_id) ?? "" : "",
+        locationType: row.location_type_id ? locationTypeMap.get(row.location_type_id) ?? "" : "",
+        budget: row.budget ?? null,
+        skills: skillNames,
+        paymentType: row.payment_type_id ? paymentTypeMap.get(row.payment_type_id) ?? "" : "",
+        timeline: row.project_timeline ? timelineMap.get(row.project_timeline) ?? "" : "",
+        attachments,
+        isSponsored: row.is_sponsored ?? false,
     };
 }
 
+// ─── fetchJobs ────────────────────────────────────────────────────────────────
+// Key change: jobs fetch + all 6 static lookup tables fire in parallel.
+// Previously: jobs → [7 parallel lookups]. The static tables have no dependency
+// on job data, so they were waiting for nothing.
+// Now:  [jobs + 6 static maps] → [profiles only]  (profiles need job user IDs)
+
 export const fetchJobs = async (): Promise<Job[]> => {
-    const { data: jobsData, error: jobsError } = await supabase
-        .from("jobs")
-        .select("*")
-        .order("posted_at", { ascending: false });
+    const [jobsRes, categoryMap, locationMap, locationTypeMap, paymentTypeMap, timelineMap, skillMap] =
+        await Promise.all([
+            supabase
+                .from("jobs")
+                .select(`
+                    id,
+                    title,
+                    status,
+                    applicants,
+                    posted_at,
+                    posted_by_user_id,
+                    categories,
+                    description,
+                    location_id,
+                    location_type_id,
+                    budget,
+                    skills,
+                    project_timeline,
+                    payment_type_id,
+                    attachments,
+                    is_sponsored,
+                    is_deleted
+                `)
+                .eq("is_deleted", false)
+                .order("posted_at", { ascending: false }),
+            fetchCategoryMap(),
+            fetchLocationMap(),
+            fetchLocationTypeMap(),
+            fetchPaymentTypeMap(),
+            fetchTimelineMap(),
+            fetchSkillMap(),
+        ]);
 
-    console.log("=== JOBS FETCH ===");
-    console.log("Error:", jobsError);
-    console.log("Data:", jobsData);
-
-    if (jobsError) {
-        console.error("Supabase error fetching jobs:", jobsError);
+    if (jobsRes.error) {
+        console.error(
+            "Supabase error fetching jobs:",
+            jobsRes.error.message,
+            jobsRes.error.details,
+            jobsRes.error.hint
+        );
         return [];
     }
 
-    const jobs = (jobsData ?? []) as DBJob[];
+    const jobs = (jobsRes.data ?? []) as DBJob[];
 
     const userIds = Array.from(
         new Set(
             jobs
-                .map((job) =>
-                    getString(job, [
-                        "posted_by_user_id",
-                        "posted_by",
-                        "user_id",
-                        "client_id",
-                    ])
-                )
+                .map((job) => job.posted_by_user_id)
                 .filter((id): id is string => Boolean(id))
         )
     );
 
-    const [categoryMap, profileMap, locationMap] = await Promise.all([
-        fetchCategoryMap(),
-        fetchProfileMap(userIds),
-        fetchLocationMap(),
-    ]);
+    // Only profiles still require a second round trip — they depend on the
+    // user IDs extracted from the jobs result above.
+    const profileMap = await fetchProfileMap(userIds);
 
-    return jobs.map((job) => mapDBJobToJob(job, categoryMap, profileMap, locationMap));
+    return jobs.map((job) =>
+        mapDBJobToJob(job, categoryMap, profileMap, locationMap, locationTypeMap, paymentTypeMap, timelineMap, skillMap)
+    );
 };
+
+// ─── Mutations ────────────────────────────────────────────────────────────────
+
+export async function toggleJobSponsorship(jobId: string, sponsored: boolean): Promise<boolean> {
+    const { error } = await supabase
+        .from("jobs")
+        .update({ is_sponsored: sponsored })
+        .eq("id", jobId);
+    if (error) {
+        console.error("Supabase error updating sponsorship:", error.message);
+        return false;
+    }
+    return true;
+}
+
+export async function softDeleteJob(jobId: string): Promise<boolean> {
+    const { error } = await supabase
+        .from("jobs")
+        .update({ is_deleted: true })
+        .eq("id", jobId);
+    if (error) {
+        console.error("Supabase error soft-deleting job:", error.message);
+        return false;
+    }
+    return true;
+}
+
+export async function banJob(jobId: string, reason: string): Promise<boolean> {
+    const { error } = await supabase
+        .from("jobs")
+        .update({ status: "banned", ban_reason: reason })
+        .eq("id", jobId);
+    if (error) {
+        console.error("Supabase error banning job:", error.message);
+        return false;
+    }
+    return true;
+}
+
+export async function fetchBids() {
+    const { data, error } = await supabase
+        .from('bids')
+        .select('*, jobs!inner(title, location_id(location))')
+        .order('submitted_at', { ascending: false });
+    if (error) throw error;
+    return data ?? [];
+}

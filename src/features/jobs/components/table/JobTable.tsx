@@ -1,13 +1,12 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { Job } from "../../pages/Jobs";
 import { JobColumn } from "./TableToolbar";
 import { Avatar } from "../../../shared/Avatar";
 import { JobStatusBadge } from "./JobStatusBadge";
-import { JobDetailPanel } from "./JobDetailPanel";
-import { JobBanModal } from "./JobBanModal";
 import { SortIcon } from "../../../shared/SortIcon";
 import { IconBtn } from "../../../shared/IconBtn";
 import { PageBtn } from "../../../shared/PageBtn";
+import { BanJobModal } from "../Banjobmodal";
 
 interface Props {
     data: Job[];
@@ -16,7 +15,9 @@ interface Props {
     sortConfig?: { key: keyof Job; direction: "asc" | "desc" } | null;
     rowsPerPage?: number;
     onViewJob?: (job: Job) => void;
-    onSuspendJob?: (job: Job, reason?: string) => void;
+    onSuspendJob?: (job: Job) => void;
+    onBanJob?: (job: Job, reason: string) => void;
+    highlightJobId?: string;
 }
 
 /* ─── Style constants ────────────────────────────────────────── */
@@ -51,12 +52,15 @@ export const JobTable: React.FC<Props> = ({
     rowsPerPage = 10,
     onViewJob,
     onSuspendJob,
+    onBanJob,
+    highlightJobId,
 }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-    const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-    const [jobToBan, setJobToBan] = useState<Job | null>(null);
+    const [, setSelectedJob] = useState<Job | null>(null);
     const [isMobile, setIsMobile] = useState(false);
+    const [banTarget, setBanTarget] = useState<Job | null>(null);
+    const highlightRowRef = useRef<HTMLTableRowElement | HTMLDivElement | null>(null);
 
     useEffect(() => {
         const mq = window.matchMedia("(max-width: 768px)");
@@ -65,6 +69,21 @@ export const JobTable: React.FC<Props> = ({
         mq.addEventListener("change", handler);
         return () => mq.removeEventListener("change", handler);
     }, []);
+
+    // Jump to the page containing the highlighted job
+    useEffect(() => {
+        if (!highlightJobId) return;
+        // const idx = data.findIndex((j) => j.jobId === highlightJobId);
+        const idx = data.findIndex((j) => j.id === highlightJobId);  
+        if (idx === -1) return;
+        setCurrentPage(Math.ceil((idx + 1) / rowsPerPage));
+    }, [highlightJobId, data, rowsPerPage]);
+
+    // Scroll to the highlighted row after the page renders
+    useEffect(() => {
+        if (!highlightJobId) return;
+        highlightRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, [currentPage, highlightJobId]);
 
     const totalPages = Math.max(1, Math.ceil(data.length / rowsPerPage));
 
@@ -128,11 +147,31 @@ export const JobTable: React.FC<Props> = ({
         </th>
     );
 
+    const ViewIcon = (
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="7" stroke="#94A3B8" strokeWidth="1.5" />
+            <path d="M8 7v4" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" />
+            <circle cx="8" cy="5" r="0.75" fill="#94A3B8" />
+        </svg>
+    );
+    const SuspendIcon = (
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="7" stroke="#94A3B8" strokeWidth="1.5" />
+            <path d="M3.5 3.5l9 9" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+    );
+    const BanIcon = (
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="7" fill="#DC2626" />
+            <path d="M4.2 4.2l7.6 7.6" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" />
+        </svg>
+    );
+
     return (
         <>
             <div
                 style={{
-                    fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
+                    fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
                     width: "100%",
                     display: "flex",
                     flexDirection: "column",
@@ -143,10 +182,140 @@ export const JobTable: React.FC<Props> = ({
                     overflow: "hidden",
                 }}
             >
-                {/* ── MOBILE VIEW ── */}
+                {/* ── MOBILE VIEW — stacked cards ── */}
                 {isMobile ? (
-                    <div style={{ padding: 16, color: "#64748B", fontSize: 14 }}>
-                        Please use a desktop device to view the Jobs table, mobile view coming soon!
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: 16 }}>
+                        {paginatedData.length > 0 && (
+                            <button
+                                onClick={toggleAll}
+                                style={{
+                                    alignSelf: "flex-start",
+                                    border: "none",
+                                    background: "transparent",
+                                    color: "#EA580C",
+                                    fontSize: 13,
+                                    fontWeight: 600,
+                                    cursor: "pointer",
+                                    padding: 0,
+                                }}
+                            >
+                                {allSelected ? "Deselect all" : "Select all on this page"}
+                            </button>
+                        )}
+
+                        {paginatedData.length === 0 ? (
+                            <div style={{ padding: "32px 0", textAlign: "center", color: "#94A3B8", fontSize: 14 }}>
+                                No jobs found
+                            </div>
+                        ) : (
+                            paginatedData.map((job) => {
+                                const isSelected = selectedIds.has(job.id);
+                                const isHighlighted = job.jobId === highlightJobId;
+                                return (
+                                    <div
+                                        key={job.id}
+                                        ref={isHighlighted ? (el) => { highlightRowRef.current = el; } : undefined}
+                                        style={{
+                                            border: isHighlighted ? "2px solid #EA580C" : "1px solid #E8EDF2",
+                                            borderRadius: 14,
+                                            padding: 16,
+                                            background: isHighlighted ? "#FFF3E0" : isSelected ? "#FFF7ED" : "#fff",
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            gap: 10,
+                                        }}
+                                    >
+                                        {/* Title row */}
+                                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+                                            <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={() => toggleOne(job.id)}
+                                                    style={{ marginTop: 3, cursor: "pointer", accentColor: "#EA580C" }}
+                                                />
+                                                <div>
+                                                    <div style={{ fontSize: 15, fontWeight: 700, color: "#0F172A", lineHeight: 1.3 }}>
+                                                        {job.title}
+                                                    </div>
+                                                    <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 2 }}>
+                                                        {job.jobId}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <JobStatusBadge status={job.status} />
+                                        </div>
+
+                                        {/* Posted by */}
+                                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                            <Avatar src={job.posted_by_image} name={job.posted_by_name} />
+                                            <span style={{ fontSize: 13, color: "#475569" }}>{job.posted_by_name}</span>
+                                        </div>
+
+                                        {/* Meta grid */}
+                                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontSize: 13 }}>
+                                            <div>
+                                                <div style={{ color: "#94A3B8", fontSize: 11, textTransform: "uppercase" }}>Categories</div>
+                                                <div style={{ color: "#475569" }}>
+                                                    {job.categories.length > 0 ? job.categories.join(", ") : "—"}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div style={{ color: "#94A3B8", fontSize: 11, textTransform: "uppercase" }}>Proposals</div>
+                                                <div style={{ color: "#475569" }}>{job.applicants}</div>
+                                            </div>
+                                            <div>
+                                                <div style={{ color: "#94A3B8", fontSize: 11, textTransform: "uppercase" }}>Posted</div>
+                                                <div style={{ color: "#475569" }}>{formatDate(job.posted_at) ?? "—"}</div>
+                                            </div>
+                                            {columns.map((col) => {
+                                                const val = (job as any)[col.key];
+                                                let display: React.ReactNode = "—";
+                                                if (val !== null && val !== undefined && val !== "") {
+                                                    if (Array.isArray(val)) display = val.length ? val.join(", ") : display;
+                                                    else if (typeof val === "boolean") display = val ? "Yes" : "No";
+                                                    else display = String(val);
+                                                }
+                                                return (
+                                                    <div key={String(col.key)}>
+                                                        <div style={{ color: "#94A3B8", fontSize: 11, textTransform: "uppercase" }}>{col.label}</div>
+                                                        <div style={{ color: "#475569" }}>{display}</div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {/* Actions */}
+                                        <div
+                                            style={{
+                                                display: "flex",
+                                                gap: 8,
+                                                justifyContent: "flex-end",
+                                                borderTop: "1px solid #F1F5F9",
+                                                paddingTop: 10,
+                                                marginTop: 4,
+                                            }}
+                                        >
+                                            <IconBtn
+                                                title="View details"
+                                                onClick={() => {
+                                                    onViewJob?.(job);
+                                                    setSelectedJob(job);
+                                                }}
+                                            >
+                                                {ViewIcon}
+                                            </IconBtn>
+                                            <IconBtn title="Suspend job" onClick={() => onSuspendJob?.(job)}>
+                                                {SuspendIcon}
+                                            </IconBtn>
+                                            <IconBtn title="Ban job" onClick={() => setBanTarget(job)}>
+                                                {BanIcon}
+                                            </IconBtn>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
                     </div>
                 ) : (
                     /* ── DESKTOP TABLE ── */
@@ -219,27 +388,30 @@ export const JobTable: React.FC<Props> = ({
                                     paginatedData.map((job, idx) => {
                                         const globalIdx = (currentPage - 1) * rowsPerPage + idx + 1;
                                         const isSelected = selectedIds.has(job.id);
+                                        const isHighlighted = job.jobId === highlightJobId;
 
                                         return (
                                             <tr
                                                 key={job.id}
-                                                onClick={() => {
-                                                    onViewJob?.(job);
-                                                    setSelectedJob(job);
-                                                }}
+                                                ref={isHighlighted ? (el) => { highlightRowRef.current = el; } : undefined}
+                                                onClick={() => setSelectedJob(job)}
                                                 style={{
-                                                    background: isSelected ? "#FFF7ED" : "#fff",
+                                                    background: isHighlighted
+                                                        ? "#FFF3E0"
+                                                        : isSelected ? "#FFF7ED" : "#fff",
+                                                    outline: isHighlighted ? "2px solid #EA580C" : "none",
+                                                    outlineOffset: "-2px",
                                                     transition: "background 0.12s",
                                                     cursor: "pointer",
                                                 }}
                                                 onMouseEnter={(e) => {
-                                                    if (!isSelected)
+                                                    if (!isSelected && !isHighlighted)
                                                         e.currentTarget.style.background = "#FAFBFC";
                                                 }}
                                                 onMouseLeave={(e) => {
-                                                    e.currentTarget.style.background = isSelected
-                                                        ? "#FFF7ED"
-                                                        : "#fff";
+                                                    e.currentTarget.style.background = isHighlighted
+                                                        ? "#FFF3E0"
+                                                        : isSelected ? "#FFF7ED" : "#fff";
                                                 }}
                                             >
                                                 <td style={tdBase} onClick={(e) => e.stopPropagation()}>
@@ -337,20 +509,19 @@ export const JobTable: React.FC<Props> = ({
                                                                 setSelectedJob(job);
                                                             }}
                                                         >
-                                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                                                <circle cx="8" cy="8" r="7" stroke="#94A3B8" strokeWidth="1.5" />
-                                                                <path d="M8 7v4" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" />
-                                                                <circle cx="8" cy="5" r="0.75" fill="#94A3B8" />
-                                                            </svg>
+                                                            {ViewIcon}
                                                         </IconBtn>
                                                         <IconBtn
                                                             title="Suspend job"
-                                                            onClick={() => setJobToBan(job)}
+                                                            onClick={() => onSuspendJob?.(job)}
                                                         >
-                                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                                                <circle cx="8" cy="8" r="7" stroke="#94A3B8" strokeWidth="1.5" />
-                                                                <path d="M3.5 3.5l9 9" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" />
-                                                            </svg>
+                                                            {SuspendIcon}
+                                                        </IconBtn>
+                                                        <IconBtn
+                                                            title="Ban job"
+                                                            onClick={() => setBanTarget(job)}
+                                                        >
+                                                            {BanIcon}
                                                         </IconBtn>
                                                     </div>
                                                 </td>
@@ -380,13 +551,13 @@ export const JobTable: React.FC<Props> = ({
                             Showing {(currentPage - 1) * rowsPerPage + 1}–
                             {Math.min(currentPage * rowsPerPage, data.length)} of {data.length} jobs
                         </span>
-                        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                        <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                             <PageBtn
                                 label="< Previous"
                                 disabled={currentPage === 1}
                                 onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                             />
-                            {pageNumbers[0] > 1 && (
+                            {!isMobile && pageNumbers[0] > 1 && (
                                 <>
                                     <PageBtn label="1" onClick={() => setCurrentPage(1)} />
                                     {pageNumbers[0] > 2 && (
@@ -394,15 +565,21 @@ export const JobTable: React.FC<Props> = ({
                                     )}
                                 </>
                             )}
-                            {pageNumbers.map((p) => (
-                                <PageBtn
-                                    key={p}
-                                    label={String(p)}
-                                    active={p === currentPage}
-                                    onClick={() => setCurrentPage(p)}
-                                />
-                            ))}
-                            {pageNumbers[pageNumbers.length - 1] < totalPages && (
+                            {!isMobile &&
+                                pageNumbers.map((p) => (
+                                    <PageBtn
+                                        key={p}
+                                        label={String(p)}
+                                        active={p === currentPage}
+                                        onClick={() => setCurrentPage(p)}
+                                    />
+                                ))}
+                            {isMobile && (
+                                <span style={{ fontSize: 13, color: "#475569", padding: "0 6px" }}>
+                                    Page {currentPage} of {totalPages}
+                                </span>
+                            )}
+                            {!isMobile && pageNumbers[pageNumbers.length - 1] < totalPages && (
                                 <>
                                     {pageNumbers[pageNumbers.length - 1] < totalPages - 1 && (
                                         <span style={{ padding: "0 4px", color: "#94A3B8" }}>…</span>
@@ -418,52 +595,45 @@ export const JobTable: React.FC<Props> = ({
                                 disabled={currentPage === totalPages}
                                 onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
                             />
-                            <span style={{ fontSize: 13, color: "#94A3B8", marginLeft: "20px" }}>Go to</span>
-                            <div
-                                style={{
-                                    background: "#F8FAFC",
-                                    border: "1px solid #E2E8F0",
-                                    color: "#CBD5E1",
-                                    borderRadius: 6,
-                                    padding: "3px 12px",
-                                    fontSize: 13
-                                }}
-                            >Page</div>
-                            <div
-                                style={{
-                                    background: "#F8FAFC",
-                                    border: "1px solid #E2E8F0",
-                                    color: "#64748B",
-                                    borderRadius: 6,
-                                    padding: "3px 12px",
-                                    fontSize: 13,
-                                    marginLeft: '10px'
-                                }}
-                            >{rowsPerPage} / page ˅</div>
+                            {!isMobile && (
+                                <>
+                                    <span style={{ fontSize: 13, color: "#94A3B8", marginLeft: "20px" }}>Go to</span>
+                                    <div
+                                        style={{
+                                            background: "#F8FAFC",
+                                            border: "1px solid #E2E8F0",
+                                            color: "#CBD5E1",
+                                            borderRadius: 6,
+                                            padding: "3px 12px",
+                                            fontSize: 13
+                                        }}
+                                    >Page</div>
+                                    <div
+                                        style={{
+                                            background: "#F8FAFC",
+                                            border: "1px solid #E2E8F0",
+                                            color: "#64748B",
+                                            borderRadius: 6,
+                                            padding: "3px 12px",
+                                            fontSize: 13,
+                                            marginLeft: '10px'
+                                        }}
+                                    >{rowsPerPage} / page ˅</div>
+                                </>
+                            )}
                         </div>
                     </div>
                 )}
             </div>
-            {selectedJob && (
-                <JobDetailPanel
-                    job={selectedJob}
-                    onClose={() => setSelectedJob(null)}
-                    onSuspend={(job) => {
-                        setSelectedJob(null);
-                        setJobToBan(job);
-                    }}
-                />
-            )}
-            {jobToBan && (
-                <JobBanModal
-                    job={jobToBan}
-                    onClose={() => setJobToBan(null)}
-                    onConfirm={(job, reason) => {
-                        onSuspendJob?.(job, reason);
-                        setJobToBan(null);
-                    }}
-                />
-            )}
+
+            <BanJobModal
+                job={banTarget}
+                onClose={() => setBanTarget(null)}
+                onConfirm={(reason) => {
+                    if (banTarget) onBanJob?.(banTarget, reason);
+                    setBanTarget(null);
+                }}
+            />
         </>
     );
 };

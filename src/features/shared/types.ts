@@ -1,4 +1,5 @@
-import { User } from "features/users/pages/Users";
+import { User } from "@features/users/types";
+
 
 
 export type Status = "active" | "suspended" | "pending";

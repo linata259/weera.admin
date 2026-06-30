@@ -1,5 +1,6 @@
 import { supabase } from 'services/supabaseClient';
-import type { User } from '../pages/Users';
+import { User } from '../types';
+
 
 async function fetchUserTypeMap(): Promise<Map<string, string>> {
   const { data, error } = await supabase.from('user_types').select('id, type');
@@ -75,7 +76,7 @@ export const fetchUsers = async (): Promise<User[]> => {
     fetchUserTypeMap(),
     fetchLocationMap(),
     fetchSkillMap(),
-    supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+    supabase.from('profiles').select('*').or('role.is.null,role.neq.admin').order('created_at', { ascending: false }),
   ]);
 
   if (profilesResult.error) {
