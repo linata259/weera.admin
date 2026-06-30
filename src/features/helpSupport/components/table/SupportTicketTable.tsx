@@ -39,6 +39,42 @@ const SortIcon: React.FC<{
   return <span style={{ color: "#0F172A" }}>{direction === "asc" ? "↑" : "↓"}</span>;
 };
 
+const priorityStyles: Record<string, React.CSSProperties> = {
+  urgent: { background: "#FEE2E2", color: "#B91C1C" },
+  high: { background: "#FFEDD5", color: "#C2410C" },
+  normal: { background: "#DBEAFE", color: "#1D4ED8" },
+  low: { background: "#DCFCE7", color: "#15803D" },
+};
+
+const formatLabel = (value: string): string =>
+  value
+    .replace(/[_-]/g, " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+
+const TriageBadge: React.FC<{
+  children: React.ReactNode;
+  style?: React.CSSProperties;
+}> = ({ children, style }) => (
+  <span
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "4px 9px",
+      borderRadius: 999,
+      fontSize: 12,
+      fontWeight: 800,
+      whiteSpace: "nowrap",
+      ...style,
+    }}
+  >
+    {children}
+  </span>
+);
+
 export const SupportTicketTable: React.FC<SupportTicketTableProps> = ({
   tickets,
   onSort,
@@ -103,7 +139,7 @@ export const SupportTicketTable: React.FC<SupportTicketTableProps> = ({
           style={{
             width: "100%",
             borderCollapse: "collapse",
-            minWidth: 900,
+            minWidth: 1120,
             fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
           }}
         >
@@ -112,6 +148,8 @@ export const SupportTicketTable: React.FC<SupportTicketTableProps> = ({
               {headerCell("Ticket ID", "ticketId")}
               {headerCell("Requester")}
               {headerCell("User Type")}
+              {headerCell("Priority", "priority")}
+              {headerCell("Category", "category")}
               {headerCell("Message", "description")}
               {headerCell("Status", "status")}
               {headerCell("Created", "createdAt")}
@@ -123,7 +161,7 @@ export const SupportTicketTable: React.FC<SupportTicketTableProps> = ({
             {currentTickets.length === 0 ? (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={9}
                   style={{
                     padding: 40,
                     textAlign: "center",
@@ -192,6 +230,25 @@ export const SupportTicketTable: React.FC<SupportTicketTableProps> = ({
                     }}
                   >
                     {ticket.user?.userType ?? "User"}
+                  </td>
+
+                  <td style={{ padding: "14px 16px" }}>
+                    <TriageBadge
+                      style={
+                        priorityStyles[ticket.priority] ?? {
+                          background: "#F1F5F9",
+                          color: "#475569",
+                        }
+                      }
+                    >
+                      {formatLabel(ticket.priority)}
+                    </TriageBadge>
+                  </td>
+
+                  <td style={{ padding: "14px 16px" }}>
+                    <TriageBadge style={{ background: "#F1F5F9", color: "#475569" }}>
+                      {ticket.category}
+                    </TriageBadge>
                   </td>
 
                   <td

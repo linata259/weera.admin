@@ -9,6 +9,8 @@ import { SupportToolbar } from "../components/table/SupportToolbar";
 import { useSupportTickets } from "../hooks/useSupportTickets";
 import type { SupportTicket } from "../types";
 
+const SUPPORT_NOTES_STORAGE_KEY = "weera_admin_support_ticket_notes";
+
 const statCardStyle: React.CSSProperties = {
   background: "#fff",
   border: "1px solid #E2E8F0",
@@ -18,6 +20,14 @@ const statCardStyle: React.CSSProperties = {
   boxSizing: "border-box",
   display: "grid",
   alignContent: "space-between",
+};
+
+const loadSavedNotes = (): Record<string, string> => {
+  try {
+    return JSON.parse(localStorage.getItem(SUPPORT_NOTES_STORAGE_KEY) || "{}");
+  } catch {
+    return {};
+  }
 };
 
 const HelpSupport: React.FC = () => {
@@ -38,7 +48,7 @@ const HelpSupport: React.FC = () => {
 
   useEffect(() => {
     setLoading(true);
-    fetchSupportTickets()
+    fetchSupportTickets(loadSavedNotes())
       .then((data) => {
         setTickets(data);
         setErrorMessage("");
@@ -103,6 +113,22 @@ const HelpSupport: React.FC = () => {
       setSelectedTicket(ticket);
       setErrorMessage("Unable to update ticket status in Supabase.");
     }
+  };
+
+  const handleAdminNotesChange = (ticket: SupportTicket, adminNotes: string) => {
+    const savedNotes = {
+      ...loadSavedNotes(),
+      [ticket.id]: adminNotes,
+    };
+
+    localStorage.setItem(SUPPORT_NOTES_STORAGE_KEY, JSON.stringify(savedNotes));
+
+    const nextTicket = { ...ticket, adminNotes };
+
+    setTickets((prev) =>
+      prev.map((item) => (item.id === ticket.id ? nextTicket : item))
+    );
+    setSelectedTicket(nextTicket);
   };
 
   return (
@@ -192,6 +218,7 @@ const HelpSupport: React.FC = () => {
           ticket={selectedTicket}
           onClose={() => setSelectedTicket(null)}
           onStatusChange={handleStatusChange}
+          onAdminNotesChange={handleAdminNotesChange}
         />
       )}
     </div>

@@ -1,16 +1,9 @@
 import { supabase } from "services/supabaseClient";
-import type { SupportTicket as SupportTicketBase, SupportTicketUser } from "../types";
-
-type SupportTicket = SupportTicketBase;
+import type { SupportTicket, SupportTicketUser } from "../types";
 
 type SupportTicketRow = {
   id: string;
-  user_id: string;
-  description: string;
-  attachment_path: string | null;
-  status: string;
-  created_at: string;
-  updated_at: string;
+  [key: string]: unknown;
 };
 
 type ProfileRow = {
@@ -27,33 +20,33 @@ type UserTypeRow = {
   type: string;
 };
 
-// const getString = (
-//   row: Record<string, unknown>,
-//   keys: string[],
-//   fallback = ""
-// ): string => {
-//   for (const key of keys) {
-//     const value = row[key];
+const getString = (
+  row: Record<string, unknown>,
+  keys: string[],
+  fallback = ""
+): string => {
+  for (const key of keys) {
+    const value = row[key];
 
-//     if (typeof value === "string" && value.trim()) {
-//       return value;
-//     }
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
 
-//     if (typeof value === "number") {
-//       return String(value);
-//     }
-//   }
+    if (typeof value === "number") {
+      return String(value);
+    }
+  }
 
-//   return fallback;
-// };
+  return fallback;
+};
 
-// const getNullableString = (
-//   row: Record<string, unknown>,
-//   keys: string[]
-// ): string | null => {
-//   const value = getString(row, keys);
-//   return value || null;
-// };
+const getNullableString = (
+  row: Record<string, unknown>,
+  keys: string[]
+): string | null => {
+  const value = getString(row, keys);
+  return value || null;
+};
 
 const getStringArray = (value: unknown): string[] => {
   if (Array.isArray(value)) {
@@ -88,6 +81,90 @@ const titleCase = (value: string): string => {
     .join(" ");
 };
 
+const formatUserType = (value: string): string => {
+  const normalized = value.trim().toLowerCase();
+
+  if (normalized === "find work") {
+    return "Bidder";
+  }
+
+  if (normalized === "hire talent") {
+    return "Client";
+  }
+
+  return titleCase(value || "User");
+};
+
+const inferCategory = (description: string): string => {
+  const value = description.toLowerCase();
+
+  if (value.includes("pay") || value.includes("wallet") || value.includes("payout")) {
+    return "Payments";
+  }
+
+  if (value.includes("job") || value.includes("bid") || value.includes("client")) {
+    return "Jobs";
+  }
+
+  if (value.includes("login") || value.includes("account") || value.includes("profile")) {
+    return "Account";
+  }
+
+  if (value.includes("bug") || value.includes("error") || value.includes("crash")) {
+    return "Technical";
+  }
+
+  return "General";
+};
+
+const inferPriority = (
+  description: string,
+  status: string
+): SupportTicket["priority"] => {
+  const value = description.toLowerCase();
+
+  if (
+    value.includes("urgent") ||
+    value.includes("emergency") ||
+    value.includes("blocked") ||
+    value.includes("can't access") ||
+    value.includes("cannot access")
+  ) {
+    return "urgent";
+  }
+
+  if (
+    status === "open" &&
+    (value.includes("payment") || value.includes("payout") || value.includes("refund"))
+  ) {
+    return "high";
+  }
+
+  if (status === "resolved" || status === "closed") {
+    return "low";
+  }
+
+  return "normal";
+};
+
+const getAttachmentUrl = (attachmentPath: string | null): string | null => {
+  if (!attachmentPath) return null;
+
+  if (attachmentPath.startsWith("http://") || attachmentPath.startsWith("https://")) {
+    return attachmentPath;
+  }
+
+  const [bucket, ...pathParts] = attachmentPath.split("/");
+  const path = pathParts.join("/");
+
+  if (!bucket || !path) {
+    return attachmentPath;
+  }
+
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+  return data.publicUrl;
+};
+
 const fetchUserTypeMap = async (): Promise<Map<string, string>> => {
   const { data, error } = await supabase.from("user_types").select("id, type");
 
@@ -99,7 +176,7 @@ const fetchUserTypeMap = async (): Promise<Map<string, string>> => {
   return new Map(
     ((data ?? []) as UserTypeRow[]).map((row) => [
       row.id,
-      titleCase(row.type || "User"),
+      formatUserType(row.type || "User"),
     ])
   );
 };
@@ -146,98 +223,44 @@ const fetchProfileMap = async (
   );
 };
 
-// const getAttachmentUrl = (path: string | null): string | null => {
-//   if (!path) return null;
-
-//   if (path.startsWith("http://") || path.startsWith("https://")) {
-//     return path;
-//   }
-
-//   const { data } = supabase.storage
-//     .from("support-tickets")
-//     .getPublicUrl(path);
-
-//   return data.publicUrl;
-// };
-
 const mapTicket = (
   row: SupportTicketRow,
-  profileMap: Map<string, SupportTicketUser>
+  profileMap: Map<string, SupportTicketUser>,
+  savedNotes: Record<string, string>
 ): SupportTicket => {
+  const userId = getNullableString(row, ["user_id", "userId", "profile_id", "created_by"]);
+  const description = getString(row, ["description", "message", "content", "body"]);
+  const status = getString(row, ["status", "ticket_status"], "open").toLowerCase();
+  const attachmentPath = getNullableString(row, [
+    "attachment_path",
+    "attachment_url",
+    "attachment",
+    "file_url",
+  ]);
+
   return {
     id: row.id,
     ticketId: makeDisplayId(row.id),
-    userId: row.user_id,
-    user: profileMap.get(row.user_id) ?? null,
-    description: row.description,
-    attachmentPath: row.attachment_path,
-    status: row.status?.trim().toLowerCase() || "open",
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    userId,
+    user: userId ? profileMap.get(userId) ?? null : null,
+    description,
+    attachmentPath,
+    attachmentUrl: getAttachmentUrl(attachmentPath),
+    status: status || "open",
+    priority: getString(row, ["priority"], inferPriority(description, status)).toLowerCase(),
+    category: titleCase(getString(row, ["category", "type"], inferCategory(description))),
+    adminNotes: getString(row, ["admin_notes", "adminNotes", "notes"], savedNotes[row.id] ?? ""),
+    createdAt: getNullableString(row, ["created_at", "createdAt", "created_on"]),
+    updatedAt: getNullableString(row, ["updated_at", "updatedAt", "updated_on"]),
   };
 };
 
-// const mapTicket = (
-//   row: SupportTicketRow,
-//   profileMap: Map<string, SupportTicketUser>
-// ): SupportTicket => {
-//   const userId = getNullableString(row, [
-//     "user_id",
-//     "userId",
-//     "profile_id",
-//     "profileId",
-//     "created_by",
-//     "createdBy",
-//   ]);
-//   const status = getString(row, ["status", "ticket_status", "ticketStatus"], "open")
-//     .trim()
-//     .toLowerCase();
-
-//   const rawAttachmentPath = getNullableString(row, [
-//   "attachment_path",
-//   "attachmentPath",
-//   "attachment_url",
-//   "attachmentUrl",
-//   "attachment",
-//   "file_url",
-//   "fileUrl",
-// ]);
-
-// const ticketObj: SupportTicket = {
-//   id: row.id,
-//   ticketId: makeDisplayId(row.id),
-//   userId,
-//   user: userId ? profileMap.get(userId) ?? null : null,
-//   description: getString(row, [
-//     "description",
-//     "message",
-//     "content",
-//     "body",
-//     "details",
-//     "issue",
-//     "reason",
-//   ]),
-//   attachmentPath: getAttachmentUrl(rawAttachmentPath),
-//   status: status || "open",
-//   createdAt: getNullableString(row, ["created_at", "createdAt", "created_on", "createdOn"]),
-//   updatedAt: getNullableString(row, ["updated_at", "updatedAt", "updated_on", "updatedOn"]),
-// };
-
-//   return ticketObj;
-// };
-
-export const fetchSupportTickets = async (): Promise<SupportTicket[]> => {
+export const fetchSupportTickets = async (
+  savedNotes: Record<string, string> = {}
+): Promise<SupportTicket[]> => {
   const { data, error } = await supabase
     .from("support_tickets")
-    .select(`
-      id,
-      user_id,
-      description,
-      attachment_path,
-      status,
-      created_at,
-      updated_at
-    `)
+    .select("*")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -246,19 +269,14 @@ export const fetchSupportTickets = async (): Promise<SupportTicket[]> => {
   }
 
   const tickets = (data ?? []) as SupportTicketRow[];
-
-  console.log("Raw support tickets:", tickets);
-
-  const userIds = tickets.map((ticket) => ticket.user_id).filter(Boolean);
+  const userIds = tickets
+    .map((ticket) => getNullableString(ticket, ["user_id", "userId", "profile_id", "created_by"]))
+    .filter((id): id is string => Boolean(id));
 
   const userTypeMap = await fetchUserTypeMap();
   const profileMap = await fetchProfileMap(userIds, userTypeMap);
 
-  const mappedTickets = tickets.map((ticket) => mapTicket(ticket, profileMap));
-
-  console.log("Mapped support tickets:", mappedTickets);
-
-  return mappedTickets;
+  return tickets.map((ticket) => mapTicket(ticket, profileMap, savedNotes));
 };
 
 export const updateSupportTicketStatus = async (
@@ -280,22 +298,3 @@ export const updateSupportTicketStatus = async (
 
   return true;
 };
-
-// export const updateSupportTicketStatus = async (
-//   ticketId: string,
-//   status: string
-// ): Promise<boolean> => {
-//   const { error } = await supabase
-//     .from("support_tickets")
-//     .update({
-//       status,
-//     })
-//     .eq("id", ticketId);
-
-//   if (error) {
-//     console.error("Supabase error updating support_tickets:", error);
-//     return false;
-//   }
-
-//   return true;
-// };
