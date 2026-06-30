@@ -1,20 +1,20 @@
 import { useMemo, useState } from "react";
-import type { ReportRow } from "../types";
+import type { SupportTicket } from "../types";
 
 type SortDirection = "asc" | "desc";
 
-const getValue = (row: ReportRow, key: string): unknown => {
-  return (row as unknown as Record<string, unknown>)[key];
+const getValue = (ticket: SupportTicket, key: keyof SupportTicket): unknown => {
+  return ticket[key];
 };
 
-export const useReports = <T extends ReportRow>(rows: T[]) => {
+export const useSupportTickets = (tickets: SupportTicket[]) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<{
-    key: string;
+    key: keyof SupportTicket;
     direction: SortDirection;
   } | null>(null);
 
-  const requestSort = (key: string) => {
+  const requestSort = (key: keyof SupportTicket) => {
     let direction: SortDirection = "asc";
 
     if (sortConfig?.key === key && sortConfig.direction === "asc") {
@@ -24,18 +24,18 @@ export const useReports = <T extends ReportRow>(rows: T[]) => {
     setSortConfig({ key, direction });
   };
 
-  const filteredAndSortedRows = useMemo(() => {
-    let nextRows = [...rows];
+  const filteredAndSortedTickets = useMemo(() => {
+    let nextTickets = [...tickets];
     const query = searchTerm.trim().toLowerCase();
 
     if (query) {
-      nextRows = nextRows.filter((row) =>
-        JSON.stringify(row).toLowerCase().includes(query)
+      nextTickets = nextTickets.filter((ticket) =>
+        JSON.stringify(ticket).toLowerCase().includes(query)
       );
     }
 
     if (sortConfig) {
-      nextRows.sort((a, b) => {
+      nextTickets.sort((a, b) => {
         const aValue = getValue(a, sortConfig.key);
         const bValue = getValue(b, sortConfig.key);
         const normalizedA = typeof aValue === "object" ? JSON.stringify(aValue) : aValue;
@@ -50,13 +50,13 @@ export const useReports = <T extends ReportRow>(rows: T[]) => {
       });
     }
 
-    return nextRows;
-  }, [rows, searchTerm, sortConfig]);
+    return nextTickets;
+  }, [tickets, searchTerm, sortConfig]);
 
   return {
     searchTerm,
     setSearchTerm,
-    filteredAndSortedRows,
+    filteredAndSortedTickets,
     requestSort,
     sortConfig,
   };

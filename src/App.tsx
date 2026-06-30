@@ -5,8 +5,7 @@ import Users from './features/users/pages/Users';
 import UserAnalytics from './features/users/pages/UserAnalytics';
 import Jobs from './features/jobs/pages/Jobs';
 import JobAnalytics from './features/jobs/pages/JobAnalytics';
-import Notifications from './features/notifications/pages/Notifications';
-import Reports from './features/reports/pages/Reports';
+import HelpSupport from './features/helpSupport/pages/HelpSupport';
 
 
 export default function App() {
@@ -74,19 +73,10 @@ export default function App() {
         />
 
         <Route
-          path="/notifications"
+          path="/help-support"
           element={
             <AdminLayout>
-              <Notifications />
-            </AdminLayout>
-          }
-        />
-
-        <Route
-          path="/reports"
-          element={
-            <AdminLayout>
-              <Reports />
+              <HelpSupport />
             </AdminLayout>
           }
         />
