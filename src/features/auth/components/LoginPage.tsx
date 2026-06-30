@@ -68,7 +68,7 @@ export const LoginPage: React.FC<Props> = ({ onLogin }) => {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
+      fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
       padding: 24,
     }}>
       <div style={{ width: "100%", maxWidth: 440 }}>

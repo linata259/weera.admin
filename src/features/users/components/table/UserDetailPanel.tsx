@@ -472,7 +472,7 @@ export const UserDetailPanel: React.FC<Props> = ({
           display: "flex",
           flexDirection: "column",
           animation: "slideIn 0.22s ease",
-          fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
+          fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
           overflow: "hidden",
         }}
       >

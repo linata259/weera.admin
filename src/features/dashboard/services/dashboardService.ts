@@ -328,6 +328,7 @@ function deriveRecentActivity(
     actorName: names.get(row.posted_by_user_id),
     createdAt: row.posted_at as string,
     actionLabel: 'View Job',
+    referenceId: row.id, 
   }));
 
   const wdItems: ActivityItem[] = recentWithdrawals.map((row) => ({

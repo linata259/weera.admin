@@ -31,7 +31,7 @@ export const ResponseModal: React.FC<Props> = ({ report, onClose, onSave }) => {
         position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
         background: '#fff', borderRadius: 16, zIndex: 201, width: 'min(520px, 94vw)',
         boxShadow: '0 20px 60px rgba(15,23,42,0.18)',
-        fontFamily: "'DM Sans','Helvetica Neue',sans-serif",
+        fontFamily: "'Inter','Helvetica Neue',sans-serif",
       }}>
         {/* header */}
         <div style={{ padding: '18px 24px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

@@ -135,7 +135,7 @@ const UsersPage: React.FC = () => {
   /* ── loading state ───────────────────────────────────────── */
   if (loading) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 300, fontFamily: "'DM Sans', sans-serif", color: "#64748B" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 300, fontFamily: "'Inter', sans-serif", color: "#64748B" }}>
         <div style={{ textAlign: "center" }}>
           <div style={{ width: 32, height: 32, border: "3px solid #E2E8F0", borderTop: "3px solid #EA580C", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
           Loading users…
@@ -146,7 +146,7 @@ const UsersPage: React.FC = () => {
   }
 
   return (
-    <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 20, fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif" }}>
+    <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 20, fontFamily: "'Inter', 'Helvetica Neue', sans-serif" }}>
       {/* NEW — export trigger */}
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <button

@@ -304,7 +304,7 @@ export function PeriodDropdown({ value, onChange }: { value: GrowthPeriod; onCha
 // ── loading spinner ────────────────────────────────────────────────────
 export function Spinner() {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300, color: SLATE, fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300, color: SLATE, fontFamily: "'Inter', sans-serif" }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{ width: 36, height: 36, border: `3px solid ${BORDER}`, borderTop: `3px solid ${ORANGE}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
         Loading analytics…

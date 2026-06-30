@@ -55,7 +55,7 @@ export const BanJobModal: React.FC<Props> = ({ job, onClose, onConfirm }) => {
                     zIndex: 201,
                     width: "min(440px, 92vw)",
                     boxShadow: "0 20px 60px rgba(15,23,42,0.18)",
-                    fontFamily: "'DM Sans','Helvetica Neue',sans-serif",
+                    fontFamily: "'Inter','Helvetica Neue',sans-serif",
                     padding: "32px 28px 24px",
                     boxSizing: "border-box",
                 }}

@@ -40,7 +40,7 @@ const Modal: React.FC<{
       background: '#fff', borderRadius: 16, zIndex: 201,
       width: 'min(440px, 92vw)',
       boxShadow: '0 20px 60px rgba(15,23,42,0.18)',
-      fontFamily: "'DM Sans','Helvetica Neue',sans-serif",
+      fontFamily: "'Inter','Helvetica Neue',sans-serif",
     }}>
       <div style={{
         padding: '18px 24px', borderBottom: `1px solid ${BORDER}`,
@@ -404,7 +404,7 @@ const SkillsPage: React.FC = () => {
   if (loading)
     return (
       <div style={{ padding: '48px 0', textAlign: 'center', color: SLATE, fontSize: 14,
-        fontFamily: "'DM Sans',sans-serif" }}>
+        fontFamily: "'Inter',sans-serif" }}>
         Loading…
       </div>
     );
@@ -426,7 +426,7 @@ const SkillsPage: React.FC = () => {
   };
 
   return (
-    <div style={{ fontFamily: "'DM Sans','Helvetica Neue',sans-serif", display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div style={{ fontFamily: "'Inter','Helvetica Neue',sans-serif", display: 'flex', flexDirection: 'column', gap: 20 }}>
 
       {/* page header — CHANGED: stacks on mobile, button goes full width */}
       <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>

@@ -341,7 +341,7 @@ export const FinancialTab: React.FC<{ user: User }> = ({ user }) => {
   const currency = summary?.currency ?? "KES";
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20, fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 20, fontFamily: "'Inter', 'Helvetica Neue', sans-serif" }}>
 
       {/* ── top row: donut + 2 line charts ── */}
       <div style={{ display: "grid", gridTemplateColumns: "280px 1fr 1fr", gap: 16 }}>

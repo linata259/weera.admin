@@ -53,7 +53,7 @@ export const AuthGuard: React.FC<Props> = ({ children }) => {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      fontFamily: "'DM Sans', sans-serif",
+      fontFamily: "'Inter', sans-serif",
       color: "#64748B",
       fontSize: 14,
     }}>

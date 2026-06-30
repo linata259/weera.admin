@@ -161,7 +161,7 @@ const ReportsPage: React.FC = () => {
 
   /* ════════════════════════════════════════════════════════════ */
   return (
-    <div style={{ fontFamily: "'DM Sans','Helvetica Neue',sans-serif", display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div style={{ fontFamily: "'Inter','Helvetica Neue',sans-serif", display: 'flex', flexDirection: 'column', gap: 20 }}>
 
       {/* header */}
       <div>

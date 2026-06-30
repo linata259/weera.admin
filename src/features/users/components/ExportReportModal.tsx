@@ -99,7 +99,7 @@ export const ExportReportModal: React.FC<Props> = ({ users, locationOptions, onC
                     maxHeight: "90vh",
                     overflowY: "auto",
                     boxShadow: "0 20px 60px rgba(15,23,42,0.18)",
-                    fontFamily: "'DM Sans','Helvetica Neue',sans-serif",
+                    fontFamily: "'Inter','Helvetica Neue',sans-serif",
                 }}
             >
                 {/* header */}

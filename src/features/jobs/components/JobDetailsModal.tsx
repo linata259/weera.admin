@@ -87,7 +87,7 @@ export const JobDetailsModal: React.FC<Props> = ({ job, onClose }) => {
                     background: "#fff",
                     borderRadius: "12px 0 0 12px",
                     boxShadow: "-8px 0 32px rgba(15,23,42,0.18)",
-                    fontFamily: "'DM Sans','Helvetica Neue',sans-serif",
+                    fontFamily: "'Inter','Helvetica Neue',sans-serif",
                     display: "flex",
                     flexDirection: "column",
                     overflowY: "auto",

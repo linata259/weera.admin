@@ -35,7 +35,7 @@ const FinancialsPage: React.FC = () => {
   }, []);
 
   return (
-    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', fontFamily: "'DM Sans','Helvetica Neue',sans-serif" }}>
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', fontFamily: "'Inter','Helvetica Neue',sans-serif" }}>
       <style>{scrollbarHideCss}</style>
 
       {/* tab bar — CHANGED: horizontally scrollable on mobile instead of overflowing/wrapping */}

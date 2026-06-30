@@ -122,7 +122,7 @@ const JobAnalytics: React.FC = () => {
   if (loading) return <Spinner />;
 
   return (
-    <div style={{ fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif", color: NAVY }}>
+    <div style={{ fontFamily: "'Inter', 'Helvetica Neue', sans-serif", color: NAVY }}>
 
       {/* ── tab nav ─────────────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: 4, background: '#F1F5F9', borderRadius: 12, padding: 4, marginBottom: 24, width: 'fit-content' }}>

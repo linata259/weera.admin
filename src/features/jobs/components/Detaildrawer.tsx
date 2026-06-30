@@ -29,7 +29,7 @@ export const DetailDrawer: React.FC<Props> = ({ report, type, onClose }) => {
         position: 'fixed', top: 0, right: 0, bottom: 0, width: 'min(420px, 100vw)',
         background: '#fff', zIndex: 200, boxShadow: '-8px 0 32px rgba(15,23,42,0.12)',
         display: 'flex', flexDirection: 'column',
-        fontFamily: "'DM Sans','Helvetica Neue',sans-serif",
+        fontFamily: "'Inter','Helvetica Neue',sans-serif",
       }}>
         {/* header */}
         <div style={{ padding: '20px 24px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

@@ -224,7 +224,7 @@ export const CurrentJobsTab: React.FC<{ user: User }> = ({ user }) => {
 
   /* ── render ──────────────────────────────────────────────────── */
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16, fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, fontFamily: "'Inter', 'Helvetica Neue', sans-serif" }}>
 
       {/* toolbar */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>

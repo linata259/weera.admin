@@ -64,6 +64,7 @@ export interface ActivityItem {
   createdAt: string;
   /** Label for the action button, e.g. "View Jobs" */
   actionLabel: string;
+  referenceId?: string;
 }
 
 export type DateRangeOption = '7d' | '30d' | '90d';

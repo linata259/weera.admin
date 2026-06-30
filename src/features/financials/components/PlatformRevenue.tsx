@@ -228,7 +228,7 @@ export const PlatformRevenue: React.FC = () => {
   if (loading) return <div style={{ padding: '48px 0', textAlign: 'center', color: SLATE, fontSize: 14 }}>Loading revenue data…</div>;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, fontFamily: "'DM Sans','Helvetica Neue',sans-serif" }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, fontFamily: "'Inter','Helvetica Neue',sans-serif" }}>
 
       {/* toolbar — CHANGED: stacks vertically on mobile */}
       <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'space-between' }}>

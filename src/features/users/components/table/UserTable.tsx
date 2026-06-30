@@ -63,7 +63,7 @@ const MobileDetailView: React.FC<{
   return (
     <div style={{
       background: BG,
-      fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
+      fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
       minHeight: "100%",
       display: "flex",
       flexDirection: "column",
@@ -320,7 +320,7 @@ export const UserTable: React.FC<Props> = ({
   return (
     <>
       <div style={{
-        fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
+        fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
         width: "100%",
         display: "flex",
         flexDirection: "column",

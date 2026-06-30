@@ -12,9 +12,10 @@ import {
   FiShield,
   FiBarChart2,
   FiSettings,
+  FiTarget,
   FiChevronDown,
   FiChevronRight,
-} from "react-icons/fi"; // NEW
+} from "react-icons/fi";
 
 const PRIMARY = "#EA580C";
 const PRIMARY_LIGHT = "#FFF4EE";
@@ -74,6 +75,7 @@ const getModernIcon = (label: string): React.ReactNode | null => {
   if (l.includes("user")) return <Icon icon={FiUsers} size={18} />;
   if (l.includes("job")) return <Icon icon={FiBriefcase} size={18} />;
   if (l.includes("financ")) return <Icon icon={FiDollarSign} size={18} />;
+  if (l.includes("skill")) return <Icon icon={FiTarget} size={18} />;
   if (l.includes("dispute")) return <Icon icon={FiAlertTriangle} size={18} />;
   if (l.includes("notification")) return <Icon icon={FiBell} size={18} />;
   if (l.includes("role") || l.includes("permission")) return <Icon icon={FiShield} size={18} />;

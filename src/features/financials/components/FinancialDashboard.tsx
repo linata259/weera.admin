@@ -180,7 +180,7 @@ export const DualLineChart: React.FC<{ data: MonthlyRevenue[]; title: string }> 
           {yTicks.map((tick, i) => (
             <g key={i}>
               <line x1={PAD_L} y1={yOf(tick)} x2={VW - PAD_R} y2={yOf(tick)} stroke="#F1F5F9" strokeWidth="1" />
-              <text x={PAD_L - 7} y={yOf(tick) + 4} textAnchor="end" fontSize="9.5" fill="#94A3B8" fontFamily="'DM Sans','Helvetica Neue',sans-serif">
+              <text x={PAD_L - 7} y={yOf(tick) + 4} textAnchor="end" fontSize="9.5" fill="#94A3B8" fontFamily="'Inter','Helvetica Neue',sans-serif">
                 {tick >= 1000 ? `${(tick / 1000).toFixed(0)}K` : tick}
               </text>
             </g>
@@ -196,7 +196,7 @@ export const DualLineChart: React.FC<{ data: MonthlyRevenue[]; title: string }> 
           {sliced.map((d, i) => (
             <g key={i}>
               <line x1={xOf(i)} y1={baseY} x2={xOf(i)} y2={baseY + 5} stroke="#CBD5E1" strokeWidth="0.8" />
-              <text x={xOf(i)} y={baseY + 18} textAnchor="middle" fontSize="9.5" fill="#94A3B8" fontWeight="500" fontFamily="'DM Sans','Helvetica Neue',sans-serif">
+              <text x={xOf(i)} y={baseY + 18} textAnchor="middle" fontSize="9.5" fill="#94A3B8" fontWeight="500" fontFamily="'Inter','Helvetica Neue',sans-serif">
                 {d.month.slice(0, 3).toUpperCase()}
               </text>
             </g>
@@ -317,7 +317,7 @@ export const CommissionChart: React.FC<{ data: MonthlyCommission[] }> = ({ data 
           {yTicks.map((tick, i) => (
             <g key={i}>
               <line x1={PAD_L} y1={yOf(tick)} x2={VW - PAD_R} y2={yOf(tick)} stroke="#F1F5F9" strokeWidth="1" />
-              <text x={PAD_L - 7} y={yOf(tick) + 4} textAnchor="end" fontSize="9.5" fill="#94A3B8" fontFamily="'DM Sans','Helvetica Neue',sans-serif">
+              <text x={PAD_L - 7} y={yOf(tick) + 4} textAnchor="end" fontSize="9.5" fill="#94A3B8" fontFamily="'Inter','Helvetica Neue',sans-serif">
                 {tick >= 1000 ? `${(tick / 1000).toFixed(0)}K` : tick}
               </text>
             </g>
@@ -330,7 +330,7 @@ export const CommissionChart: React.FC<{ data: MonthlyCommission[] }> = ({ data 
           {sliced.map((d, i) => (
             <g key={i}>
               <line x1={xOf(i)} y1={baseY} x2={xOf(i)} y2={baseY + 5} stroke="#CBD5E1" strokeWidth="0.8" />
-              <text x={xOf(i)} y={baseY + 18} textAnchor="middle" fontSize="9.5" fill="#94A3B8" fontWeight="500" fontFamily="'DM Sans','Helvetica Neue',sans-serif">
+              <text x={xOf(i)} y={baseY + 18} textAnchor="middle" fontSize="9.5" fill="#94A3B8" fontWeight="500" fontFamily="'Inter','Helvetica Neue',sans-serif">
                 {d.month.slice(0, 3).toUpperCase()}
               </text>
             </g>
@@ -442,7 +442,7 @@ export const FinancialDashboard: React.FC = () => {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24, fontFamily: "'DM Sans','Helvetica Neue',sans-serif" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 24, fontFamily: "'Inter','Helvetica Neue',sans-serif" }}>
 
       {/* ── stat cards ─────────────────────────────────────────── */}
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: isMobile ? 12 : 16 }}>

@@ -5,7 +5,7 @@ import { TableToolbar } from "../components/table/TableToolbar";
 import { JobTable } from "../components/table/JobTable";
 import { JobDetailsModal } from "../components/JobDetailsModal";
 import { JobAgeStatusTable } from "../components/table/Jobagestatustable";
-
+import { useSearchParams } from 'react-router-dom';
 /* -------------------------------------------------------------------------- */
 /*                                   TYPES                                    */
 /* -------------------------------------------------------------------------- */
@@ -294,6 +294,8 @@ const Jobs: React.FC = () => {
     const [jobTypeFilter, setJobTypeFilter]     = useState<string>("all");
 
     const { searchTerm, setSearchTerm, filteredAndSortedJobs: baseFiltered, requestSort, sortConfig } = useJobs(jobs);
+    const [searchParams] = useSearchParams();
+    const highlightJobId = searchParams.get('highlight') ?? undefined;
 
     /* ---------------------------------------------------------------------- */
     /*                            FETCH + SANITIZE                            */
@@ -393,7 +395,7 @@ const Jobs: React.FC = () => {
     ];
 
     return (
-        <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 20, fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif" }}>
+        <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 20, fontFamily: "'Inter', 'Helvetica Neue', sans-serif" }}>
 
             {/* ── Tabs ─────────────────────────────────────────────── */}
             <div style={{ display: "flex", gap: 4, borderBottom: "1px solid #E8EDF2" }}>
@@ -440,6 +442,7 @@ const Jobs: React.FC = () => {
                         onSuspendJob={handleSuspendJob}
                         onBanJob={handleBanJob}
                         rowsPerPage={10}
+                        highlightJobId={highlightJobId}
                     />
                 </>
             )}

@@ -183,7 +183,7 @@ export const EscrowManagement: React.FC = () => {
   if (loading) return <div style={{ padding: '48px 0', textAlign: 'center', color: SLATE, fontSize: 14 }}>Loading escrow data…</div>;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, fontFamily: "'DM Sans','Helvetica Neue',sans-serif" }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, fontFamily: "'Inter','Helvetica Neue',sans-serif" }}>
 
       {/* summary chips */}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>

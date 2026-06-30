@@ -160,7 +160,7 @@ export const JobAgeStatusTable: React.FC<Props> = ({
     return (
         <div
             style={{
-                fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
+                fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
                 width: "100%",
                 display: "flex",
                 flexDirection: "column",

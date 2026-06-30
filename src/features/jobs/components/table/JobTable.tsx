@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { Job } from "../../pages/Jobs";
 import { JobColumn } from "./TableToolbar";
 import { Avatar } from "../../../shared/Avatar";
@@ -8,7 +8,6 @@ import { IconBtn } from "../../../shared/IconBtn";
 import { PageBtn } from "../../../shared/PageBtn";
 import { BanJobModal } from "../Banjobmodal";
 
-
 interface Props {
     data: Job[];
     columns: JobColumn[];
@@ -17,7 +16,8 @@ interface Props {
     rowsPerPage?: number;
     onViewJob?: (job: Job) => void;
     onSuspendJob?: (job: Job) => void;
-    onBanJob?: (job: Job, reason: string) => void; // NEW
+    onBanJob?: (job: Job, reason: string) => void;
+    highlightJobId?: string;
 }
 
 /* ─── Style constants ────────────────────────────────────────── */
@@ -53,12 +53,14 @@ export const JobTable: React.FC<Props> = ({
     onViewJob,
     onSuspendJob,
     onBanJob,
+    highlightJobId,
 }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [, setSelectedJob] = useState<Job | null>(null);
     const [isMobile, setIsMobile] = useState(false);
-    const [banTarget, setBanTarget] = useState<Job | null>(null); // NEW
+    const [banTarget, setBanTarget] = useState<Job | null>(null);
+    const highlightRowRef = useRef<HTMLTableRowElement | HTMLDivElement | null>(null);
 
     useEffect(() => {
         const mq = window.matchMedia("(max-width: 768px)");
@@ -67,6 +69,21 @@ export const JobTable: React.FC<Props> = ({
         mq.addEventListener("change", handler);
         return () => mq.removeEventListener("change", handler);
     }, []);
+
+    // Jump to the page containing the highlighted job
+    useEffect(() => {
+        if (!highlightJobId) return;
+        // const idx = data.findIndex((j) => j.jobId === highlightJobId);
+        const idx = data.findIndex((j) => j.id === highlightJobId);  
+        if (idx === -1) return;
+        setCurrentPage(Math.ceil((idx + 1) / rowsPerPage));
+    }, [highlightJobId, data, rowsPerPage]);
+
+    // Scroll to the highlighted row after the page renders
+    useEffect(() => {
+        if (!highlightJobId) return;
+        highlightRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, [currentPage, highlightJobId]);
 
     const totalPages = Math.max(1, Math.ceil(data.length / rowsPerPage));
 
@@ -130,7 +147,6 @@ export const JobTable: React.FC<Props> = ({
         </th>
     );
 
-    // Shared action icon markup so mobile cards and desktop rows render identical icons
     const ViewIcon = (
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <circle cx="8" cy="8" r="7" stroke="#94A3B8" strokeWidth="1.5" />
@@ -144,7 +160,6 @@ export const JobTable: React.FC<Props> = ({
             <path d="M3.5 3.5l9 9" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
     );
-    // NEW — filled red circle, visually distinct from the gray-outline Suspend icon above
     const BanIcon = (
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <circle cx="8" cy="8" r="7" fill="#DC2626" />
@@ -156,7 +171,7 @@ export const JobTable: React.FC<Props> = ({
         <>
             <div
                 style={{
-                    fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
+                    fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
                     width: "100%",
                     display: "flex",
                     flexDirection: "column",
@@ -195,14 +210,16 @@ export const JobTable: React.FC<Props> = ({
                         ) : (
                             paginatedData.map((job) => {
                                 const isSelected = selectedIds.has(job.id);
+                                const isHighlighted = job.jobId === highlightJobId;
                                 return (
                                     <div
                                         key={job.id}
+                                        ref={isHighlighted ? (el) => { highlightRowRef.current = el; } : undefined}
                                         style={{
-                                            border: "1px solid #E8EDF2",
+                                            border: isHighlighted ? "2px solid #EA580C" : "1px solid #E8EDF2",
                                             borderRadius: 14,
                                             padding: 16,
-                                            background: isSelected ? "#FFF7ED" : "#fff",
+                                            background: isHighlighted ? "#FFF3E0" : isSelected ? "#FFF7ED" : "#fff",
                                             display: "flex",
                                             flexDirection: "column",
                                             gap: 10,
@@ -371,24 +388,30 @@ export const JobTable: React.FC<Props> = ({
                                     paginatedData.map((job, idx) => {
                                         const globalIdx = (currentPage - 1) * rowsPerPage + idx + 1;
                                         const isSelected = selectedIds.has(job.id);
+                                        const isHighlighted = job.jobId === highlightJobId;
 
                                         return (
                                             <tr
                                                 key={job.id}
+                                                ref={isHighlighted ? (el) => { highlightRowRef.current = el; } : undefined}
                                                 onClick={() => setSelectedJob(job)}
                                                 style={{
-                                                    background: isSelected ? "#FFF7ED" : "#fff",
+                                                    background: isHighlighted
+                                                        ? "#FFF3E0"
+                                                        : isSelected ? "#FFF7ED" : "#fff",
+                                                    outline: isHighlighted ? "2px solid #EA580C" : "none",
+                                                    outlineOffset: "-2px",
                                                     transition: "background 0.12s",
                                                     cursor: "pointer",
                                                 }}
                                                 onMouseEnter={(e) => {
-                                                    if (!isSelected)
+                                                    if (!isSelected && !isHighlighted)
                                                         e.currentTarget.style.background = "#FAFBFC";
                                                 }}
                                                 onMouseLeave={(e) => {
-                                                    e.currentTarget.style.background = isSelected
-                                                        ? "#FFF7ED"
-                                                        : "#fff";
+                                                    e.currentTarget.style.background = isHighlighted
+                                                        ? "#FFF3E0"
+                                                        : isSelected ? "#FFF7ED" : "#fff";
                                                 }}
                                             >
                                                 <td style={tdBase} onClick={(e) => e.stopPropagation()}>
