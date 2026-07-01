@@ -32,6 +32,9 @@ const SkillsPage = lazy(() => import("./features/skills/pages/SkillsPage"));
 const HelpSupportPage = lazy(
   () => import("./features/helpSupport/pages/HelpSupport"),
 );
+const NotificationsPage = lazy(
+  () => import("./features/notifications/pages/NotificationsPage"),
+);
 
 function PageLoader() {
   return (
@@ -91,6 +94,7 @@ export default function App() {
             <Route path="/skills" element={<SkillsPage />} />
             <Route path="/help-support" element={<HelpSupportPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
           </Route>
         </Routes>
       </AuthGuard>

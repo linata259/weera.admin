@@ -44,6 +44,12 @@ const NAV_FEATURES: NavGroup[] = [
     icon: "🎯",
   },
   {
+    id: "notifications",
+    label: "Notifications",
+    path: "/notifications",
+    icon: "🔔",
+  },
+  {
     id: "settings",
     label: "Settings",
     path: "/settings",
