@@ -19,6 +19,8 @@ export interface Job {
     status: string;
     applicants: number;
     posted_at: string | null;
+    expires_at: string | null;
+    updated_at: string | null;
 
     posted_by_user_id: string | null;
     posted_by_name: string;
@@ -51,7 +53,27 @@ export interface BidRecord {
     decline_reason?: string | null;
     client_rating?: number | null;
     client_review?: string | null;
-    jobs?: { title?: string; location_id?: { location?: string } | null } | null;
+    jobs?: {
+        title?: string;
+        location_id?: { location?: string } | null;
+        job_location_type?: string | null;
+        counties?: { name?: string | null } | null;
+        subcounties?: { name?: string | null } | null;
+        wards?: { name?: string | null } | null;
+    } | null;
+}
+
+/** Location of the job a bid was placed on (new county/ward scheme first). */
+export function bidJobLocation(b: BidRecord): string {
+    const j = b.jobs;
+    if (!j) return "";
+    const type = (j.job_location_type ?? "").toLowerCase();
+    if (type === "remote") return "Remote";
+    const adminArea = [j.wards?.name, j.subcounties?.name, j.counties?.name]
+        .filter((n): n is string => Boolean(n))
+        .join(", ");
+    if (adminArea) return adminArea;
+    return j.location_id?.location ?? "";
 }
 
 /* -------------------------------------------------------------------------- */

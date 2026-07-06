@@ -46,8 +46,11 @@ const slideInKeyframes = `
 }
 `;
 
+const isImageFile = (name: string) => /\.(jpe?g|png|gif|webp|bmp)$/i.test(name);
+
 export const JobDetailsModal: React.FC<Props> = ({ job, onClose }) => {
     const [tab, setTab] = useState<TabKey>("description");
+    const [preview, setPreview] = useState<{ url: string; name: string } | null>(null);
 
     if (!job) return null;
 
@@ -189,33 +192,73 @@ export const JobDetailsModal: React.FC<Props> = ({ job, onClose }) => {
                         {tab === "attachments" && (
                             job.attachments.length > 0 ? (
                                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                                    {job.attachments.map((a, i) => (
-                                        <a
-                                            key={i}
-                                            href={a.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            style={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                gap: 10,
-                                                padding: "10px 14px",
-                                                borderRadius: 10,
-                                                border: `1px solid ${BORDER}`,
-                                                textDecoration: "none",
-                                                color: NAVY,
-                                                fontSize: 14,
-                                            }}
-                                        >
-                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                                <path d="M4 1.5h5l3 3v8.5a1 1 0 01-1 1H4a1 1 0 01-1-1V2.5a1 1 0 011-1z" stroke={SLATE} strokeWidth="1.3" />
-                                                <path d="M9 1.5V4.5h3" stroke={SLATE} strokeWidth="1.3" />
-                                            </svg>
-                                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                                {a.name}
-                                            </span>
-                                        </a>
-                                    ))}
+                                    {job.attachments.map((a, i) =>
+                                        isImageFile(a.name) ? (
+                                            /* Image attachment — click to preview inline */
+                                            <div
+                                                key={i}
+                                                onClick={() => setPreview(a)}
+                                                style={{
+                                                    borderRadius: 12,
+                                                    border: `1px solid ${BORDER}`,
+                                                    overflow: "hidden",
+                                                    cursor: "zoom-in",
+                                                }}
+                                            >
+                                                <img
+                                                    src={a.url}
+                                                    alt={a.name}
+                                                    loading="lazy"
+                                                    style={{
+                                                        width: "100%",
+                                                        height: 170,
+                                                        objectFit: "cover",
+                                                        display: "block",
+                                                        background: "#F8FAFC",
+                                                    }}
+                                                />
+                                                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px" }}>
+                                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                                                        <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" stroke={SLATE} strokeWidth="1.3" />
+                                                        <circle cx="5.5" cy="6.5" r="1.25" stroke={SLATE} strokeWidth="1.1" />
+                                                        <path d="M2.5 12l3.5-3.5 2.5 2.5 2-2 3 3" stroke={SLATE} strokeWidth="1.3" strokeLinejoin="round" />
+                                                    </svg>
+                                                    <span style={{ fontSize: 13, color: NAVY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                                        {a.name}
+                                                    </span>
+                                                    <span style={{ marginLeft: "auto", fontSize: 11, color: SLATE, whiteSpace: "nowrap" }}>
+                                                        Click to view
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <a
+                                                key={i}
+                                                href={a.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                style={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: 10,
+                                                    padding: "10px 14px",
+                                                    borderRadius: 10,
+                                                    border: `1px solid ${BORDER}`,
+                                                    textDecoration: "none",
+                                                    color: NAVY,
+                                                    fontSize: 14,
+                                                }}
+                                            >
+                                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                                    <path d="M4 1.5h5l3 3v8.5a1 1 0 01-1 1H4a1 1 0 01-1-1V2.5a1 1 0 011-1z" stroke={SLATE} strokeWidth="1.3" />
+                                                    <path d="M9 1.5V4.5h3" stroke={SLATE} strokeWidth="1.3" />
+                                                </svg>
+                                                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                                    {a.name}
+                                                </span>
+                                            </a>
+                                        )
+                                    )}
                                 </div>
                             ) : (
                                 <EmptyTabState text="No attachments uploaded for this job." />
@@ -224,6 +267,70 @@ export const JobDetailsModal: React.FC<Props> = ({ job, onClose }) => {
                     </div>
                 </div>
             </div>
+
+            {/* ── Image lightbox ── */}
+            {preview && (
+                <div
+                    onClick={(e) => { e.stopPropagation(); setPreview(null); }}
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        background: "rgba(15, 23, 42, 0.85)",
+                        zIndex: 1100,
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: 24,
+                        animation: "jobDetailsFadeIn 0.15s ease-out",
+                        cursor: "zoom-out",
+                    }}
+                >
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12, maxWidth: "90vw" }}>
+                        <span style={{ color: "#fff", fontSize: 14, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {preview.name}
+                        </span>
+                        <a
+                            href={preview.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ color: "#93C5FD", fontSize: 12, textDecoration: "underline", whiteSpace: "nowrap" }}
+                        >
+                            Open original
+                        </a>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setPreview(null); }}
+                            style={{
+                                border: "none",
+                                background: "rgba(255,255,255,0.15)",
+                                color: "#fff",
+                                width: 28,
+                                height: 28,
+                                borderRadius: "50%",
+                                cursor: "pointer",
+                                fontSize: 15,
+                                lineHeight: 1,
+                            }}
+                        >
+                            {"\u00D7"}
+                        </button>
+                    </div>
+                    <img
+                        src={preview.url}
+                        alt={preview.name}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                            maxWidth: "92vw",
+                            maxHeight: "82vh",
+                            borderRadius: 12,
+                            objectFit: "contain",
+                            boxShadow: "0 12px 48px rgba(0,0,0,0.5)",
+                            cursor: "default",
+                        }}
+                    />
+                </div>
+            )}
         </div>
     );
 };

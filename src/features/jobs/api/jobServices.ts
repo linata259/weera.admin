@@ -7,6 +7,8 @@ type DBJob = {
     status: string | null;
     applicants: number | null;
     posted_at: string | null;
+    expires_at: string | null;
+    updated_at: string | null;
     posted_by_user_id: string | null;
     categories: string[] | null;
     description: string | null;
@@ -19,6 +21,10 @@ type DBJob = {
     attachments: string[] | null;
     is_sponsored: boolean | null;
     is_deleted: boolean | null;
+    job_location_type: string | null;
+    counties: { name: string | null } | null;
+    subcounties: { name: string | null } | null;
+    wards: { name: string | null } | null;
 };
 
 type DBProfile = {
@@ -127,6 +133,29 @@ function resolveAttachment(path: string): { url: string; name: string } {
     return { url: data.publicUrl, name: cleanAttachmentFilename(path) };
 }
 
+// The app now stores on-site locations as county/subcounty/ward and the
+// work type in jobs.job_location_type. Fall back to the legacy
+// location_id / location_type_id columns for old rows.
+function resolveJobLocation(row: DBJob, locationMap: Map<string, string>): string {
+    const type = (row.job_location_type ?? "").toLowerCase();
+    if (type === "remote") return "Remote";
+
+    const adminArea = [row.wards?.name, row.subcounties?.name, row.counties?.name]
+        .filter((n): n is string => Boolean(n))
+        .join(", ");
+    if (adminArea) return type === "hybrid" ? `Hybrid \u2013 ${adminArea}` : adminArea;
+
+    return row.location_id ? locationMap.get(row.location_id) ?? "" : "";
+}
+
+function resolveJobLocationType(row: DBJob, locationTypeMap: Map<string, string>): string {
+    const type = (row.job_location_type ?? "").toLowerCase();
+    if (type === "remote") return "Remote";
+    if (type === "hybrid") return "Hybrid";
+    if (type === "on-site" || type === "on_site" || type === "onsite") return "On-site";
+    return row.location_type_id ? locationTypeMap.get(row.location_type_id) ?? "" : "";
+}
+
 function mapDBJobToJob(
     row: DBJob,
     categoryMap: Map<string, string>,
@@ -168,12 +197,14 @@ function mapDBJobToJob(
         status: row.status ?? "pending",
         applicants: row.applicants ?? 0,
         posted_at: row.posted_at ?? null,
+        expires_at: row.expires_at ?? null,
+        updated_at: row.updated_at ?? null,
         posted_by_user_id: row.posted_by_user_id ?? null,
         posted_by_name: postedByName || "Unknown",
         posted_by_image: profile?.image_url ?? null,
         description: row.description ?? "",
-        location: row.location_id ? locationMap.get(row.location_id) ?? "" : "",
-        locationType: row.location_type_id ? locationTypeMap.get(row.location_type_id) ?? "" : "",
+        location: resolveJobLocation(row, locationMap),
+        locationType: resolveJobLocationType(row, locationTypeMap),
         budget: row.budget ?? null,
         skills: skillNames,
         paymentType: row.payment_type_id ? paymentTypeMap.get(row.payment_type_id) ?? "" : "",
@@ -200,6 +231,8 @@ export const fetchJobs = async (): Promise<Job[]> => {
                     status,
                     applicants,
                     posted_at,
+                    expires_at,
+                    updated_at,
                     posted_by_user_id,
                     categories,
                     description,
@@ -211,7 +244,11 @@ export const fetchJobs = async (): Promise<Job[]> => {
                     payment_type_id,
                     attachments,
                     is_sponsored,
-                    is_deleted
+                    is_deleted,
+                    job_location_type,
+                    counties:county_id (name),
+                    subcounties:subcounty_id (name),
+                    wards:ward_id (name)
                 `)
                 .eq("is_deleted", false)
                 .order("posted_at", { ascending: false }),
@@ -233,7 +270,7 @@ export const fetchJobs = async (): Promise<Job[]> => {
         return [];
     }
 
-    const jobs = (jobsRes.data ?? []) as DBJob[];
+    const jobs = (jobsRes.data ?? []) as unknown as DBJob[];
 
     const userIds = Array.from(
         new Set(
@@ -293,7 +330,7 @@ export async function banJob(jobId: string, reason: string): Promise<boolean> {
 export async function fetchBids() {
     const { data, error } = await supabase
         .from('bids')
-        .select('*, jobs!inner(title, location_id(location))')
+        .select('*, jobs!inner(title, location_id(location), job_location_type, counties:county_id(name), subcounties:subcounty_id(name), wards:ward_id(name))')
         .order('submitted_at', { ascending: false });
     if (error) throw error;
     return data ?? [];

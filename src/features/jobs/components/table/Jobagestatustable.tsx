@@ -4,15 +4,22 @@ import { Avatar } from "../../../shared/Avatar";
 import { JobStatusBadge } from "./JobStatusBadge";
 import { IconBtn } from "../../../shared/IconBtn";
 import { PageBtn } from "../../../shared/PageBtn";
+import {
+    ageInDays,
+    daysUntilExpiry,
+    effectiveStatus,
+    getRepostedAt,
+} from "../../utils/jobLifecycle";
 
-type AgeBucketKey = "week" | "month" | "threeMonths" | "sixMonths" | "older";
+// Jobs expire 7 days after (re)posting, so buckets follow that lifecycle.
+type AgeBucketKey = "fresh" | "mid" | "expiring" | "pastWeek" | "older";
 
 const AGE_BUCKETS: { key: AgeBucketKey; label: string }[] = [
-    { key: "week", label: "1 Week Old" },
-    { key: "month", label: "1 Month Old" },
-    { key: "threeMonths", label: "3 Months Old" },
-    { key: "sixMonths", label: "6 Months Old" },
-    { key: "older", label: "Older than 6 Months" },
+    { key: "fresh", label: "New (\u2264 2 Days)" },
+    { key: "mid", label: "3\u20135 Days" },
+    { key: "expiring", label: "6\u20137 Days (Expiring)" },
+    { key: "pastWeek", label: "1\u20134 Weeks" },
+    { key: "older", label: "Older than a Month" },
 ];
 
 // Reuses the same status values already used elsewhere in the Jobs page.
@@ -20,9 +27,11 @@ const AGE_BUCKETS: { key: AgeBucketKey; label: string }[] = [
 const STATUS_OPTIONS = [
     { label: "Active", value: "active" },
     { label: "Pending (No Bids)", value: "pending" },
-    { label: "Suspended", value: "suspended" },
+    { label: "Expired", value: "expired" },
     { label: "Assigned", value: "assigned" },
+    { label: "In Progress", value: "in_progress" },
     { label: "Completed", value: "completed" },
+    { label: "Suspended", value: "suspended" },
 ];
 
 interface Props {
@@ -49,14 +58,57 @@ const tdBase: React.CSSProperties = {
     verticalAlign: "middle",
 };
 
-function getAgeBucket(postedAt: string | null): AgeBucketKey | null {
-    if (!postedAt) return null;
-    const diffDays = (Date.now() - new Date(postedAt).getTime()) / (1000 * 60 * 60 * 24);
-    if (diffDays <= 7) return "week";
-    if (diffDays <= 30) return "month";
-    if (diffDays <= 90) return "threeMonths";
-    if (diffDays <= 180) return "sixMonths";
+// Age is measured from the last (re)post, matching the app's 7-day expiry.
+function getAgeBucket(job: Job): AgeBucketKey | null {
+    const days = ageInDays(job);
+    if (days === null) return null;
+    if (days <= 2) return "fresh";
+    if (days <= 5) return "mid";
+    if (days <= 7) return "expiring";
+    if (days <= 30) return "pastWeek";
     return "older";
+}
+
+const AGE_STYLES: Record<AgeBucketKey, { bg: string; fg: string }> = {
+    fresh:    { bg: "#DCFCE7", fg: "#15803D" },
+    mid:      { bg: "#F1F5F9", fg: "#475569" },
+    expiring: { bg: "#FEF3C7", fg: "#B45309" },
+    pastWeek: { bg: "#F1F5F9", fg: "#475569" },
+    older:    { bg: "#FEF2F2", fg: "#B91C1C" },
+};
+
+// "3d left" / "Expires today" / "Expired 5d ago"
+function ExpiryLabel({ job }: { job: Job }) {
+    const days = daysUntilExpiry(job);
+    if (days === null) return <span style={{ color: "#CBD5E1", fontSize: 12 }}>{"\u2014"}</span>;
+    if (days < 0) {
+        return (
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#B91C1C" }}>
+                Expired {Math.abs(days)}d ago
+            </span>
+        );
+    }
+    const urgent = days <= 2;
+    return (
+        <span style={{ fontSize: 12, fontWeight: 600, color: urgent ? "#B45309" : "#15803D" }}>
+            {days === 0 ? "Expires today" : `${days}d left`}
+        </span>
+    );
+}
+
+// Posted date + "reposted" marker when the job was posted again after expiring
+function PostedCell({ job }: { job: Job }) {
+    const repostedAt = getRepostedAt(job);
+    return (
+        <div>
+            <div>{formatDate(job.posted_at)}</div>
+            {repostedAt && (
+                <div style={{ marginTop: 2, fontSize: 11, fontWeight: 600, color: "#7C3AED", whiteSpace: "nowrap" }}>
+                    {"\u21BB"} Reposted {formatDate(repostedAt)}
+                </div>
+            )}
+        </div>
+    );
 }
 
 function getAgeLabel(key: AgeBucketKey | null): string {
@@ -139,13 +191,13 @@ export const JobAgeStatusTable: React.FC<Props> = ({
 
         if (selectedBuckets.size > 0) {
             list = list.filter((j) => {
-                const bucket = getAgeBucket(j.posted_at);
+                const bucket = getAgeBucket(j);
                 return bucket !== null && selectedBuckets.has(bucket);
             });
         }
 
         if (statusFilter !== "all") {
-            list = list.filter((j) => j.status === statusFilter);
+            list = list.filter((j) => effectiveStatus(j) === statusFilter);
         }
 
         return list;
@@ -274,7 +326,7 @@ export const JobAgeStatusTable: React.FC<Props> = ({
                         </div>
                     ) : (
                         paginated.map((job) => {
-                            const bucket = getAgeBucket(job.posted_at);
+                            const bucket = getAgeBucket(job);
                             return (
                                 <div
                                     key={job.id}
@@ -307,7 +359,7 @@ export const JobAgeStatusTable: React.FC<Props> = ({
                                             </div>
                                             <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 2 }}>{job.jobId}</div>
                                         </div>
-                                        <JobStatusBadge status={job.status} />
+                                        <JobStatusBadge status={effectiveStatus(job)} />
                                     </div>
 
                                     {/* Posted by */}
@@ -320,7 +372,7 @@ export const JobAgeStatusTable: React.FC<Props> = ({
                                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontSize: 13 }}>
                                         <div>
                                             <div style={{ color: "#94A3B8", fontSize: 11, textTransform: "uppercase" }}>Posted</div>
-                                            <div style={{ color: "#475569" }}>{formatDate(job.posted_at)}</div>
+                                            <div style={{ color: "#475569" }}><PostedCell job={job} /></div>
                                         </div>
                                         <div>
                                             <div style={{ color: "#94A3B8", fontSize: 11, textTransform: "uppercase" }}>Age</div>
@@ -332,12 +384,16 @@ export const JobAgeStatusTable: React.FC<Props> = ({
                                                     borderRadius: 20,
                                                     fontSize: 12,
                                                     fontWeight: 600,
-                                                    background: bucket === "older" ? "#FEF2F2" : "#F1F5F9",
-                                                    color: bucket === "older" ? "#B91C1C" : "#475569",
+                                                    background: bucket ? AGE_STYLES[bucket].bg : "#F1F5F9",
+                                                    color: bucket ? AGE_STYLES[bucket].fg : "#475569",
                                                 }}
                                             >
                                                 {getAgeLabel(bucket)}
                                             </span>
+                                        </div>
+                                        <div>
+                                            <div style={{ color: "#94A3B8", fontSize: 11, textTransform: "uppercase" }}>Expiry</div>
+                                            <div style={{ marginTop: 2 }}><ExpiryLabel job={job} /></div>
                                         </div>
                                     </div>
 
@@ -382,6 +438,7 @@ export const JobAgeStatusTable: React.FC<Props> = ({
                                 <th style={thBase}>Posted By</th>
                                 <th style={thBase}>Posted Date</th>
                                 <th style={thBase}>Age</th>
+                                <th style={thBase}>Expires</th>
                                 <th style={thBase}>Status</th>
                                 <th style={{ ...thBase, textAlign: "right", paddingRight: 24 }}>Action</th>
                             </tr>
@@ -389,14 +446,14 @@ export const JobAgeStatusTable: React.FC<Props> = ({
                         <tbody>
                             {paginated.length === 0 ? (
                                 <tr>
-                                    <td colSpan={8} style={{ padding: "48px 0", textAlign: "center", color: "#94A3B8", fontSize: 14 }}>
+                                    <td colSpan={9} style={{ padding: "48px 0", textAlign: "center", color: "#94A3B8", fontSize: 14 }}>
                                         No jobs match the selected filters.
                                     </td>
                                 </tr>
                             ) : (
                                 paginated.map((job, idx) => {
                                     const globalIdx = (currentPage - 1) * rowsPerPage + idx + 1;
-                                    const bucket = getAgeBucket(job.posted_at);
+                                    const bucket = getAgeBucket(job);
                                     return (
                                         <tr
                                             key={job.id}
@@ -433,7 +490,7 @@ export const JobAgeStatusTable: React.FC<Props> = ({
                                                 </div>
                                             </td>
                                             <td style={{ ...tdBase, color: "#475569", whiteSpace: "nowrap" }}>
-                                                {formatDate(job.posted_at)}
+                                                <PostedCell job={job} />
                                             </td>
                                             <td style={tdBase}>
                                                 <span
@@ -442,16 +499,19 @@ export const JobAgeStatusTable: React.FC<Props> = ({
                                                         borderRadius: 20,
                                                         fontSize: 12,
                                                         fontWeight: 600,
-                                                        background: bucket === "older" ? "#FEF2F2" : "#F1F5F9",
-                                                        color: bucket === "older" ? "#B91C1C" : "#475569",
+                                                        background: bucket ? AGE_STYLES[bucket].bg : "#F1F5F9",
+                                                        color: bucket ? AGE_STYLES[bucket].fg : "#475569",
                                                         whiteSpace: "nowrap",
                                                     }}
                                                 >
                                                     {getAgeLabel(bucket)}
                                                 </span>
                                             </td>
+                                            <td style={{ ...tdBase, whiteSpace: "nowrap" }}>
+                                                <ExpiryLabel job={job} />
+                                            </td>
                                             <td style={tdBase}>
-                                                <JobStatusBadge status={job.status} />
+                                                <JobStatusBadge status={effectiveStatus(job)} />
                                             </td>
                                             <td style={{ ...tdBase, textAlign: "right", paddingRight: 24 }}>
                                                 <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>

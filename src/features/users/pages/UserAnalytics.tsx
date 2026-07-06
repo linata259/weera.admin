@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Cell,
+  ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer,
 } from 'recharts';
+import { supabase } from 'services/supabaseClient';
 import { fetchUsers } from '../api/userServices';
 import { User } from '../types';
 
@@ -13,6 +14,8 @@ const SLATE   = '#64748B';
 const SLATE_L = '#94A3B8';
 const BORDER  = '#E2E8F0';
 const BG      = '#F8FAFC';
+const BLUE    = '#2563EB';
+const GOLD    = '#F59E0B';
 
 // ── types ──────────────────────────────────────────────────────────────
 type GrowthPeriod = 'days' | 'weeks' | 'months';
@@ -170,7 +173,7 @@ function GrowthTooltip({ active, payload, label }: any) {
     <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '8px 12px', boxShadow: '0 2px 8px rgba(15,23,42,0.08)', fontSize: 12, fontFamily: 'Inter, sans-serif' }}>
       <p style={{ margin: 0, fontWeight: 600, color: NAVY }}>{label}</p>
       {payload.map((p: any) => (
-        <p key={p.dataKey} style={{ margin: '2px 0 0', color: p.fill }}>{p.name}: {p.value}</p>
+        <p key={p.dataKey} style={{ margin: '2px 0 0', color: p.color || p.stroke || p.fill }}>{p.name}: {p.value}</p>
       ))}
     </div>
   );
@@ -183,7 +186,7 @@ function DonutChart({ clients, bidders, suspended }: { clients: number; bidders:
 
   const segments = [
     { value: clients,   color: ORANGE,    label: 'Clients',   count: clients },
-    { value: bidders,   color: NAVY,      label: 'Bidders',   count: bidders },
+    { value: bidders,   color: BLUE,      label: 'Bidders',   count: bidders },
     { value: suspended, color: '#CBD5E1', label: 'Suspended', count: suspended },
   ];
 
@@ -252,11 +255,22 @@ const PERIOD_OPTIONS: { value: GrowthPeriod; label: string }[] = [
 // ── main ───────────────────────────────────────────────────────────────
 const UserAnalytics: React.FC = () => {
   const [users,   setUsers]   = useState<User[]>([]);
+  const [ratings, setRatings] = useState<{ user_id: string; client_rating: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [period,  setPeriod]  = useState<GrowthPeriod>('months');
 
   useEffect(() => {
-    fetchUsers().then(setUsers).catch(console.error).finally(() => setLoading(false));
+    Promise.all([
+      fetchUsers(),
+      supabase.from('bids').select('user_id, client_rating').not('client_rating', 'is', null)
+        .then(({ data, error }) => {
+          if (error) { console.warn('ratings fetch:', error); return []; }
+          return (data ?? []) as { user_id: string; client_rating: number }[];
+        }),
+    ])
+      .then(([u, r]) => { setUsers(u); setRatings(r); })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
   const stats = useMemo(() => {
@@ -264,10 +278,16 @@ const UserAnalytics: React.FC = () => {
     const locationCount: Record<string, number> = {};
     const skillCount:    Record<string, number> = {};
 
+    let newThisMonth = 0, completeProfiles = 0;
+    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
+
     users.forEach(u => {
       const types = u.user_type_names ?? [];
       if (types.some((t: string) => t === 'hire talent')) clients++;
       if (types.some((t: string) => t === 'find work'))   bidders++;
+      if (u.is_active === false) suspended++;
+      if (u.created_at && new Date(u.created_at).getTime() >= monthStart) newThisMonth++;
+      if (u.image_url && u.professional_headline && (u.skills_id?.length ?? 0) > 0) completeProfiles++;
 
       (u.location_names ?? [u.location].filter(Boolean)).forEach((loc) => {
         if (loc && loc !== '—') locationCount[loc] = (locationCount[loc] || 0) + 1;
@@ -278,13 +298,37 @@ const UserAnalytics: React.FC = () => {
     });
 
     return {
-      total: users.length, clients, bidders, suspended,
+      total: users.length, clients, bidders, suspended, newThisMonth, completeProfiles,
       topLocations: Object.entries(locationCount).sort((a,b) => b[1]-a[1]).slice(0,5).map(([name,count]) => ({name,count})),
       topSkills:    Object.entries(skillCount).sort((a,b) => b[1]-a[1]).slice(0,5).map(([name,count]) => ({name,count})),
     };
   }, [users]);
 
   const growthData = useMemo(() => buildGrowthBuckets(users, period), [users, period]);
+
+  // ── top rated freelancers (from client ratings on their bids) ───────
+  const topRated = useMemo(() => {
+    const agg = new Map<string, { sum: number; count: number }>();
+    ratings.forEach(r => {
+      const e = agg.get(r.user_id) ?? { sum: 0, count: 0 };
+      e.sum += r.client_rating; e.count++;
+      agg.set(r.user_id, e);
+    });
+    return Array.from(agg.entries())
+      .map(([id, { sum, count }]) => {
+        const u = users.find(x => x.id === id);
+        return {
+          id,
+          name: u?.name || [u?.first_name, u?.last_name].filter(Boolean).join(' ') || 'Freelancer',
+          image: u?.image_url ?? null,
+          headline: u?.professional_headline ?? '',
+          avg: sum / count,
+          count,
+        };
+      })
+      .sort((a, b) => b.avg - a.avg || b.count - a.count)
+      .slice(0, 6);
+  }, [ratings, users]);
   const maxLoc   = Math.max(...stats.topLocations.map(l => l.count), 1);
   const maxSkill = Math.max(...stats.topSkills.map(s => s.count), 1);
 
@@ -303,10 +347,12 @@ const UserAnalytics: React.FC = () => {
 
       {/* stat cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
-        <StatCard label="Total Users" value={stats.total}     icon={UsersIcon(NAVY)}           accentColor={NAVY} />
-        <StatCard label="Clients"     value={stats.clients}   icon={ClientIcon(ORANGE)}         accentColor={ORANGE} />
-        <StatCard label="Bidders"     value={stats.bidders}   icon={BidderIcon(NAVY)}           accentColor={NAVY} />
-        <StatCard label="Suspended"   value={stats.suspended} icon={SuspendIcon(SLATE_L)}       accentColor={SLATE_L} />
+        <StatCard label="Total Users"       value={stats.total}            icon={UsersIcon(NAVY)}      accentColor={NAVY} />
+        <StatCard label="Clients"           value={stats.clients}          icon={ClientIcon(ORANGE)}   accentColor={ORANGE} />
+        <StatCard label="Bidders"           value={stats.bidders}          icon={BidderIcon(BLUE)}     accentColor={BLUE} />
+        {/* <StatCard label="New This Month"    value={stats.newThisMonth}     icon={UsersIcon('#16A34A')} accentColor="#16A34A" /> */}
+        {/* <StatCard label="Complete Profiles" value={stats.completeProfiles} icon={ClientIcon('#7C3AED')} accentColor="#7C3AED" /> */}
+        <StatCard label="Suspended"         value={stats.suspended}        icon={SuspendIcon(SLATE_L)} accentColor={SLATE_L} />
       </div>
 
       {/* charts row */}
@@ -317,7 +363,7 @@ const UserAnalytics: React.FC = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <span style={{ fontSize: 14, fontWeight: 700, color: NAVY }}>Growth Over Time</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              {[{ color: ORANGE, label: 'Clients' }, { color: NAVY, label: 'Bidders' }].map(({ color, label }) => (
+              {[{ color: ORANGE, label: 'Clients' }, { color: BLUE, label: 'Bidders' }, { color: SLATE_L, label: 'Total' }].map(({ color, label }) => (
                 <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
                   <span style={{ fontSize: 11, color: SLATE_L }}>{label}</span>
@@ -339,19 +385,41 @@ const UserAnalytics: React.FC = () => {
             </div>
           </div>
 
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={growthData} barCategoryGap="35%" barGap={3} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 11, fill: SLATE_L, fontFamily: 'Inter,sans-serif' }} axisLine={false} tickLine={false} />
+          <ResponsiveContainer width="100%" height={230}>
+            <ComposedChart data={growthData} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="ugClients" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={ORANGE} stopOpacity={0.25} />
+                  <stop offset="100%" stopColor={ORANGE} stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="ugBidders" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={BLUE} stopOpacity={0.22} />
+                  <stop offset="100%" stopColor={BLUE} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid stroke="#F1F5F9" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: SLATE_L, fontFamily: 'Inter,sans-serif' }} axisLine={{ stroke: BORDER }} tickLine={false} interval="preserveStartEnd" />
               <YAxis tick={{ fontSize: 11, fill: SLATE_L, fontFamily: 'Inter,sans-serif' }} axisLine={false} tickLine={false} width={28} allowDecimals={false} />
-              <Tooltip content={<GrowthTooltip />} cursor={{ fill: '#F8FAFC' }} />
-              <Bar dataKey="clients" name="Clients" fill={ORANGE} radius={[4,4,0,0]}>
-                {growthData.map((_, i) => <Cell key={i} fill={ORANGE} />)}
-              </Bar>
-              <Bar dataKey="bidders" name="Bidders" fill={NAVY} radius={[4,4,0,0]}>
-                {growthData.map((_, i) => <Cell key={i} fill={NAVY} />)}
-              </Bar>
-            </BarChart>
+              <Tooltip content={<GrowthTooltip />} cursor={{ stroke: '#CBD5E1', strokeDasharray: '4 4' }} />
+              <Area
+                type="monotone" dataKey="clients" name="Clients"
+                stroke={ORANGE} strokeWidth={2.5} fill="url(#ugClients)"
+                dot={false} activeDot={{ r: 4.5, strokeWidth: 2, stroke: '#fff' }}
+                animationDuration={900}
+              />
+              <Area
+                type="monotone" dataKey="bidders" name="Bidders"
+                stroke={BLUE} strokeWidth={2.5} fill="url(#ugBidders)"
+                dot={false} activeDot={{ r: 4.5, strokeWidth: 2, stroke: '#fff' }}
+                animationDuration={900}
+              />
+              <Line
+                type="monotone" dataKey={(d: any) => d.clients + d.bidders} name="Total signups"
+                stroke={SLATE_L} strokeWidth={1.5} strokeDasharray="5 4"
+                dot={false} activeDot={{ r: 3.5, strokeWidth: 2, stroke: '#fff' }}
+                animationDuration={900}
+              />
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
 
@@ -365,7 +433,40 @@ const UserAnalytics: React.FC = () => {
       </div>
 
       {/* bottom row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
+        {/* Top Rated Freelancers */}
+        <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 12, padding: 20, boxShadow: '0 1px 3px rgba(15,23,42,0.06)' }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: NAVY, display: 'block' }}>Top Rated Freelancers</span>
+          <span style={{ fontSize: 11, color: SLATE_L, display: 'block', marginBottom: 16 }}>By client ratings on completed work</span>
+          {topRated.length === 0
+            ? <span style={{ fontSize: 13, color: SLATE_L }}>No ratings recorded yet</span>
+            : <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {topRated.map((f, i) => (
+                  <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ width: 18, fontSize: 11, fontWeight: 700, color: i < 3 ? GOLD : SLATE_L, flexShrink: 0 }}>{i + 1}</span>
+                    {f.image
+                      ? <img src={f.image} alt={f.name} style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                      : <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#F1F5F9', color: SLATE, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, flexShrink: 0 }}>
+                          {f.name.charAt(0).toUpperCase()}
+                        </div>}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: NAVY, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</div>
+                      {f.headline && <div style={{ fontSize: 11, color: SLATE_L, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.headline}</div>}
+                    </div>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
+                        <svg width={13} height={13} viewBox="0 0 24 24" fill={GOLD}>
+                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                        </svg>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: NAVY }}>{f.avg.toFixed(1)}</span>
+                      </div>
+                      <div style={{ fontSize: 10, color: SLATE_L }}>{f.count} rating{f.count !== 1 ? 's' : ''}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>}
+        </div>
+
         <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 12, padding: 20, boxShadow: '0 1px 3px rgba(15,23,42,0.06)' }}>
           <span style={{ fontSize: 14, fontWeight: 700, color: NAVY, display: 'block', marginBottom: 16 }}>Top Locations</span>
           {stats.topLocations.length > 0

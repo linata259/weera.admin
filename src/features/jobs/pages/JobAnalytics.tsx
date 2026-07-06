@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { fetchJobs, fetchBids } from '../api/jobServices';
-import type { Job, BidRecord } from '../pages/Jobs';
-import { BidStats, buildGrowthBuckets, ChartCard, DonutChart, DonutSegment, GREEN, GrowthPeriod, HBarList, LineChart, NAVY, ORANGE, PeriodDropdown, RED, SectionHead, SKY, SLATE, Spinner, StatCard } from '../components/Analyticscomponents';
+import { bidJobLocation, type Job, type BidRecord } from '../pages/Jobs';
+import { BidStats, buildGrowthBuckets, ChartCard, DonutChart, DonutSegment, GREEN, GrowthPeriod, HBarList, NAVY, ORANGE, PeriodDropdown, PURPLE, RED, SectionHead, SKY, SLATE, Spinner, StatCard } from '../components/Analyticscomponents';
+import { effectiveStatus, getExpiredAt, getRepostedAt, isJobExpired, isJobReposted } from '../utils/jobLifecycle';
+import { LifecycleChart, LifecyclePoint } from '../components/LifecycleChart';
 import BidAnalyticsTab from '../components/Bidanalyticstab';
 
 
@@ -30,28 +32,30 @@ const JobAnalytics: React.FC = () => {
 
   // ── job stats ──────────────────────────────────────────────────────
   const jobStats = useMemo(() => {
-    let active = 0, assigned = 0, completed = 0, pending = 0, suspended = 0, totalApplicants = 0;
+    let active = 0, assigned = 0, completed = 0, pending = 0, suspended = 0, expired = 0, reposted = 0;
     const catCount: Record<string, number> = {};
     const locCount: Record<string, number> = {};
 
     jobs.forEach(j => {
-      const s = j.status.toLowerCase();
-      if (s === 'active' || s === 'in_progress') active++;
+      // effectiveStatus surfaces jobs whose 7-day window has lapsed as 'expired'
+      const s = effectiveStatus(j);
+      if (s === 'expired') expired++;
+      else if (s === 'active' || s === 'in_progress') active++;
       else if (['assigned', 'offer_sent', 'offer_accepted'].includes(s)) assigned++;
       else if (s === 'completed') completed++;
       else if (['pending', 'pending_review', 'submitted', 'waiting_for_bidder_response'].includes(s)) pending++;
       else suspended++;
 
-      totalApplicants += j.applicants || 0;
+      if (isJobReposted(j)) reposted++;
       j.categories.filter(c => c && c !== 'General').forEach(c => { catCount[c] = (catCount[c] || 0) + 1; });
       if (j.location) locCount[j.location] = (locCount[j.location] || 0) + 1;
     });
 
     const total = jobs.length;
     return {
-      total, active, assigned, completed, pending, suspended,
+      total, active, assigned, completed, pending, suspended, expired, reposted,
       completionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
-      avgApplicants:  total > 0 ? Math.round(totalApplicants / total) : 0,
+      expiredRate:    total > 0 ? Math.round((expired / total) * 100) : 0,
       topCategories:  Object.entries(catCount).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([name, count]) => ({ name, count })),
       topLocations:   Object.entries(locCount).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([name, count]) => ({ name, count })),
     };
@@ -86,8 +90,8 @@ const JobAnalytics: React.FC = () => {
         matchedJob.categories.filter(c => c && c !== 'General').forEach(c => { catCount[c] = (catCount[c] || 0) + 1; });
       }
 
-      // Bid location from joined data
-      const loc = b.jobs?.location_id?.location;
+      // Bid location from joined data (county/ward scheme first)
+      const loc = bidJobLocation(b);
       if (loc) locCount[loc] = (locCount[loc] || 0) + 1;
     });
 
@@ -104,9 +108,28 @@ const JobAnalytics: React.FC = () => {
     };
   }, [bids, jobs]);
 
-  // ── chart data ─────────────────────────────────────────────────────
-  const jobGrowthData = useMemo(() => buildGrowthBuckets(jobs, combinedPeriod, j => j.posted_at),    [jobs, combinedPeriod]);
-  const bidGrowthData = useMemo(() => buildGrowthBuckets(bids, combinedPeriod, b => b.submitted_at), [bids, combinedPeriod]);
+  // ── chart data: job lifecycle (new / reposted / expired / still active) vs bids ──
+  const lifecycleData = useMemo((): LifecyclePoint[] => {
+    const expiredJobs  = jobs.filter(j => isJobExpired(j));
+    const repostedJobs = jobs.filter(j => isJobReposted(j));
+    const openJobs     = jobs.filter(j => {
+      const s = effectiveStatus(j);
+      return s === 'active' || s === 'pending' || s === 'in_progress';
+    });
+
+    const newB      = buildGrowthBuckets(jobs,         combinedPeriod, j => j.posted_at);
+    const repostB   = buildGrowthBuckets(repostedJobs, combinedPeriod, j => getRepostedAt(j));
+    const expiredB  = buildGrowthBuckets(expiredJobs,  combinedPeriod, j => getExpiredAt(j));
+    const activeB   = buildGrowthBuckets(openJobs,     combinedPeriod, j => getRepostedAt(j) ?? j.posted_at);
+
+    return newB.map((b, i) => ({
+      label:    b.label,
+      newJobs:  b.count,
+      reposted: repostB[i]?.count ?? 0,
+      expired:  expiredB[i]?.count ?? 0,
+      active:   activeB[i]?.count ?? 0,
+    }));
+  }, [jobs, combinedPeriod]);
 
   // ── derived values for Overview tab ───────────────────────────────
   const activeJobPct = jobStats.total > 0 ? Math.round((jobStats.active / jobStats.total) * 100) : 0;
@@ -116,7 +139,8 @@ const JobAnalytics: React.FC = () => {
     { value: jobStats.assigned,  color: '#CA8A04', label: 'Assigned'  },
     { value: jobStats.completed, color: '#2563EB', label: 'Completed' },
     { value: jobStats.pending,   color: '#F59E0B', label: 'Pending'   },
-    { value: jobStats.suspended, color: RED,       label: 'Suspended' },
+    { value: jobStats.expired,   color: RED,       label: 'Expired'   },
+    { value: jobStats.suspended, color: '#94A3B8', label: 'Suspended' },
   ].filter(s => s.value > 0);
 
   if (loading) return <Spinner />;
@@ -147,22 +171,20 @@ const JobAnalytics: React.FC = () => {
 
           {/* Stat cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
-            <StatCard label="Total Jobs"     value={jobStats.total}         sub="All postings"                                  accent={NAVY}   />
-            <StatCard label="Active Jobs"    value={jobStats.active}        sub="Currently open"                                accent={ORANGE} />
-            <StatCard label="Completed"      value={jobStats.completed}     sub={`${jobStats.completionRate}% completion rate`} accent={SKY}    />
-            <StatCard label="Avg Applicants" value={jobStats.avgApplicants} sub="Per job posting"                               accent={GREEN}  />
+            <StatCard label="Total Jobs"   value={jobStats.total}     sub="All postings"                                  accent={NAVY}   />
+            <StatCard label="Active Jobs"  value={jobStats.active}    sub="Currently open"                                accent={ORANGE} />
+            <StatCard label="Completed"    value={jobStats.completed} sub={`${jobStats.completionRate}% completion rate`} accent={SKY}    />
+            <StatCard label="Expired Jobs" value={jobStats.expired}   sub={`${jobStats.expiredRate}% lapsed after 7 days`} accent={RED}   />
+            <StatCard label="Reposted"     value={jobStats.reposted}  sub="Posted again after expiry"                     accent={PURPLE} />
           </div>
 
           {/* Combined line chart */}
           <ChartCard
-            title="Activity Over Time"
-            sub="Jobs posted vs bids submitted per period"
+            title="Job Lifecycle Activity"
+            sub="New, reposted, expired & still-open jobs per period"
             action={<PeriodDropdown value={combinedPeriod} onChange={setCombinedPeriod} />}
           >
-            <LineChart datasets={[
-              { label: 'Jobs Posted',    color: ORANGE, data: jobGrowthData },
-              { label: 'Bids Submitted', color: SKY,    data: bidGrowthData },
-            ]} />
+            <LifecycleChart data={lifecycleData} />
           </ChartCard>
 
           {/* 3-col: Status donut | Top Posted Categories | Top Job Locations */}
@@ -186,7 +208,7 @@ const JobAnalytics: React.FC = () => {
       {/* BID ANALYTICS TAB — delegated to BidAnalyticsTab          */}
       {/* ══════════════════════════════════════════════════════════ */}
       {tab === 'bid-analytics' && (
-        <BidAnalyticsTab bids={bids} bidStats={bidStats} />
+        <BidAnalyticsTab bids={bids} bidStats={bidStats} jobs={jobs} />
       )}
 
     </div>

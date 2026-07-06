@@ -9,6 +9,8 @@ import { UserGrowthChart } from "./components/UserGrowthChart";
 import { ActivityFeed } from "./components/ActivityFeed";
 
 import { useDashboardStats } from "./hooks/useDashboardStats";
+import { useAppHealth } from "./hooks/useAppHealth";
+import { HealthOverview } from "./components/HealthOverview";
 import { useUserGrowthChart } from "./hooks/useUserGrowthChart";
 import { useRecentActivity } from "./hooks/useRecentActivity";
 import { useTopJobLocations } from "./hooks/Usetopjoblocations";
@@ -21,7 +23,6 @@ import { HorizontalBarBreakdown } from "./components/Horizontalbarbreakdown";
 const ORANGE = "#EA580C";
 const BLUE = "#2563EB";
 const AMBER = "#D97706";
-const BORDER = "#E2E8F0";
 const TEXT_DARK = "#0F172A";
 const BG_PAGE = "#F8FAFC";
 const AMBER_BG = "#FFFBEB";
@@ -52,20 +53,22 @@ function Card({
   return (
     <div
       style={{
-        borderRadius: 12,
-        border: `1px solid ${BORDER}`,
+        borderRadius: 16,
+        border: "1px solid #EEF2F6",
         background: "#FFFFFF",
-        padding: 20,
+        padding: 22,
         flex: 1,
         minWidth: 0,
+        boxShadow: "0 1px 3px rgba(15,23,42,0.05)",
       }}
     >
-      <h2
-        style={{ margin: 0, fontSize: 15, fontWeight: 700, color: TEXT_DARK }}
-      >
-        {title}
-      </h2>
-      <div style={{ marginTop: 12 }}>{children}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ width: 8, height: 8, borderRadius: 3, background: ORANGE, flexShrink: 0 }} />
+        <h2 style={{ margin: 0, fontSize: 14.5, fontWeight: 800, color: TEXT_DARK, letterSpacing: -0.2 }}>
+          {title}
+        </h2>
+      </div>
+      <div style={{ marginTop: 14 }}>{children}</div>
     </div>
   );
 }
@@ -92,10 +95,12 @@ export function DashboardPage() {
     isLoading: activityLoading,
     refetch: refetchActivity,
   } = useRecentActivity(8);
+  const { health, isLoading: healthLoading, refetch: refetchHealth } = useAppHealth();
 
   const handleRefresh = () => {
     refetchStats();
     refetchActivity();
+    refetchHealth();
   };
 
   return (
@@ -143,12 +148,12 @@ export function DashboardPage() {
         }}
       >
         {statsLoading || !stats
-          ? Array.from({ length: 4 }).map((_, index) => (
+          ? Array.from({ length: 2 }).map((_, index) => (
               <div
                 key={index}
                 style={{
                   height: 112,
-                  borderRadius: 12,
+                  borderRadius: 16,
                   background: "#F1F5F9",
                   animation: "dashboardSkeletonPulse 1.5s ease-in-out infinite",
                 }}
@@ -156,7 +161,10 @@ export function DashboardPage() {
             ))
           : (
               Object.values(stats) as Array<(typeof stats)[DashboardStatId]>
-            ).map((stat) => (
+            )
+              // Funds figures (escrow / withdrawals) live in the Financials tab
+              .filter((stat) => stat.id !== "totalFundsInEscrow" && stat.id !== "pendingWithdrawals")
+              .map((stat) => (
               <StatCard
                 key={stat.id}
                 stat={stat}
@@ -164,6 +172,9 @@ export function DashboardPage() {
               />
             ))}
       </div>
+
+      {/* Platform health — live monitor across all modules */}
+      <HealthOverview health={health} isLoading={healthLoading} />
 
       {/* Row 2 — growth chart, locations, categories */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>

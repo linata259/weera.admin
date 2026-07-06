@@ -1,6 +1,5 @@
 import type { DashboardStat, DashboardStatId, TrendDirection } from '../types';
 
-const BORDER = '#E2E8F0';
 const TEXT_DARK = '#0F172A';
 const SLATE = '#64748B';
 const SLATE_LIGHT = '#94A3B8';
@@ -62,18 +61,31 @@ export function StatCard({ stat, accentColor }: StatCardProps) {
 
   return (
     <div
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-2px)';
+        e.currentTarget.style.boxShadow = '0 10px 24px rgba(15, 23, 42, 0.10)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'none';
+        e.currentTarget.style.boxShadow = '0 1px 3px rgba(15, 23, 42, 0.05)';
+      }}
       style={{
+        position: 'relative',
+        overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        borderRadius: 12,
-        border: `1px solid ${BORDER}`,
+        borderRadius: 16,
+        border: '1px solid #EEF2F6',
         background: '#FFFFFF',
         padding: '20px 20px 16px',
-        boxShadow: '0 1px 3px rgba(15, 23, 42, 0.06)',
+        boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)',
         fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+        transition: 'transform 0.15s ease, box-shadow 0.15s ease',
       }}
     >
+      {/* accent stripe */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${accentColor}, ${accentColor}55)` }} />
       {/* Top row: label + icon */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
         <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: SLATE, lineHeight: 1.4 }}>
@@ -101,8 +113,8 @@ export function StatCard({ stat, accentColor }: StatCardProps) {
       <p
         style={{
           margin: '10px 0 0',
-          fontSize: 30,
-          fontWeight: 700,
+          fontSize: 32,
+          fontWeight: 800,
           letterSpacing: '-0.02em',
           color: TEXT_DARK,
           fontVariantNumeric: 'tabular-nums',

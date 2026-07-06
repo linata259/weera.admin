@@ -17,6 +17,8 @@ const STATUS_STYLES: Record<string, React.CSSProperties> = {
     pending: { background: "#FEF9C3", color: "#CA8A04" }, // Yellow/Orange
     assigned: { background: "#FEF9C3", color: "#CA8A04" }, // Yellow/Orange
     completed: { background: "#DBEAFE", color: "#2563EB" }, // Blue
+    expired: { background: "#FFE4E6", color: "#BE123C" }, // Rose
+    in_progress: { background: "#E0F2FE", color: "#0284C7" }, // Sky
 };
 
 export const JobStatusBadge: React.FC<{ status: JobStatus }> = ({ status }) => {

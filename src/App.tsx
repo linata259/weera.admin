@@ -29,6 +29,7 @@ const FinancialsPage = lazy(
   () => import("./features/financials/pages/FinancialsPage"),
 );
 const SkillsPage = lazy(() => import("./features/skills/pages/SkillsPage"));
+const LocationsPage = lazy(() => import("./features/locations/pages/LocationsPage"));
 
 function PageLoader() {
   return (
@@ -86,6 +87,7 @@ export default function App() {
             <Route path="/jobs/reports" element={<JobReports />} />
             <Route path="/financials" element={<FinancialsPage />} />
             <Route path="/skills" element={<SkillsPage />} />
+            <Route path="/locations" element={<LocationsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
         </Routes>
