@@ -27,7 +27,10 @@ const NAV_FEATURES: NavGroup[] = [
       { id: "jobs", label: "Jobs", path: "/jobs" },
       { id: "reports", label: "Reports", path: "/jobs/reports" },
     ],
+
   },
+  { id: "help-support", label: "Help & Support", path: "/help-support", icon: "?" },
+
   {
     id: "financials",
     label: "Financials",
@@ -45,6 +48,12 @@ const NAV_FEATURES: NavGroup[] = [
     label: "Locations",
     path: "/locations",
     icon: "📍",
+  },
+  {
+    id: "notifications",
+    label: "Notifications",
+    path: "/notifications",
+    icon: "🔔",
   },
   {
     id: "settings",

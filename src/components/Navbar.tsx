@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from 'services/supabaseClient';
 import { useNavbar } from '../hooks/Navbarcontext';
+import { NotificationBell } from '../features/notifications/components/NotificationBell';
 
 const PRIMARY = '#EA580C';
 const NAVY    = '#0F172A';
@@ -132,7 +133,9 @@ const Navbar: React.FC<NavbarProps> = ({
         )}
       </div>
 
-      {/* ── Right: avatar + dropdown ── */}
+      {/* ── Right: notification bell + avatar + dropdown ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <NotificationBell />
       <div ref={dropdownRef} style={{ position: 'relative' }}>
 
         {/* Avatar button */}
@@ -253,6 +256,7 @@ const Navbar: React.FC<NavbarProps> = ({
           </div>
         )}
       </div>
+      </div>{/* ── end right flex wrapper ── */}
 
       <style>{`@keyframes fadeInDown { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }`}</style>
     </header>
