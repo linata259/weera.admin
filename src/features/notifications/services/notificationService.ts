@@ -75,13 +75,13 @@ export async function fetchNotifications(): Promise<AdminNotification[]> {
       .order('created_at', { ascending: false })
       .limit(50),
 
-    // 3. Open or urgent/high support tickets (last 7 days)
+    // 3. Open support tickets (last 7 days).
+    // NOTE: support_tickets has no `ticket_id` or `priority` column — priority
+    // is inferred in the UI, not stored — so we select only real columns.
     supabase
       .from('support_tickets')
-      .select('id, ticket_id, status, priority, created_at')
-      .or('status.eq.open,priority.eq.urgent,priority.eq.high')
-      .neq('status', 'resolved')
-      .neq('status', 'closed')
+      .select('id, status, created_at')
+      .eq('status', 'open')
       .gte('created_at', cutoffWeek)
       .order('created_at', { ascending: false })
       .limit(50),
@@ -140,18 +140,14 @@ export async function fetchNotifications(): Promise<AdminNotification[]> {
 
   // ── 3. Support tickets ──────────────────────────────────────────────────────
   (ticketsResult.data ?? []).forEach((t) => {
-    const isUrgent = t.priority === 'urgent' || t.priority === 'high';
-    const category: NotificationCategory = isUrgent
-      ? 'support_ticket_urgent'
-      : 'support_ticket_open';
+    const category: NotificationCategory = 'support_ticket_open';
     const id = makeId(category, t.id);
+    const shortRef = String(t.id).replace(/[^0-9]/g, '').slice(0, 6) || String(t.id).slice(0, 6);
     notifications.push({
       id,
       category,
-      title: isUrgent ? 'Urgent support ticket' : 'New support ticket',
-      body: isUrgent
-        ? `Ticket #${t.ticket_id ?? t.id} is marked ${t.priority} priority.`
-        : `Ticket #${t.ticket_id ?? t.id} has been opened and needs attention.`,
+      title: 'New support ticket',
+      body: `Ticket #${shortRef} has been opened and needs attention.`,
       referenceId: t.id,
       href: '/help-support',
       createdAt: t.created_at,

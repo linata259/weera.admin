@@ -12,6 +12,7 @@ import {
   FiShield,
   FiBarChart2,
   FiSettings,
+  FiMessageSquare,
   FiTarget,
   FiChevronDown,
   FiChevronRight,
@@ -77,6 +78,7 @@ const getModernIcon = (label: string): React.ReactNode | null => {
   if (l.includes("financ")) return <Icon icon={FiDollarSign} size={18} />;
   if (l.includes("skill")) return <Icon icon={FiTarget} size={18} />;
   if (l.includes("location")) return <Icon icon={FiMapPin} size={18} />;
+  if (l.includes("chat") || l.includes("moderation")) return <Icon icon={FiMessageSquare} size={18} />;
   if (l.includes("dispute")) return <Icon icon={FiAlertTriangle} size={18} />;
   if (l.includes("notification")) return <Icon icon={FiBell} size={18} />;
   if (l.includes("role") || l.includes("permission")) return <Icon icon={FiShield} size={18} />;

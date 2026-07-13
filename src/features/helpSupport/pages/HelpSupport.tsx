@@ -201,7 +201,7 @@ const HelpSupport: React.FC = () => {
             textAlign: "center",
           }}
         >
-          Loading support tickets from Supabase...
+          Loading support tickets ...
         </div>
       ) : (
         <SupportTicketTable

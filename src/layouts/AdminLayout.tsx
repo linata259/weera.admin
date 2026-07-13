@@ -30,6 +30,12 @@ const NAV_FEATURES: NavGroup[] = [
 
   },
   { id: "help-support", label: "Help & Support", path: "/help-support", icon: "?" },
+  {
+    id: "chats",
+    label: "Chat Moderation",
+    path: "/chats",
+    icon: "💬",
+  },
 
   {
     id: "financials",

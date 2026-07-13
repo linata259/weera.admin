@@ -36,6 +36,7 @@ const HelpSupportPage = lazy(
 const NotificationsPage = lazy(
   () => import("./features/notifications/pages/NotificationsPage"),
 );
+const ChatsPage = lazy(() => import("./features/chats/pages/ChatsPage"));
 
 function PageLoader() {
   return (
@@ -95,6 +96,7 @@ export default function App() {
             <Route path="/skills" element={<SkillsPage />} />
             <Route path="/locations" element={<LocationsPage />} />
             <Route path="/help-support" element={<HelpSupportPage />} />
+            <Route path="/chats" element={<ChatsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
           </Route>
