@@ -3,7 +3,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import {
-  FiDollarSign, FiPercent, FiAlertCircle, FiDownload, FiTrendingUp,
+  FiDollarSign, FiPercent, FiAlertCircle, FiDownload, FiLock,
   FiArrowUpRight, FiArrowDownRight,
 } from "react-icons/fi";
 
@@ -209,8 +209,8 @@ export function FinanceDashboardPage() {
         gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
         gap: 14,
       }}>
-        <KpiCard icon={FiTrendingUp} label="Revenue MTD" loading={loading}
-          value={k ? fmtMoney(k.revenueMtd) : ""} trend={k?.revenueMtdTrend} />
+        <KpiCard icon={FiLock} label="Funds in Escrow" loading={loading}
+          value={k ? fmtMoney(k.fundsInEscrow) : ""} sub="currently locked" />
         <KpiCard icon={FiDollarSign} label="Total Revenue" loading={loading}
           value={k ? fmtMoney(k.totalRevenue) : ""} sub="all-time money in" />
         <KpiCard icon={FiPercent} label="Platform Fees (10%)" loading={loading}

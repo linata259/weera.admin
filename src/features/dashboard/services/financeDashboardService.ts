@@ -1,11 +1,10 @@
 import { supabase } from "services/supabaseClient";
-import { KpiTrend, RevenueTrendPoint } from "./superAdminService";
+import { RevenueTrendPoint } from "./superAdminService";
 
 /* ── Types ──────────────────────────────────────────────────── */
 
 export interface FinanceKpis {
-  revenueMtd: number;
-  revenueMtdTrend: KpiTrend;
+  fundsInEscrow: number;
   totalRevenue: number;
   platformFees: number;
   failedPayments: number;
@@ -46,19 +45,6 @@ const pf = (v: unknown): number => {
   return Number.isFinite(n) ? n : 0;
 };
 
-const trend = (current: number, previous: number): KpiTrend => {
-  if (previous <= 0) {
-    return current > 0
-      ? { changePercent: 100, direction: "up" }
-      : { changePercent: 0, direction: "flat" };
-  }
-  const pct = ((current - previous) / previous) * 100;
-  return {
-    changePercent: Math.round(Math.abs(pct) * 10) / 10,
-    direction: pct > 0.5 ? "up" : pct < -0.5 ? "down" : "flat",
-  };
-};
-
 const normStatus = (s: string | null | undefined): string => {
   const v = (s ?? "").toLowerCase();
   if (["completed", "complete", "success", "succeeded"].includes(v)) return "completed";
@@ -71,18 +57,22 @@ const normStatus = (s: string | null | undefined): string => {
 
 export async function fetchFinanceDashboardData(): Promise<FinanceDashboardData> {
   const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const prevMonthSamePoint = new Date(
-    now.getFullYear(), now.getMonth() - 1, now.getDate(), now.getHours(),
-  );
   const yearAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1);
 
-  const { data, error } = await supabase
-    .from("wallet_transactions")
-    .select("id, amount, type, status, created_at")
-    .order("created_at", { ascending: false });
+  const [txRes, walletsRes] = await Promise.all([
+    supabase
+      .from("wallet_transactions")
+      .select("id, amount, type, status, created_at")
+      .order("created_at", { ascending: false }),
+    supabase.from("wallets").select("escrow_balance"),
+  ]);
+  const { data, error } = txRes;
   if (error) throw error;
+
+  const fundsInEscrow = ((walletsRes.data ?? []) as any[]).reduce(
+    (s, r) => s + pf(r.escrow_balance),
+    0,
+  );
 
   const rows = ((data ?? []) as any[]).map((r) => ({
     id: String(r.id),
@@ -94,8 +84,6 @@ export async function fetchFinanceDashboardData(): Promise<FinanceDashboardData>
 
   /* KPIs */
   let totalRevenue = 0;
-  let revenueMtd = 0;
-  let revenuePrevMtd = 0;
   let realFees = 0;
   let hasRealFees = false;
   let failedPayments = 0;
@@ -133,9 +121,6 @@ export async function fetchFinanceDashboardData(): Promise<FinanceDashboardData>
 
     if (isMoneyIn && isCompleted) {
       totalRevenue += r.amount;
-      if (created >= monthStart) revenueMtd += r.amount;
-      else if (created >= prevMonthStart && created < prevMonthSamePoint)
-        revenuePrevMtd += r.amount;
     }
 
     if (created >= yearAgo && isCompleted) {
@@ -177,8 +162,7 @@ export async function fetchFinanceDashboardData(): Promise<FinanceDashboardData>
 
   return {
     kpis: {
-      revenueMtd,
-      revenueMtdTrend: trend(revenueMtd, revenuePrevMtd),
+      fundsInEscrow,
       totalRevenue,
       platformFees: hasRealFees ? realFees : totalRevenue * PLATFORM_FEE_RATE,
       failedPayments,
