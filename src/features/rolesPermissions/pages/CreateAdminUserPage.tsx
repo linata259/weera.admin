@@ -77,12 +77,12 @@ const CreateAdminUserPage: React.FC = () => {
       <div style={{ padding: 24, fontFamily: "'Inter', sans-serif", maxWidth: 560 }}>
         <div style={card}>
           <h2 style={{ margin: "0 0 6px", fontSize: 18, color: TEXT }}>
-            Admin user created
+            {result.role} account created
           </h2>
           <p style={{ margin: "0 0 18px", fontSize: 13.5, color: MUTED }}>
             {result.emailed
-              ? `Credentials were emailed to ${result.email}.`
-              : "Email delivery isn't configured yet — copy the credentials below and share them securely. The password is shown only once."}
+              ? `An invite email was sent to ${result.email}. You can also share the temporary password below — it's shown only once.`
+              : "The invite email couldn't be sent — copy the credentials below and share them securely. The password is shown only once."}
           </p>
 
           <div

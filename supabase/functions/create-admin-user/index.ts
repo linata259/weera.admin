@@ -116,25 +116,58 @@ Deno.serve(async (req) => {
     .single();
   if (!role) return json({ error: "Role not found" }, 400);
 
-  // ── 3. Create the auth user with a generated password ──
+  // ── 3. Invite the user by email (sent through Supabase Auth —
+  //       the same email channel the Weera app already uses), then
+  //       set a generated password so credentials can also be shared
+  //       directly from the UI ──
   const password = generatePassword();
-  const { data: created, error: createErr } = await admin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    user_metadata: {
+  const inviteOptions: { data: Record<string, string>; redirectTo?: string } = {
+    data: {
       first_name: body.first_name ?? "",
-      last_name: body.last_name ??"",
+      last_name: body.last_name ?? "",
       phone: body.phone ?? "",
+      invited_role: role.name,
     },
-  });
-  if (createErr || !created.user) {
-    return json({ error: createErr?.message ?? "Failed to create user" }, 400);
+  };
+  // optional: where the invite link lands (must be in Auth → URL allow-list)
+  const adminUrl = Deno.env.get("ADMIN_APP_URL");
+  if (adminUrl) inviteOptions.redirectTo = adminUrl;
+
+  let userId: string | null = null;
+  let emailed = false;
+
+  const { data: invited, error: inviteErr } =
+    await admin.auth.admin.inviteUserByEmail(email, inviteOptions);
+
+  if (invited?.user) {
+    userId = invited.user.id;
+    emailed = true;
+    // give the account a usable password right away (invite link also works)
+    await admin.auth.admin.updateUserById(userId, {
+      password,
+      email_confirm: true,
+    });
+  } else {
+    // invite failed (e.g. email sending disabled) → fall back to direct
+    // creation so the flow still completes with copyable credentials
+    const { data: created, error: createErr } = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: inviteOptions.data,
+    });
+    if (createErr || !created.user) {
+      return json(
+        { error: inviteErr?.message ?? createErr?.message ?? "Failed to create user" },
+        400,
+      );
+    }
+    userId = created.user.id;
   }
 
   // ── 4. Upsert profile as admin with the assigned role ──
   let { error: profileErr } = await admin.from("profiles").upsert({
-    id: created.user.id,
+    id: userId,
     email,
     first_name: body.first_name ?? null,
     last_name: body.last_name ?? null,
@@ -146,7 +179,7 @@ Deno.serve(async (req) => {
   // doesn't have email/phone/name columns
   if (profileErr && /column|schema cache/i.test(profileErr.message)) {
     const retry = await admin.from("profiles").upsert({
-      id: created.user.id,
+      id: userId,
       role: "admin",
       role_id: role.id,
     });
@@ -154,46 +187,12 @@ Deno.serve(async (req) => {
   }
   if (profileErr) {
     // roll back the orphaned auth user
-    await admin.auth.admin.deleteUser(created.user.id);
+    await admin.auth.admin.deleteUser(userId!);
     return json({ error: `Profile creation failed: ${profileErr.message}` }, 400);
   }
 
-  // ── 5. Email credentials (best effort) ──
-  let emailed = false;
-  const resendKey = Deno.env.get("RESEND_API_KEY");
-  if (resendKey) {
-    try {
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${resendKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: Deno.env.get("EMAIL_FROM") ?? "Weera Admin <onboarding@resend.dev>",
-          to: [email],
-          subject: "Your Weera admin account",
-          html: `
-            <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto">
-              <h2 style="color:#EA580C">Welcome to Weera Admin</h2>
-              <p>An administrator account has been created for you.</p>
-              <table style="border-collapse:collapse;width:100%;margin:16px 0">
-                <tr><td style="padding:8px;border:1px solid #E2E8F0"><b>Email</b></td><td style="padding:8px;border:1px solid #E2E8F0">${email}</td></tr>
-                <tr><td style="padding:8px;border:1px solid #E2E8F0"><b>Temporary password</b></td><td style="padding:8px;border:1px solid #E2E8F0"><code>${password}</code></td></tr>
-                <tr><td style="padding:8px;border:1px solid #E2E8F0"><b>Role</b></td><td style="padding:8px;border:1px solid #E2E8F0">${role.name}</td></tr>
-              </table>
-              <p>Please sign in and change your password immediately.</p>
-            </div>`,
-        }),
-      });
-      emailed = res.ok;
-    } catch {
-      emailed = false;
-    }
-  }
-
   return json({
-    user_id: created.user.id,
+    user_id: userId,
     email,
     password, // shown once in the UI so it can be copied / shared securely
     role: role.name,
