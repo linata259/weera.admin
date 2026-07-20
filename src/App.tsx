@@ -13,10 +13,8 @@ import { AuthGuard } from "./features/auth/components/AuthGuard";
 import SettingsPage from "./features/settings/Settingspage";
 
 // Each page is its own chunk — only downloaded when the user first visits that route
-const DashboardPage = lazy(() =>
-  import("./features/dashboard/Dashboard").then((m) => ({
-    default: m.DashboardPage,
-  })),
+const DashboardPage = lazy(
+  () => import("./features/dashboard/SuperAdminDashboard"),
 );
 const Users = lazy(() => import("./features/users/pages/Users"));
 const UserAnalytics = lazy(
@@ -37,6 +35,18 @@ const NotificationsPage = lazy(
   () => import("./features/notifications/pages/NotificationsPage"),
 );
 const ChatsPage = lazy(() => import("./features/chats/pages/ChatsPage"));
+const AdminUsersPage = lazy(
+  () => import("./features/rolesPermissions/pages/AdminUsersPage"),
+);
+const ManageRolesPage = lazy(
+  () => import("./features/rolesPermissions/pages/ManageRolesPage"),
+);
+const RoleFormPage = lazy(
+  () => import("./features/rolesPermissions/pages/RoleFormPage"),
+);
+const CreateAdminUserPage = lazy(
+  () => import("./features/rolesPermissions/pages/CreateAdminUserPage"),
+);
 
 function PageLoader() {
   return (
@@ -99,6 +109,11 @@ export default function App() {
             <Route path="/chats" element={<ChatsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
+            <Route path="/roles" element={<AdminUsersPage />} />
+            <Route path="/roles/manage" element={<ManageRolesPage />} />
+            <Route path="/roles/add" element={<RoleFormPage />} />
+            <Route path="/roles/:roleId/edit" element={<RoleFormPage />} />
+            <Route path="/roles/create-user" element={<CreateAdminUserPage />} />
           </Route>
         </Routes>
       </AuthGuard>

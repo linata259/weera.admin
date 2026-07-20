@@ -62,6 +62,16 @@ const NAV_FEATURES: NavGroup[] = [
     icon: "🔔",
   },
   {
+    id: "roles",
+    label: "Roles & Permissions",
+    path: "/roles",
+    icon: "🛡️",
+    children: [
+      { id: "roles-users", label: "Admin Users", path: "/roles" },
+      { id: "roles-manage", label: "Manage Roles", path: "/roles/manage" },
+    ],
+  },
+  {
     id: "settings",
     label: "Settings",
     path: "/settings",
