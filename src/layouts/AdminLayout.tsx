@@ -1,8 +1,9 @@
 import React, { useState, useCallback, useEffect, memo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Sidebar, { NavItem, NavGroup } from "../components/Sidebar";
 import { NavbarProvider } from "../hooks/Navbarcontext";
+import { usePermissions } from "../features/rolesPermissions/hooks/usePermissions";
 
 
 const NAV_FEATURES: NavGroup[] = [
@@ -79,6 +80,22 @@ const NAV_FEATURES: NavGroup[] = [
   },
 ];
 
+// ── Role-restricted navigation ────────────────────────────────
+// Finance only sees their dashboard, financials and the two analytics pages.
+const FINANCE_NAV: NavGroup[] = [
+  { id: "dashboard", label: "Dashboard", path: "/dashboard", icon: "⊞" },
+  { id: "financials", label: "Financials", path: "/financials", icon: "💰" },
+  { id: "users-analytics", label: "User Analytics", path: "/users/analytics", icon: "👥" },
+  { id: "jobs-analytics", label: "Job Analytics", path: "/jobs/analytics", icon: "💼" },
+];
+
+const FINANCE_ALLOWED_PATHS = [
+  "/dashboard",
+  "/financials",
+  "/users/analytics",
+  "/jobs/analytics",
+];
+
 export const AdminLayout: React.FC<React.PropsWithChildren<{}>> = memo(
   ({ children }) => {
     const [collapsed, setCollapsed] = useState(false);
@@ -86,6 +103,20 @@ export const AdminLayout: React.FC<React.PropsWithChildren<{}>> = memo(
     const [isMobile, setIsMobile] = useState(false);
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
     const navigate = useNavigate();
+    const location = useLocation();
+
+    const { loading: permsLoading, roleName } = usePermissions();
+    const isFinance = roleName === "Finance";
+    const navFeatures = isFinance ? FINANCE_NAV : NAV_FEATURES;
+
+    // hard redirect if a Finance user opens a URL outside their scope
+    useEffect(() => {
+      if (permsLoading || !isFinance) return;
+      const allowed = FINANCE_ALLOWED_PATHS.some(
+        (p) => location.pathname === p || location.pathname.startsWith(`${p}/`),
+      );
+      if (!allowed) navigate("/dashboard", { replace: true });
+    }, [permsLoading, isFinance, location.pathname, navigate]);
 
     useEffect(() => {
       const mq = window.matchMedia("(max-width: 768px)");
@@ -131,7 +162,7 @@ export const AdminLayout: React.FC<React.PropsWithChildren<{}>> = memo(
       <NavbarProvider>
         <div style={{ minHeight: "100vh", background: "#F9FBFC" }}>
           <Sidebar
-            features={NAV_FEATURES}
+            features={navFeatures}
             collapsed={collapsed}
             onToggle={handleToggleCollapse}
             onNavigate={handleNavigate}

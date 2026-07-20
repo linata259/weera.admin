@@ -14,7 +14,7 @@ import SettingsPage from "./features/settings/Settingspage";
 
 // Each page is its own chunk — only downloaded when the user first visits that route
 const DashboardPage = lazy(
-  () => import("./features/dashboard/SuperAdminDashboard"),
+  () => import("./features/dashboard/DashboardRouter"),
 );
 const Users = lazy(() => import("./features/users/pages/Users"));
 const UserAnalytics = lazy(
