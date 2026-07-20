@@ -1,0 +1,22 @@
+<!-- Paste into: Supabase Dashboard → Authentication → Email Templates → "Invite user"
+     Suggested subject line:  Your Weera {{ .Data.invited_role }} account -->
+
+<div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1E293B;">
+  <h2 style="color:#EA580C;margin:0 0 12px;">Welcome to Weera Admin</h2>
+
+  <p style="font-size:14px;line-height:1.6;margin:0 0 16px;">
+    Hi {{ .Data.first_name }},<br />
+    You have been invited to the Weera admin panel as
+    <strong style="color:#EA580C;">{{ .Data.invited_role }}</strong>.
+    Sign in with the credentials below.
+  </p>
+
+  <p style="font-size:14px;line-height:1.8;margin:0 0 16px;">
+    Email: <strong>{{ .Email }}</strong><br />
+    Password: <strong>{{ .Data.temp_password }}</strong>
+  </p>
+
+  <p style="font-size:12px;color:#64748B;line-height:1.5;margin:0;">
+    If you weren't expecting this invitation, you can ignore this email.
+  </p>
+</div>

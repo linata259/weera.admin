@@ -127,6 +127,9 @@ Deno.serve(async (req) => {
       last_name: body.last_name ?? "",
       phone: body.phone ?? "",
       invited_role: role.name,
+      // rendered into the invite email template as {{ .Data.temp_password }},
+      // then stripped from user metadata right after the email is sent
+      temp_password: password,
     },
   };
   // optional: where the invite link lands (must be in Auth → URL allow-list)
@@ -142,10 +145,12 @@ Deno.serve(async (req) => {
   if (invited?.user) {
     userId = invited.user.id;
     emailed = true;
-    // give the account a usable password right away (invite link also works)
+    // set the real password and remove it from metadata (the invite email
+    // has already been rendered and sent at this point)
     await admin.auth.admin.updateUserById(userId, {
       password,
       email_confirm: true,
+      user_metadata: { temp_password: null },
     });
   } else {
     // invite failed (e.g. email sending disabled) → fall back to direct
