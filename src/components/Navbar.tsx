@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from 'services/supabaseClient';
 import { useNavbar } from '../hooks/Navbarcontext';
 import { NotificationBell } from '../features/notifications/components/NotificationBell';
+import { usePermissions } from '../features/rolesPermissions/hooks/usePermissions';
 
 const PRIMARY = '#EA580C';
 const NAVY    = '#0F172A';
@@ -39,6 +40,7 @@ const Navbar: React.FC<NavbarProps> = ({
   const location  = useLocation();
   const navigate  = useNavigate();
   const { breadcrumb } = useNavbar();
+  const { roleName } = usePermissions();
 
   const [open,    setOpen]    = useState(false);
   const [profile, setProfile] = useState<AdminProfile | null>(null);
@@ -120,10 +122,14 @@ const Navbar: React.FC<NavbarProps> = ({
 
         {breadcrumb ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 16, fontWeight: 500, color: SLATE }}>{breadcrumb.parent}</span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
+            {breadcrumb.parent && (
+              <>
+                <span style={{ fontSize: 16, fontWeight: 500, color: SLATE }}>{breadcrumb.parent}</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </>
+            )}
             <span style={{ fontSize: 16, fontWeight: 700, color: NAVY }}>{breadcrumb.current}</span>
           </div>
         ) : (
@@ -218,7 +224,7 @@ const Navbar: React.FC<NavbarProps> = ({
                   letterSpacing: '0.05em', textTransform: 'uppercase',
                 }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: PRIMARY, display: 'inline-block' }} />
-                  Administrator
+                  {roleName ?? 'Administrator'}
                 </span>
               </div>
             </div>

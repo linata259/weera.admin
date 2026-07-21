@@ -13,6 +13,7 @@ import { useUserGrowthChart } from "./hooks/useUserGrowthChart";
 import { UserGrowthChart } from "./components/UserGrowthChart";
 import { useRecentActivity } from "./hooks/useRecentActivity";
 import { ActivityFeed } from "./components/ActivityFeed";
+import { useNavbar } from "../../hooks/Navbarcontext";
 
 const ORANGE = "#EA580C";
 const TEXT_DARK = "#0F172A";
@@ -122,6 +123,13 @@ export function SuperAdminDashboardPage() {
 
   const { data: growthData, isLoading: growthLoading } = useUserGrowthChart();
   const { activity, isLoading: activityLoading } = useRecentActivity(6);
+  const { setBreadcrumb } = useNavbar();
+
+  // page title lives in the navbar instead of on the page
+  useEffect(() => {
+    setBreadcrumb({ parent: "", current: "Super Admin Dashboard" });
+    return () => setBreadcrumb(null);
+  }, [setBreadcrumb]);
 
   useEffect(() => {
     fetchSuperAdminData()
@@ -139,7 +147,7 @@ export function SuperAdminDashboardPage() {
     <div
       style={{
         width: "100%", display: "flex", flexDirection: "column", gap: 20,
-        background: "#F8FAFC", padding: 24,
+        background: "#F8FAFC", padding: 0,
         fontFamily: "'Inter','Helvetica Neue',sans-serif",
       }}
     >

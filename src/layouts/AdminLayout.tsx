@@ -81,20 +81,62 @@ const NAV_FEATURES: NavGroup[] = [
 ];
 
 // ── Role-restricted navigation ────────────────────────────────
-// Finance only sees their dashboard, financials and the two analytics pages.
-const FINANCE_NAV: NavGroup[] = [
-  { id: "dashboard", label: "Dashboard", path: "/dashboard", icon: "⊞" },
-  { id: "financials", label: "Financials", path: "/financials", icon: "💰" },
-  { id: "users-analytics", label: "User Analytics", path: "/users/analytics", icon: "👥" },
-  { id: "jobs-analytics", label: "Job Analytics", path: "/jobs/analytics", icon: "💼" },
-];
-
-const FINANCE_ALLOWED_PATHS = [
-  "/dashboard",
-  "/financials",
-  "/users/analytics",
-  "/jobs/analytics",
-];
+// Roles listed here get a reduced sidebar and are redirected away from
+// any path outside their allow-list. Roles not listed (Super Admin,
+// Admin, legacy admins) see the full NAV_FEATURES.
+const ROLE_ACCESS: Record<string, { nav: NavGroup[]; allowed: string[] }> = {
+  Finance: {
+    nav: [
+      { id: "dashboard", label: "Dashboard", path: "/dashboard", icon: "⊞" },
+      { id: "financials", label: "Financials", path: "/financials", icon: "💰" },
+      { id: "users-analytics", label: "User Analytics", path: "/users/analytics", icon: "👥" },
+      { id: "jobs-analytics", label: "Job Analytics", path: "/jobs/analytics", icon: "💼" },
+    ],
+    allowed: ["/dashboard", "/financials", "/users/analytics", "/jobs/analytics"],
+  },
+  Marketing: {
+    // dashboard only for now — more modules will be added later
+    nav: [
+      { id: "dashboard", label: "Dashboard", path: "/dashboard", icon: "⊞" },
+    ],
+    allowed: ["/dashboard"],
+  },
+  "Customer Care": {
+    nav: [
+      { id: "dashboard", label: "Dashboard", path: "/dashboard", icon: "⊞" },
+      {
+        id: "users",
+        label: "User Management",
+        path: "/users",
+        icon: "👥",
+        children: [
+          { id: "users-analytics", label: "Analytics", path: "/users/analytics" },
+          { id: "users", label: "Users", path: "/users" },
+        ],
+      },
+      {
+        id: "jobs",
+        label: "Job Management",
+        path: "/jobs",
+        icon: "💼",
+        children: [
+          { id: "jobs-analytics", label: "Analytics", path: "/jobs/analytics" },
+          { id: "jobs", label: "Jobs", path: "/jobs" },
+          { id: "reports", label: "Reports", path: "/jobs/reports" },
+        ],
+      },
+      { id: "help-support", label: "Help & Support", path: "/help-support", icon: "?" },
+      { id: "chats", label: "Chat Moderation", path: "/chats", icon: "💬" },
+      { id: "notifications", label: "Notifications", path: "/notifications", icon: "🔔" },
+      { id: "skills", label: "Skills", path: "/skills", icon: "🎯" },
+      { id: "locations", label: "Locations", path: "/locations", icon: "📍" },
+    ],
+    allowed: [
+      "/dashboard", "/users", "/jobs", "/help-support", "/chats",
+      "/notifications", "/skills", "/locations",
+    ],
+  },
+};
 
 export const AdminLayout: React.FC<React.PropsWithChildren<{}>> = memo(
   ({ children }) => {
@@ -106,17 +148,17 @@ export const AdminLayout: React.FC<React.PropsWithChildren<{}>> = memo(
     const location = useLocation();
 
     const { loading: permsLoading, roleName } = usePermissions();
-    const isFinance = roleName === "Finance";
-    const navFeatures = isFinance ? FINANCE_NAV : NAV_FEATURES;
+    const roleAccess = roleName ? ROLE_ACCESS[roleName] : undefined;
+    const navFeatures = roleAccess ? roleAccess.nav : NAV_FEATURES;
 
-    // hard redirect if a Finance user opens a URL outside their scope
+    // hard redirect if a restricted role opens a URL outside its scope
     useEffect(() => {
-      if (permsLoading || !isFinance) return;
-      const allowed = FINANCE_ALLOWED_PATHS.some(
+      if (permsLoading || !roleAccess) return;
+      const allowed = roleAccess.allowed.some(
         (p) => location.pathname === p || location.pathname.startsWith(`${p}/`),
       );
       if (!allowed) navigate("/dashboard", { replace: true });
-    }, [permsLoading, isFinance, location.pathname, navigate]);
+    }, [permsLoading, roleAccess, location.pathname, navigate]);
 
     useEffect(() => {
       const mq = window.matchMedia("(max-width: 768px)");
@@ -155,6 +197,24 @@ export const AdminLayout: React.FC<React.PropsWithChildren<{}>> = memo(
     const handleToggleCollapse = useCallback(() => setCollapsed((c) => !c), []);
     const handleMobileClose = useCallback(() => setMobileSidebarOpen(false), []);
     const handleMenuClick = useCallback(() => setMobileSidebarOpen(true), []);
+
+    // Don't render ANY page or navigation until the role is resolved —
+    // prevents the Super Admin dashboard/sidebar flashing for other roles.
+    if (permsLoading) {
+      return (
+        <div style={{
+          minHeight: "100vh", display: "flex", alignItems: "center",
+          justifyContent: "center", background: "#F9FBFC",
+        }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: "50%",
+            border: "3px solid #E2E8F0", borderTopColor: "#EA580C",
+            animation: "weera-perm-spin 0.7s linear infinite",
+          }} />
+          <style>{`@keyframes weera-perm-spin { to { transform: rotate(360deg) } }`}</style>
+        </div>
+      );
+    }
 
     return (
       // NavbarProvider wraps everything so any page can push a breadcrumb

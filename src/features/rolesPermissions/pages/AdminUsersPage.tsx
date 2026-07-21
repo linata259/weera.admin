@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchAdminUsers, fetchRoles, updateAdminUserRole } from "../api/rolesApi";
+import {
+  deleteAdminUser, fetchAdminUsers, fetchRoles, resetAdminPassword, updateAdminUserRole,
+} from "../api/rolesApi";
 import { AdminUser, Role } from "../types";
 import {
   card, th, td, input, MUTED, TEXT, BORDER,
@@ -16,6 +18,8 @@ const AdminUsersPage: React.FC = () => {
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [resetResult, setResetResult] = useState<{ email: string; password: string; emailed: boolean } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -46,6 +50,43 @@ const AdminUsersPage: React.FC = () => {
         .some((v) => String(v).toLowerCase().includes(q)),
     );
   }, [users, search]);
+
+  const handleDelete = async (u: AdminUser) => {
+    const name = [u.first_name, u.last_name].filter(Boolean).join(" ") || u.email || "this user";
+    if (!window.confirm(`Delete ${name}'s admin account? This can't be undone.`)) return;
+    setSavingId(u.id);
+    try {
+      await deleteAdminUser(u.id);
+      setUsers((prev) => prev.filter((x) => x.id !== u.id));
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to delete user");
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const handleResetPassword = async (u: AdminUser) => {
+    const name = [u.first_name, u.last_name].filter(Boolean).join(" ") || u.email || "this user";
+    if (!window.confirm(`Generate a new password for ${name}? Their current password will stop working.`)) return;
+    setSavingId(u.id);
+    try {
+      const { password, emailed } = await resetAdminPassword(u.id);
+      setResetResult({ email: u.email ?? name, password, emailed });
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to reset password");
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const copyReset = async () => {
+    if (!resetResult) return;
+    await navigator.clipboard.writeText(
+      `Email: ${resetResult.email}\nNew password: ${resetResult.password}`,
+    );
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const handleRoleChange = async (userId: string, roleId: string) => {
     setSavingId(userId);
@@ -86,6 +127,27 @@ const AdminUsersPage: React.FC = () => {
       </div>
 
       <ErrorNote message={error} />
+
+      {resetResult && (
+        <div style={{
+          ...card, marginBottom: 16, display: "flex", flexWrap: "wrap",
+          alignItems: "center", gap: 12, borderColor: "#FDBA8C", background: "#FFF7ED",
+        }}>
+          <div style={{ marginRight: "auto", fontSize: 13.5, color: TEXT }}>
+            New password for <b>{resetResult.email}</b>:{" "}
+            <code style={{ background: "#fff", padding: "3px 8px", borderRadius: 6, border: `1px solid ${BORDER}` }}>
+              {resetResult.password}
+            </code>
+            <div style={{ fontSize: 12, color: MUTED, marginTop: 4 }}>
+              {resetResult.emailed
+                ? "Also emailed to the user. Shown here only once."
+                : "Email couldn't be sent — copy it now and share it securely. Shown only once."}
+            </div>
+          </div>
+          <PrimaryButton onClick={copyReset}>{copied ? "Copied!" : "Copy"}</PrimaryButton>
+          <GhostButton onClick={() => setResetResult(null)}>Dismiss</GhostButton>
+        </div>
+      )}
 
       <div style={{ ...card, padding: 0, overflow: "hidden" }}>
         <div style={{ padding: 16, borderBottom: `1px solid ${BORDER}` }}>
@@ -163,16 +225,41 @@ const AdminUsersPage: React.FC = () => {
                         )}
                       </td>
                       <td style={td}>
-                        <button
-                          onClick={() => setEditingId(editingId === u.id ? null : u.id)}
-                          style={{
-                            background: "none", border: `1px solid ${BORDER}`,
-                            borderRadius: 6, padding: "5px 10px", fontSize: 12.5,
-                            color: "#475569", cursor: "pointer",
-                          }}
-                        >
-                          {editingId === u.id ? "Cancel" : "Change Role"}
-                        </button>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          <button
+                            onClick={() => setEditingId(editingId === u.id ? null : u.id)}
+                            style={{
+                              background: "none", border: `1px solid ${BORDER}`,
+                              borderRadius: 6, padding: "5px 10px", fontSize: 12.5,
+                              color: "#475569", cursor: "pointer",
+                            }}
+                          >
+                            {editingId === u.id ? "Cancel" : "Change Role"}
+                          </button>
+                          <button
+                            onClick={() => handleResetPassword(u)}
+                            disabled={savingId === u.id}
+                            title="Generate a new password (shown once)"
+                            style={{
+                              background: "none", border: `1px solid ${BORDER}`,
+                              borderRadius: 6, padding: "5px 10px", fontSize: 12.5,
+                              color: "#475569", cursor: "pointer",
+                            }}
+                          >
+                            Reset Password
+                          </button>
+                          <button
+                            onClick={() => handleDelete(u)}
+                            disabled={savingId === u.id}
+                            style={{
+                              background: "none", border: "1px solid #FECACA",
+                              borderRadius: 6, padding: "5px 10px", fontSize: 12.5,
+                              color: "#DC2626", cursor: "pointer",
+                            }}
+                          >
+                            {savingId === u.id ? "…" : "Delete"}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

@@ -85,6 +85,27 @@ export async function fetchFinancialSummary(): Promise<FinancialSummary> {
 
 // ─── Monthly revenue ──────────────────────────────────────────────────────────
 
+// Raw completed transactions for period-bucketed charting (day/week/month)
+export interface RevenueEvent {
+  ts: string;
+  type: string;
+  amount: number;
+}
+
+export async function fetchRevenueEvents(): Promise<RevenueEvent[]> {
+  const { data } = await supabase
+    .from("wallet_transactions")
+    .select("amount,type,status,created_at")
+    .in("type", ["deposit", "escrow_lock", "milestone_payment", "escrow_release", "withdrawal"])
+    .eq("status", "completed")
+    .order("created_at", { ascending: true });
+  return ((data ?? []) as any[]).map((r) => ({
+    ts: String(r.created_at),
+    type: String(r.type),
+    amount: pf(r.amount),
+  }));
+}
+
 export async function fetchMonthlyRevenue(): Promise<MonthlyRevenue[]> {
   const { data } = await supabase
     .from("wallet_transactions")
@@ -316,10 +337,12 @@ export interface CommissionEvent {
 }
 
 export async function fetchCommissionEvents(): Promise<CommissionEvent[]> {
+  // basis = money entering the platform (escrow_lock is the real flow here);
+  // escrow_release is excluded to avoid double-counting lock→release pairs
   const { data } = await supabase
     .from("wallet_transactions")
     .select("amount,type,created_at")
-    .in("type", ["platform_fee", "deposit", "escrow_release", "milestone_payment"])
+    .in("type", ["platform_fee", "deposit", "escrow_lock", "milestone_payment"])
     .eq("status", "completed")
     .order("created_at", { ascending: true });
 
@@ -338,7 +361,7 @@ async function deriveMonthlyCommission(): Promise<MonthlyCommission[]> {
   const { data } = await supabase
     .from("wallet_transactions")
     .select("amount,type,created_at")
-    .in("type", ["platform_fee", "deposit", "escrow_release", "milestone_payment"])
+    .in("type", ["platform_fee", "deposit", "escrow_lock", "milestone_payment"])
     .eq("status", "completed")
     .order("created_at", { ascending: true });
 
@@ -369,66 +392,52 @@ async function deriveMonthlyCommission(): Promise<MonthlyCommission[]> {
 }
 
 export async function fetchPendingRefunds(): Promise<RefundRequest[]> {
-  return [
-    {
-      id: "1",
-      reference: "REF-001",
-      clientName: "James Mwangi",
-      clientAvatar: null,
-      freelancerName: "Aisha Kamau",
-      jobTitle: "Logo Design for Nairobi Startup",
-      amount: 8500,
-      reason: "work_rejected",
-      requestedAt: "2026-06-10T08:30:00Z",
-      status: "pending",
-    },
-    {
-      id: "2",
-      reference: "REF-002",
-      clientName: "Fatuma Hassan",
-      clientAvatar: null,
-      freelancerName: "Brian Otieno",
-      jobTitle: "WordPress Site Build",
-      amount: 22000,
-      reason: "cancelled",
-      requestedAt: "2026-06-12T11:15:00Z",
-      status: "pending",
-    },
-    {
-      id: "3",
-      reference: "REF-003",
-      clientName: "Samuel Kipchoge",
-      clientAvatar: null,
-      freelancerName: "Grace Wanjiku",
-      jobTitle: "Social Media Content Pack",
-      amount: 5000,
-      reason: "dispute",
-      requestedAt: "2026-06-14T09:00:00Z",
-      status: "pending",
-    },
-    {
-      id: "4",
-      reference: "REF-004",
-      clientName: "Lilian Odhiambo",
-      clientAvatar: null,
-      freelancerName: "Kevin Mutua",
-      jobTitle: "Mobile App UI Mockups",
-      amount: 15000,
-      reason: "work_rejected",
-      requestedAt: "2026-06-15T14:45:00Z",
-      status: "pending",
-    },
-    {
-      id: "5",
-      reference: "REF-005",
-      clientName: "David Njoroge",
-      clientAvatar: null,
-      freelancerName: "Mercy Achieng",
-      jobTitle: "Copywriting — Product Descriptions",
-      amount: 3200,
-      reason: "other",
-      requestedAt: "2026-06-17T07:20:00Z",
-      status: "pending",
-    },
-  ];
+  // real data: escrow transactions flagged for refund/dispute
+  const { data, error } = await supabase
+    .from("escrow_transactions")
+    .select("id, client_id, bidder_id, job_id, amount, status, created_at, notes")
+    .in("status", ["refund_requested", "pending_refund", "dispute"])
+    .order("created_at", { ascending: false });
+  if (error) {
+    console.warn("Supabase error fetching pending refunds:", error.message);
+    return [];
+  }
+  const rows = (data ?? []) as any[];
+  if (!rows.length) return [];
+
+  const userIds = Array.from(
+    new Set(rows.flatMap((r) => [r.client_id, r.bidder_id]).filter(Boolean)),
+  ) as string[];
+  const jobIds = Array.from(new Set(rows.map((r) => r.job_id).filter(Boolean)));
+
+  const [profileMap, jobsRes] = await Promise.all([
+    buildProfileMap(userIds),
+    jobIds.length
+      ? supabase.from("jobs").select("id, title").in("id", jobIds)
+      : Promise.resolve({ data: [] } as any),
+  ]);
+  const jobTitles = new Map(
+    ((jobsRes.data ?? []) as any[]).map((j) => [j.id, j.title as string]),
+  );
+
+  const reasonFor = (status: string, notes: string | null): RefundRequest["reason"] => {
+    if (status === "dispute") return "dispute";
+    const n = (notes ?? "").toLowerCase();
+    if (n.includes("cancel")) return "cancelled";
+    if (n.includes("reject")) return "work_rejected";
+    return "other";
+  };
+
+  return rows.map((r) => ({
+    id: String(r.id),
+    reference: `REF-${String(r.id).replace(/-/g, "").slice(0, 6).toUpperCase()}`,
+    clientName: profileMap.get(r.client_id)?.name ?? "\u2014",
+    clientAvatar: profileMap.get(r.client_id)?.avatar ?? null,
+    freelancerName: profileMap.get(r.bidder_id)?.name ?? "\u2014",
+    jobTitle: jobTitles.get(r.job_id) ?? "\u2014",
+    amount: pf(r.amount),
+    reason: reasonFor(String(r.status), r.notes ?? null),
+    requestedAt: String(r.created_at),
+    status: "pending" as const,
+  }));
 }

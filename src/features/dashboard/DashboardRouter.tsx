@@ -2,6 +2,8 @@ import React from "react";
 import { usePermissions } from "../rolesPermissions/hooks/usePermissions";
 import SuperAdminDashboardPage from "./SuperAdminDashboard";
 import FinanceDashboardPage from "./FinanceDashboard";
+import MarketingDashboardPage from "./MarketingDashboard";
+import CustomerCareDashboardPage from "./CustomerCareDashboard";
 
 /**
  * Renders the dashboard that matches the signed-in admin's role.
@@ -24,6 +26,8 @@ const DashboardRouter: React.FC = () => {
   }
 
   if (roleName === "Finance") return <FinanceDashboardPage />;
+  if (roleName === "Marketing") return <MarketingDashboardPage />;
+  if (roleName === "Customer Care") return <CustomerCareDashboardPage />;
   return <SuperAdminDashboardPage />;
 };
 

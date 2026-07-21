@@ -6,6 +6,8 @@ import {
   fetchPendingRefunds,          // replaces fetchPendingWithdrawals
   fetchCommissionEvents,
   CommissionEvent,
+  fetchRevenueEvents,
+  RevenueEvent,
 } from "../api/financialService";
 import { FinancialSummary, MonthlyCommission, MonthlyRevenue, RefundRequest } from "../types";
 import { exportCsv } from "../utils/exportCsv";
@@ -110,12 +112,65 @@ function areaPath(pts: { x: number; y: number }[], baseY: number): string {
 type Period = "hour" | "day" | "week" | "month";
 
 /* ─── DualLineChart ─────────────────────────────────────────── */
+
+// money-in vs payouts, bucketed at the chosen granularity; shows the most
+// recent N buckets that contain data so no period ever renders empty
+const REV_IN_TYPES = ["deposit", "escrow_lock", "milestone_payment"];
+
+function bucketRevenueDual(
+  events: RevenueEvent[],
+  period: Period,
+): MonthlyRevenue[] {
+  const KEEP: Record<Period, number> = { hour: 24, day: 14, week: 8, month: 12 };
+  const buckets = new Map<string, { label: string; sort: number; revenue: number; escrow: number }>();
+
+  for (const e of events) {
+    const d = new Date(e.ts);
+    let key: string, label: string, sort: number;
+    if (period === "day") {
+      key = d.toISOString().slice(0, 10);
+      label = d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+      sort = new Date(key).getTime();
+    } else if (period === "week") {
+      const ws = startOfWeek(d);
+      key = ws.toISOString().slice(0, 10);
+      label = ws.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+      sort = ws.getTime();
+    } else {
+      key = `${d.getFullYear()}-${d.getMonth()}`;
+      label = d.toLocaleDateString("en-GB", { month: "short", year: "2-digit" });
+      sort = new Date(d.getFullYear(), d.getMonth(), 1).getTime();
+    }
+    const b = buckets.get(key) ?? { label, sort, revenue: 0, escrow: 0 };
+    if (REV_IN_TYPES.includes(e.type)) b.revenue += e.amount;
+    else b.escrow += e.amount; // escrow_release + withdrawal = payouts
+    buckets.set(key, b);
+  }
+
+  return Array.from(buckets.values())
+    .sort((a, b) => a.sort - b.sort)
+    .slice(-KEEP[period])
+    .map((b) => ({
+      month: b.label,
+      revenue: Math.round(b.revenue * 100) / 100,
+      escrow: Math.round(b.escrow * 100) / 100,
+    }));
+}
+
 export const DualLineChart: React.FC<{ data: MonthlyRevenue[]; title: string }> = ({ data, title }) => {
   const [period, setPeriod] = useState<Period>("month");
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const [events, setEvents] = useState<RevenueEvent[] | null>(null);
   const isMobile = useIsMobile();
 
-  const sliced = period === "day" ? data.slice(-1) : period === "week" ? data.slice(-4) : data;
+  useEffect(() => {
+    fetchRevenueEvents().then(setEvents).catch(() => setEvents([]));
+  }, []);
+
+  // prefer raw events (real per-period bucketing); fall back to monthly prop
+  const sliced = events && events.length
+    ? bucketRevenueDual(events, period)
+    : data;
 
   if (!sliced.length)
     return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 220, color: "#CBD5E1", fontSize: 13 }}>No data</div>;
@@ -156,7 +211,7 @@ export const DualLineChart: React.FC<{ data: MonthlyRevenue[]; title: string }> 
         <span style={{ fontSize: 15, fontWeight: 700, color: NAVY }}>{title}</span>
         <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "flex-start" : "center", gap: 12 }}>
           <div style={{ display: "flex", gap: 14 }}>
-            {[{ color: ORANGE, label: "Revenue" }, { color: NAVY, label: "Escrow" }].map(({ color, label }) => (
+            {[{ color: ORANGE, label: "Revenue" }, { color: NAVY, label: "Payouts" }].map(({ color, label }) => (
               <div key={label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <div style={{ width: 20, height: 2.5, borderRadius: 2, background: color }} />
                 <span style={{ fontSize: 12, color: SLATE }}>{label}</span>
@@ -199,7 +254,7 @@ export const DualLineChart: React.FC<{ data: MonthlyRevenue[]; title: string }> 
             <g key={i}>
               <line x1={xOf(i)} y1={baseY} x2={xOf(i)} y2={baseY + 5} stroke="#CBD5E1" strokeWidth="0.8" />
               <text x={xOf(i)} y={baseY + 18} textAnchor="middle" fontSize="9.5" fill="#94A3B8" fontWeight="500" fontFamily="'Inter','Helvetica Neue',sans-serif">
-                {d.month.slice(0, 3).toUpperCase()}
+                {d.month.toUpperCase()}
               </text>
             </g>
           ))}
@@ -218,7 +273,7 @@ export const DualLineChart: React.FC<{ data: MonthlyRevenue[]; title: string }> 
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#94A3B8", flexShrink: 0 }} />
-              <span style={{ color: "#CBD5E1" }}>Escrow</span>
+              <span style={{ color: "#CBD5E1" }}>Payouts</span>
               <span style={{ marginLeft: "auto", fontWeight: 700 }}>{tooltip.esc >= 1000 ? `${(tooltip.esc / 1000).toFixed(1)}K` : tooltip.esc}</span>
             </div>
           </div>
@@ -256,14 +311,11 @@ function startOfWeek(d: Date): Date {
 }
 
 // Bucket timestamped commission events into the selected granularity.
+// Shows the most recent N buckets that contain data (rather than a hard
+// time window), so every granularity has something to display even when
+// activity is sparse or old.
 function bucketCommission(events: CommissionEvent[], period: Period): ChartPoint[] {
-  const now = Date.now();
-  const WINDOW: Record<Period, number> = {
-    hour: 24 * 3600e3,       // last 24 hours
-    day: 14 * 86400e3,       // last 14 days
-    week: 8 * 7 * 86400e3,   // last 8 weeks
-    month: 366 * 86400e3,    // last ~12 months
-  };
+  const KEEP: Record<Period, number> = { hour: 24, day: 14, week: 8, month: 12 };
   const buckets = new Map<string, { label: string; sort: number; total: number }>();
   const push = (key: string, label: string, sort: number, amt: number) => {
     const b = buckets.get(key);
@@ -274,7 +326,6 @@ function bucketCommission(events: CommissionEvent[], period: Period): ChartPoint
   for (const e of events) {
     const d = new Date(e.ts);
     const t = d.getTime();
-    if (now - t > WINDOW[period]) continue;
     if (period === "hour") {
       push(`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}-${d.getHours()}`,
         `${String(d.getHours()).padStart(2, "0")}:00`, t, e.amount);
@@ -294,6 +345,7 @@ function bucketCommission(events: CommissionEvent[], period: Period): ChartPoint
 
   return Array.from(buckets.values())
     .sort((a, b) => a.sort - b.sort)
+    .slice(-KEEP[period]) // most recent N buckets with data
     .map((b) => ({ label: b.label, commission: Math.round(b.total) }));
 }
 
@@ -564,8 +616,8 @@ export const FinancialDashboard: React.FC = () => {
         />
         {/* ── CHANGED: was Pending Withdrawals, now Pending Refunds ── */}
         <StatCard accent={RED} label="Pending Refunds"
-          value={String(summary?.pendingRefundsCount ?? 0)}
-          sub={`KES ${fmtK(summary?.pendingRefundsAmount ?? 0)} total`}
+          value={String(refunds.length)}
+          sub={`KES ${fmtK(refunds.reduce((s, r) => s + r.amount, 0))} total`}
           icon={
             <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
               <path d="M2 8a6 6 0 1 0 6-6" stroke={RED} strokeWidth="1.4" strokeLinecap="round" />

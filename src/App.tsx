@@ -10,6 +10,7 @@ import {
 import AdminLayout from "./layouts/AdminLayout";
 import { LoginPage } from "./features/auth/components/LoginPage";
 import { AuthGuard } from "./features/auth/components/AuthGuard";
+import { PermissionsProvider } from "./features/rolesPermissions/PermissionsContext";
 import SettingsPage from "./features/settings/Settingspage";
 
 // Each page is its own chunk — only downloaded when the user first visits that route
@@ -90,6 +91,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthGuard>
+        <PermissionsProvider>
         <Routes>
           <Route path="/login" element={<LoginPage onLogin={() => {}} />} />
 
@@ -116,6 +118,7 @@ export default function App() {
             <Route path="/roles/create-user" element={<CreateAdminUserPage />} />
           </Route>
         </Routes>
+        </PermissionsProvider>
       </AuthGuard>
     </BrowserRouter>
   );

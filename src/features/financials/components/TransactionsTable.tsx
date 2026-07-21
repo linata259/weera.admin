@@ -29,7 +29,9 @@ const stS = (s: string) => ({
   failed:    { color: '#DC2626', bg: '#FEE2E2' },
 }[s] ?? { color: SLATE, bg: BG });
 const fmt        = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
-const isCredit   = (t: string)   => ['deposit', 'escrow_release', 'escrow_refund', 'milestone_payment'].includes(t);
+// money coming INTO the platform is a credit — escrow_lock (client funds
+// locked) and platform_fee count as money in; withdrawals/refunds are debits
+const isCredit   = (t: string)   => ['deposit', 'escrow_lock', 'escrow_release', 'milestone_payment', 'platform_fee'].includes(t);
 
 /* ── shared sub-components ──────────────────────────────────── */
 const ExBtn: React.FC<{ label: string; onClick: () => void }> = ({ label, onClick }) => (

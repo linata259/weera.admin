@@ -11,6 +11,7 @@ import {
   fetchFinanceDashboardData, FinanceDashboardData, TransactionRow,
 } from "./services/financeDashboardService";
 import { KpiTrend } from "./services/superAdminService";
+import { useNavbar } from "../../hooks/Navbarcontext";
 
 const ORANGE = "#EA580C";
 const TEXT_DARK = "#0F172A";
@@ -144,6 +145,13 @@ export function FinanceDashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [statusTab, setStatusTab] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const { setBreadcrumb } = useNavbar();
+
+  // page title lives in the navbar instead of on the page
+  useEffect(() => {
+    setBreadcrumb({ parent: "", current: "Finance Dashboard" });
+    return () => setBreadcrumb(null);
+  }, [setBreadcrumb]);
 
   useEffect(() => {
     fetchFinanceDashboardData()
@@ -171,29 +179,9 @@ export function FinanceDashboardPage() {
   return (
     <div style={{
       width: "100%", display: "flex", flexDirection: "column", gap: 20,
-      background: "#F8FAFC", padding: 24,
+      background: "#F8FAFC", padding: 0,
       fontFamily: "'Inter','Helvetica Neue',sans-serif",
     }}>
-      {/* header */}
-      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-        <div style={{ marginRight: "auto" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <h1 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: TEXT_DARK }}>
-              Finance Dashboard
-            </h1>
-            <span style={{
-              fontSize: 11, fontWeight: 700, color: ORANGE, background: "#FFF4EE",
-              border: "1px solid #FDBA8C", borderRadius: 999, padding: "3px 10px",
-            }}>
-              Finance Team
-            </span>
-          </div>
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: MUTED }}>
-            Revenue, payments &amp; financial health
-          </p>
-        </div>
-      </div>
-
       {error && (
         <div style={{
           borderRadius: 8, border: "1px solid #FECACA", background: "#FEF2F2",

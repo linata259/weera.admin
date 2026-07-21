@@ -118,7 +118,49 @@ export async function deleteRole(roleId: string): Promise<void> {
 
 /* ── Admin users ───────────────────────────────────────────── */
 
+async function adminUsersAction<T>(body: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke("admin-users", { body });
+  if (error) {
+    let message = error.message;
+    try {
+      const ctx = (error as any).context;
+      if (ctx && typeof ctx.json === "function") {
+        const b = await ctx.json();
+        if (b?.error) message = b.error;
+      }
+    } catch { /* keep original message */ }
+    throw new Error(message);
+  }
+  if ((data as any)?.error) throw new Error((data as any).error);
+  return data as T;
+}
+
 export async function fetchAdminUsers(): Promise<AdminUser[]> {
+  // preferred: edge function — merges email/phone from auth.users,
+  // which the browser can't read directly
+  try {
+    const res = await adminUsersAction<{ users: AdminUser[] }>({ action: "list" });
+    return res.users;
+  } catch {
+    // fall back to the profiles-only query (e.g. function not deployed yet)
+    return fetchAdminUsersFromProfiles();
+  }
+}
+
+export async function deleteAdminUser(userId: string): Promise<void> {
+  await adminUsersAction<{ success: boolean }>({ action: "delete", user_id: userId });
+}
+
+export async function resetAdminPassword(
+  userId: string,
+): Promise<{ password: string; emailed: boolean }> {
+  return adminUsersAction<{ password: string; emailed: boolean }>({
+    action: "reset_password",
+    user_id: userId,
+  });
+}
+
+async function fetchAdminUsersFromProfiles(): Promise<AdminUser[]> {
   // select("*") + a separate roles lookup: avoids 400s from missing
   // profile columns or a not-yet-cached profiles→roles relationship
   const [profilesRes, rolesRes] = await Promise.all([
@@ -153,11 +195,30 @@ export async function updateAdminUserRole(
   userId: string,
   roleId: string,
 ): Promise<void> {
-  const { error } = await supabase
+  // via edge function (service role) — client-side updates to other users'
+  // profiles are silently blocked by RLS (0 rows updated, no error)
+  try {
+    await adminUsersAction<{ success: boolean }>({
+      action: "set_role",
+      user_id: userId,
+      role_id: roleId,
+    });
+    return;
+  } catch (e: any) {
+    // fall through only if the function isn't deployed yet
+    if (!/not found|Failed to send/i.test(e?.message ?? "")) throw e;
+  }
+  const { data, error } = await supabase
     .from("profiles")
     .update({ role_id: roleId })
-    .eq("id", userId);
+    .eq("id", userId)
+    .select("id");
   if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error(
+      "Role not saved — blocked by database permissions. Deploy the admin-users function: npx supabase functions deploy admin-users --no-verify-jwt",
+    );
+  }
 }
 
 export async function createAdminUser(
