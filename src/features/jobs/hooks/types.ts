@@ -17,6 +17,15 @@ export interface JobReport {
   reporter_avatar: string | null;
 }
 
+export interface JobReportReply {
+  id: string;
+  report_id: string;
+  sender_id: string | null;
+  sender_role: 'user' | 'admin';
+  message: string;
+  created_at: string;
+}
+
 export interface MessageReport {
   id: string;
   message_id: string;

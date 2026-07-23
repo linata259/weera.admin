@@ -1,7 +1,8 @@
 /* ─── src/features/reports/components/DetailDrawer.tsx ──────── */
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { supabase } from 'services/supabaseClient';
 import { Avatar } from '../../shared/Avatar';
-import { BLUE, BORDER, capitalize, fmt, fmtTime, GREEN, JobReport, MessageReport, NAVY,SLATE, stS, Tab } from '../hooks/types';
+import { BLUE, BORDER, capitalize, fmt, fmtTime, GREEN, JobReport, JobReportReply, MessageReport, NAVY, ORANGE, SLATE, stS, Tab } from '../hooks/types';
 
 interface Props {
   report: JobReport | MessageReport | null;
@@ -15,6 +16,121 @@ const Row: React.FC<{ label: string; value: React.ReactNode; multiline?: boolean
     <div style={{ fontSize: 14, color: NAVY, lineHeight: multiline ? 1.7 : 1.4 }}>{value}</div>
   </div>
 );
+
+/* ── reply thread (job reports only) ─────────────────────────── */
+const ReplyThread: React.FC<{ reportId: string }> = ({ reportId }) => {
+  const [replies, setReplies] = useState<JobReportReply[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [draft, setDraft]     = useState('');
+  const [sending, setSending] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('job_report_replies')
+      .select('*')
+      .eq('report_id', reportId)
+      .order('created_at', { ascending: true });
+    if (!error && data) setReplies(data as JobReportReply[]);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, [reportId]);
+
+  const handleSend = async () => {
+    const message = draft.trim();
+    if (!message || sending) return;
+
+    setSending(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setSending(false); return; }
+
+    const { error } = await supabase.from('job_report_replies').insert({
+      report_id: reportId,
+      sender_id: user.id,
+      sender_role: 'admin',
+      message,
+    });
+
+    if (!error) {
+      setDraft('');
+      await load();
+    }
+    setSending(false);
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: SLATE, textTransform: 'uppercase', letterSpacing: 0.6 }}>
+        Conversation
+      </div>
+
+      {loading ? (
+        <div style={{ fontSize: 13, color: SLATE, padding: '8px 0' }}>Loading…</div>
+      ) : replies.length === 0 ? (
+        <div style={{ fontSize: 13, color: SLATE, padding: '8px 0' }}>No replies yet.</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {replies.map(r => {
+            const isAdmin = r.sender_role === 'admin';
+            return (
+              <div
+                key={r.id}
+                style={{
+                  alignSelf: isAdmin ? 'flex-end' : 'flex-start',
+                  maxWidth: '85%',
+                  background: isAdmin ? '#FFF3E9' : '#F1F5F9',
+                  border: `1px solid ${isAdmin ? '#FED7AA' : BORDER}`,
+                  borderRadius: 10,
+                  padding: '10px 12px',
+                }}
+              >
+                <div style={{ fontSize: 11, fontWeight: 700, color: isAdmin ? ORANGE : SLATE, marginBottom: 3 }}>
+                  {isAdmin ? 'Admin' : 'User'}
+                </div>
+                <div style={{ fontSize: 13, color: NAVY, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                  {r.message}
+                </div>
+                <div style={{ fontSize: 10, color: SLATE, marginTop: 4 }}>
+                  {fmtTime(r.created_at)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* reply input */}
+      <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+        <textarea
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          placeholder="Reply to user…"
+          rows={2}
+          style={{
+            flex: 1, boxSizing: 'border-box', padding: '8px 12px', borderRadius: 10,
+            border: `1px solid ${BORDER}`, fontSize: 13, color: NAVY, fontFamily: 'inherit',
+            outline: 'none', resize: 'vertical', lineHeight: 1.5,
+          }}
+          onFocus={e => (e.currentTarget.style.borderColor = ORANGE)}
+          onBlur={e  => (e.currentTarget.style.borderColor = BORDER)}
+        />
+        <button
+          onClick={handleSend}
+          disabled={sending || !draft.trim()}
+          style={{
+            padding: '0 16px', borderRadius: 10, border: 'none',
+            background: ORANGE, color: '#fff', fontSize: 13, fontWeight: 600,
+            cursor: sending ? 'not-allowed' : 'pointer', opacity: sending || !draft.trim() ? 0.6 : 1,
+            fontFamily: 'inherit',
+          }}
+        >
+          {sending ? '…' : 'Send'}
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export const DetailDrawer: React.FC<Props> = ({ report, type, onClose }) => {
   if (!report) return null;
@@ -74,6 +190,8 @@ export const DetailDrawer: React.FC<Props> = ({ report, type, onClose }) => {
                     )}
                   </div>
                 )}
+
+                <ReplyThread reportId={jr.id} />
               </>
             );
           })() : (() => {

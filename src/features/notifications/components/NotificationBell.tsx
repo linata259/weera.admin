@@ -14,7 +14,10 @@ const CATEGORY_COLORS: Record<string, string> = {
   support_ticket_open:     '#8B5CF6',
   support_ticket_urgent:   '#EF4444',
   new_job:                 '#10B981',
-  pending_refund:          '#F97316',
+  escrow_dispute:          '#F97316',
+  job_report:              '#DC2626',
+  message_report:          '#DB2777',
+  report_reply:            '#0891B2',
 };
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
@@ -48,10 +51,29 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
       <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
     </svg>
   ),
-  pending_refund: (
+  escrow_dispute: (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="1 4 1 10 7 10" />
       <path d="M3.51 15a9 9 0 1 0 .49-3.31" />
+    </svg>
+  ),
+  job_report: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 9v4" />
+      <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L14.71 3.86a2 2 0 0 0-3.42 0z" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  ),
+  message_report: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="15.5" x2="12.01" y2="15.5" />
+    </svg>
+  ),
+  report_reply: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 17H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-4l-4 4v-4z" />
     </svg>
   ),
 };

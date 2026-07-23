@@ -17,7 +17,10 @@ const CAT_META: Record<NotificationCategory, { label: string; color: string; bg:
   support_ticket_open:   { label: 'Support Ticket',  color: '#6D28D9', bg: '#EDE9FE' },
   support_ticket_urgent: { label: 'Urgent Ticket',   color: '#B91C1C', bg: '#FEE2E2' },
   new_job:               { label: 'New Job',         color: '#065F46', bg: '#D1FAE5' },
-  pending_refund:        { label: 'Refund',          color: '#C2410C', bg: '#FFEDD5' },
+  escrow_dispute:        { label: 'Escrow Dispute',  color: '#C2410C', bg: '#FFEDD5' },
+  job_report:            { label: 'Job Report',      color: '#B91C1C', bg: '#FEE2E2' },
+  message_report:        { label: 'Message Report',  color: '#BE185D', bg: '#FCE7F3' },
+  report_reply:          { label: 'Report Reply',    color: '#0891B2', bg: '#CFFAFE' },
 };
 
 const ALL_CATEGORIES: NotificationCategory[] = [
@@ -26,7 +29,10 @@ const ALL_CATEGORIES: NotificationCategory[] = [
   'support_ticket_open',
   'support_ticket_urgent',
   'new_job',
-  'pending_refund',
+  'escrow_dispute',
+  'job_report',
+  'message_report',
+  'report_reply',
 ];
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
@@ -188,7 +194,10 @@ const NotificationsPage: React.FC = () => {
     unread:      notifications.filter((n) => !n.isRead).length,
     withdrawals: notifications.filter((n) => n.category === 'withdrawal_request').length,
     urgent:      notifications.filter((n) => n.category === 'support_ticket_urgent').length,
-    refunds:     notifications.filter((n) => n.category === 'pending_refund').length,
+    disputes:    notifications.filter((n) => n.category === 'escrow_dispute').length,
+    reports:     notifications.filter((n) =>
+      n.category === 'job_report' || n.category === 'message_report' || n.category === 'report_reply'
+    ).length,
   }), [notifications]);
 
   /* ── filter + sort pipeline ──────────────────────────────── */
@@ -269,7 +278,8 @@ const NotificationsPage: React.FC = () => {
           { label: 'Unread',         value: stats.unread      },
           { label: 'Withdrawals',    value: stats.withdrawals },
           { label: 'Urgent Tickets', value: stats.urgent      },
-          { label: 'Refunds',        value: stats.refunds     },
+          { label: 'Disputes',       value: stats.disputes    },
+          { label: 'Reports',        value: stats.reports     },
         ].map((s) => (
           <div key={s.label} style={statCardStyle}>
             <div style={{ color: SLATE, fontSize: 13, fontWeight: 700 }}>{s.label}</div>

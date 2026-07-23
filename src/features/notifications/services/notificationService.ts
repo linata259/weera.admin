@@ -2,17 +2,10 @@ import { supabase } from 'services/supabaseClient';
 import type { AdminNotification, NotificationCategory } from '../types';
 
 const LOOK_BACK_DAYS = 7;
-const LOOK_BACK_HOURS_JOBS = 24;
 
 function daysAgo(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() - days);
-  return d.toISOString();
-}
-
-function hoursAgo(hours: number): string {
-  const d = new Date();
-  d.setHours(d.getHours() - hours);
   return d.toISOString();
 }
 
@@ -47,14 +40,16 @@ export function markAllAsRead(ids: string[]): void {
 export async function fetchNotifications(): Promise<AdminNotification[]> {
   const readIds = loadReadIds();
   const cutoffWeek = daysAgo(LOOK_BACK_DAYS);
-  const cutoff24h = hoursAgo(LOOK_BACK_HOURS_JOBS);
 
   const [
     usersResult,
     withdrawalsResult,
     ticketsResult,
     jobsResult,
-    refundsResult,
+    escrowDisputesResult,
+    jobReportsResult,
+    messageReportsResult,
+    reportRepliesResult,
   ] = await Promise.all([
     // 1. New user sign-ups (last 7 days, non-admin)
     supabase
@@ -86,20 +81,50 @@ export async function fetchNotifications(): Promise<AdminNotification[]> {
       .order('created_at', { ascending: false })
       .limit(50),
 
-    // 4. New jobs posted in the last 24 hours
+    // 4. New jobs posted in the last 7 days.
+    // NOTE: `jobs` has no `is_deleted` column (that's on `profiles`) — the
+    // old filter here was silently erroring on every request.
     supabase
       .from('jobs')
       .select('id, title, created_at')
-      .eq('is_deleted', false)
-      .gte('created_at', cutoff24h)
+      .gte('created_at', cutoffWeek)
       .order('created_at', { ascending: false })
       .limit(50),
 
-    // 5. Pending refunds (escrow transactions awaiting refund)
+    // 5. Escrow disputes needing admin review.
+    // NOTE: there is no `escrow_transactions` table — escrow lives in the
+    // `escrow` table, with status one of held/released/refunded/disputed.
+    // 'disputed' is the only state that actually needs admin attention.
     supabase
-      .from('escrow_transactions')
-      .select('id, job_id, amount, created_at, status')
-      .in('status', ['refund_requested', 'dispute', 'pending_refund'])
+      .from('escrow')
+      .select('id, job_id, amount, status, created_at')
+      .eq('status', 'disputed')
+      .order('created_at', { ascending: false })
+      .limit(50),
+
+    // 6. New job reports (last 7 days)
+    supabase
+      .from('job_reports')
+      .select('id, job_id, reason, status, created_at')
+      .gte('created_at', cutoffWeek)
+      .order('created_at', { ascending: false })
+      .limit(50),
+
+    // 7. New message reports (last 7 days)
+    supabase
+      .from('message_reports')
+      .select('id, reason, created_at')
+      .gte('created_at', cutoffWeek)
+      .order('created_at', { ascending: false })
+      .limit(50),
+
+    // 8. Users replying back on a report (last 7 days) — the admin previously
+    // had no way to find out these existed at all.
+    supabase
+      .from('job_report_replies')
+      .select('id, report_id, message, created_at')
+      .eq('sender_role', 'user')
+      .gte('created_at', cutoffWeek)
       .order('created_at', { ascending: false })
       .limit(50),
   ]);
@@ -170,18 +195,64 @@ export async function fetchNotifications(): Promise<AdminNotification[]> {
     });
   });
 
-  // ── 5. Pending refunds ──────────────────────────────────────────────────────
-  (refundsResult.data ?? []).forEach((e) => {
-    const id = makeId('pending_refund', e.id);
+  // ── 5. Escrow disputes ──────────────────────────────────────────────────────
+  (escrowDisputesResult.data ?? []).forEach((e: any) => {
+    const id = makeId('escrow_dispute', e.id);
     const amount = typeof e.amount === 'number' ? `KES ${e.amount.toLocaleString()}` : '';
     notifications.push({
       id,
-      category: 'pending_refund',
-      title: 'Refund / dispute pending',
-      body: `An escrow refund${amount ? ` of ${amount}` : ''} is pending review.`,
+      category: 'escrow_dispute',
+      title: 'Escrow dispute needs review',
+      body: `An escrow${amount ? ` of ${amount}` : ''} has been disputed and needs admin review.`,
       referenceId: e.id,
       href: '/financials',
       createdAt: e.created_at,
+      isRead: readIds.has(id),
+    });
+  });
+
+  // ── 6. New job reports ──────────────────────────────────────────────────────
+  (jobReportsResult.data ?? []).forEach((r: any) => {
+    const id = makeId('job_report', r.id);
+    notifications.push({
+      id,
+      category: 'job_report',
+      title: 'New job report filed',
+      body: `A user filed a report${r.reason ? ` (${String(r.reason).replace(/_/g, ' ')})` : ''} on a job.`,
+      referenceId: r.id,
+      href: '/jobs/reports',
+      createdAt: r.created_at,
+      isRead: readIds.has(id),
+    });
+  });
+
+  // ── 7. New message reports ──────────────────────────────────────────────────
+  (messageReportsResult.data ?? []).forEach((r: any) => {
+    const id = makeId('message_report', r.id);
+    notifications.push({
+      id,
+      category: 'message_report',
+      title: 'New message reported',
+      body: `A chat message was reported${r.reason ? ` (${String(r.reason).replace(/_/g, ' ')})` : ''}.`,
+      referenceId: r.id,
+      href: '/jobs/reports',
+      createdAt: r.created_at,
+      isRead: readIds.has(id),
+    });
+  });
+
+  // ── 8. Users replying on a report ───────────────────────────────────────────
+  (reportRepliesResult.data ?? []).forEach((r: any) => {
+    const id = makeId('report_reply', r.id);
+    const preview = String(r.message ?? '').slice(0, 120);
+    notifications.push({
+      id,
+      category: 'report_reply',
+      title: 'User replied to a report',
+      body: preview || 'A user added a reply to their report.',
+      referenceId: r.report_id,
+      href: '/jobs/reports',
+      createdAt: r.created_at,
       isRead: readIds.has(id),
     });
   });

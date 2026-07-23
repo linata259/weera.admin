@@ -4,7 +4,10 @@ export type NotificationCategory =
   | 'support_ticket_open'
   | 'support_ticket_urgent'
   | 'new_job'
-  | 'pending_refund';
+  | 'escrow_dispute'
+  | 'job_report'
+  | 'message_report'
+  | 'report_reply';
 
 export interface AdminNotification {
   /** Deterministic ID so the same event always maps to the same notification */
