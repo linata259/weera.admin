@@ -1,9 +1,15 @@
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+import React, { lazy, useState, useCallback, useMemo, useEffect } from "react";
 import { Column, User } from "../types";
 import { fetchUsers } from "../api/userServices";
 import { TableToolbar } from "../components/table/TableToolbar";
 import { UserTable } from "../components/table/UserTable";
-import { ExportReportModal } from "../components/ExportReportModal"; // NEW
+import { LazyBoundary } from "../../../components/LazyBoundary";
+
+/* Only rendered once someone clicks Export, so there is no reason for it — or
+ * for the PDF engine behind it — to be part of the Users page download. */
+const ExportReportModal = lazy(() =>
+  import("../components/ExportReportModal").then(m => ({ default: m.ExportReportModal })),
+);
 
 /* ── sanitise helpers (keep XSS out of rendered values) ─────── */
 const sanitizeText = (v: string | null | undefined): string => {
@@ -190,11 +196,13 @@ const UsersPage: React.FC = () => {
 
       {/* NEW */}
       {showExport && (
-        <ExportReportModal
-          users={users}
-          locationOptions={locationOptions}
-          onClose={() => setShowExport(false)}
-        />
+        <LazyBoundary fallback={null}>
+          <ExportReportModal
+            users={users}
+            locationOptions={locationOptions}
+            onClose={() => setShowExport(false)}
+          />
+        </LazyBoundary>
       )}
     </div>
   );

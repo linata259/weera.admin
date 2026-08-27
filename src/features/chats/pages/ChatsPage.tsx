@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { lazy, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import {
   ChatModerationData,
@@ -8,10 +8,17 @@ import {
   unblockConversation,
 } from "../api/chatService";
 import type { Conversation, FlagStatus, FlaggedMessage } from "../types";
-import OverviewTab from "../components/OverviewTab";
-import FlaggedTab from "../components/FlaggedTab";
-import BlockedTab from "../components/BlockedTab";
-import ConversationThread from "../components/ConversationThread";
+import { LazyBoundary } from "../../../components/LazyBoundary";
+
+/* Three tabs and a slide-over, all downloaded to show one of them. Overview is
+ * the expensive one — it is the only part of this page that needs the charting
+ * library — and the moderator who opens Flagged never renders it. */
+const OverviewTab = lazy(() => import("../components/OverviewTab"));
+const FlaggedTab = lazy(() => import("../components/FlaggedTab"));
+const BlockedTab = lazy(() => import("../components/BlockedTab"));
+const ConversationThread = lazy(
+  () => import("../components/ConversationThread"),
+);
 
 type TabKey = "overview" | "flagged" | "blocked";
 
@@ -258,7 +265,7 @@ const ChatsPage: React.FC = () => {
           Loading chats…
         </div>
       ) : (
-        <>
+        <LazyBoundary>
           {tab === "overview" && <OverviewTab stats={data.stats} />}
           {tab === "flagged" && (
             <FlaggedTab
@@ -277,14 +284,16 @@ const ChatsPage: React.FC = () => {
               busyIds={busyIds}
             />
           )}
-        </>
+        </LazyBoundary>
       )}
 
       {openConv && (
-        <ConversationThread
-          conversation={openConv}
-          onClose={() => setOpenConv(null)}
-        />
+        <LazyBoundary fallback={null}>
+          <ConversationThread
+            conversation={openConv}
+            onClose={() => setOpenConv(null)}
+          />
+        </LazyBoundary>
       )}
     </div>
   );

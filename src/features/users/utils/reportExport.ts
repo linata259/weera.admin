@@ -1,7 +1,18 @@
 // src/features/users/utils/reportExport.ts
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
 import { User, deriveStatus } from "../types";
+
+/* jsPDF and its dependency chain (html2canvas, svg-pathdata, core-js shims)
+ * are roughly three quarters of a megabyte of JavaScript, and they were
+ * imported at the top of this file — so everyone who opened the Users page
+ * downloaded a PDF engine whether or not they ever exported a report.
+ * Fetched on the click instead. */
+async function loadPdfKit() {
+  const [pdfMod, autoTableMod] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+  ]);
+  return { jsPDF: pdfMod.jsPDF, autoTable: autoTableMod.default };
+}
 
 export interface ReportFilters {
     userType: "all" | "clients" | "bidders";
@@ -132,7 +143,8 @@ export const exportUsersCSV = (users: User[], meta: ReportMeta) => {
 };
 
 /* ── PDF ──────────────────────────────────────────────────────── */
-export const exportUsersPDF = (users: User[], meta: ReportMeta) => {
+export const exportUsersPDF = async (users: User[], meta: ReportMeta) => {
+    const { jsPDF, autoTable } = await loadPdfKit();
     const doc = new jsPDF();
 
     doc.setFontSize(16);

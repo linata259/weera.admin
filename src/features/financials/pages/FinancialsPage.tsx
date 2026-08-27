@@ -1,9 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import { FinancialDashboard } from '../components/FinancialDashboard';
-import { TransactionsTable }  from '../components/TransactionsTable';
-import { EscrowManagement }   from '../components/EscrowManagement';
-import { PlatformRevenue }    from '../components/PlatformRevenue';
-import { WithdrawalsTable }   from '../components/WithdrawalsTable';
+import React, { lazy, useState } from 'react';
+import { useIsMobile } from '../../../hooks/useIsMobile';
+import { LazyBoundary } from '../../../components/LazyBoundary';
+
+/* Five tabs, one of which is on screen. Loading all five meant every visit to
+ * Financials also downloaded the escrow grid, the withdrawal queue and the
+ * revenue chart before showing the dashboard. */
+const FinancialDashboard = lazy(() =>
+  import('../components/FinancialDashboard').then(m => ({ default: m.FinancialDashboard })),
+);
+const TransactionsTable = lazy(() => import('../components/TransactionsTable'));
+const EscrowManagement  = lazy(() => import('../components/EscrowManagement'));
+const PlatformRevenue   = lazy(() => import('../components/PlatformRevenue'));
+const WithdrawalsTable  = lazy(() => import('../components/WithdrawalsTable'));
 
 const ORANGE='#EA580C'; const SLATE='#64748B'; const BORDER='#E2E8F0';
 
@@ -24,16 +32,7 @@ const scrollbarHideCss = `
 
 const FinancialsPage: React.FC = () => {
   const [tab, setTab] = useState<Tab>('dashboard');
-  const [isMobile, setIsMobile] = useState(false); // NEW
-
-  // NEW — same mobile-detection pattern used elsewhere in the app
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 768px)");
-    setIsMobile(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
+  const isMobile = useIsMobile();
 
   return (
     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', fontFamily: "'Inter','Helvetica Neue',sans-serif" }}>
@@ -76,11 +75,13 @@ const FinancialsPage: React.FC = () => {
 
       {/* tab content */}
       <div style={{ width: '100%' }}>
-        {tab === 'dashboard'    && <FinancialDashboard />}
-        {tab === 'transactions' && <TransactionsTable />}
-        {tab === 'escrow'       && <EscrowManagement />}
-        {tab === 'revenue'      && <PlatformRevenue />}
-        {tab === 'Withdrawals'  && <WithdrawalsTable />}
+        <LazyBoundary>
+          {tab === 'dashboard'    && <FinancialDashboard />}
+          {tab === 'transactions' && <TransactionsTable />}
+          {tab === 'escrow'       && <EscrowManagement />}
+          {tab === 'revenue'      && <PlatformRevenue />}
+          {tab === 'Withdrawals'  && <WithdrawalsTable />}
+        </LazyBoundary>
       </div>
     </div>
   );

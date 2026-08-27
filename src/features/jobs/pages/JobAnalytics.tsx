@@ -1,10 +1,18 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { lazy, useEffect, useState, useMemo } from 'react';
 import { fetchJobs, fetchBids } from '../api/jobServices';
 import { bidJobLocation, type Job, type BidRecord } from '../pages/Jobs';
 import { BidStats, buildGrowthBuckets, ChartCard, DonutChart, DonutSegment, GREEN, GrowthPeriod, HBarList, NAVY, ORANGE, PeriodDropdown, PURPLE, RED, SectionHead, SKY, SLATE, Spinner, StatCard } from '../components/Analyticscomponents';
 import { effectiveStatus, getExpiredAt, getRepostedAt, isJobExpired, isJobReposted } from '../utils/jobLifecycle';
-import { LifecycleChart, LifecyclePoint } from '../components/LifecycleChart';
-import BidAnalyticsTab from '../components/Bidanalyticstab';
+import type { LifecyclePoint } from '../components/LifecycleChart';
+import { LazyBoundary, LazyChart } from '../../../components/LazyBoundary';
+
+/* Both of these draw with recharts. Splitting them out lets the KPI cards and
+ * tables on this page paint before the charting library has finished
+ * downloading, and keeps the bid tab off the wire until it is opened. */
+const LifecycleChart = lazy(() =>
+  import('../components/LifecycleChart').then(m => ({ default: m.LifecycleChart })),
+);
+const BidAnalyticsTab = lazy(() => import('../components/Bidanalyticstab'));
 
 
 // ── types ──────────────────────────────────────────────────────────────
@@ -184,7 +192,9 @@ const JobAnalytics: React.FC = () => {
             sub="New, reposted, expired & still-open jobs per period"
             action={<PeriodDropdown value={combinedPeriod} onChange={setCombinedPeriod} />}
           >
-            <LifecycleChart data={lifecycleData} />
+            <LazyChart height={300}>
+              <LifecycleChart data={lifecycleData} />
+            </LazyChart>
           </ChartCard>
 
           {/* 3-col: Status donut | Top Posted Categories | Top Job Locations */}
@@ -208,7 +218,9 @@ const JobAnalytics: React.FC = () => {
       {/* BID ANALYTICS TAB — delegated to BidAnalyticsTab          */}
       {/* ══════════════════════════════════════════════════════════ */}
       {tab === 'bid-analytics' && (
-        <BidAnalyticsTab bids={bids} bidStats={bidStats} jobs={jobs} />
+        <LazyBoundary>
+          <BidAnalyticsTab bids={bids} bidStats={bidStats} jobs={jobs} />
+        </LazyBoundary>
       )}
 
     </div>

@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -11,12 +11,14 @@ import AdminLayout from "./layouts/AdminLayout";
 import { LoginPage } from "./features/auth/components/LoginPage";
 import { AuthGuard } from "./features/auth/components/AuthGuard";
 import { PermissionsProvider } from "./features/rolesPermissions/PermissionsContext";
-import SettingsPage from "./features/settings/Settingspage";
 
 // Each page is its own chunk — only downloaded when the user first visits that route
 const DashboardPage = lazy(
   () => import("./features/dashboard/DashboardRouter"),
 );
+// Settings was the one page still imported eagerly, so its cost was paid on
+// every page load by everyone, including the admins who never open it.
+const SettingsPage = lazy(() => import("./features/settings/Settingspage"));
 const Users = lazy(() => import("./features/users/pages/Users"));
 const UserAnalytics = lazy(
   () => import("./features/users/pages/UserAnalytics"),
@@ -74,10 +76,49 @@ function PageLoader() {
   );
 }
 
+/* Splitting a route makes the first paint cheap and every later navigation a
+ * download. Once the browser is idle and the page the admin asked for is on
+ * screen, quietly pull the handful of routes they are most likely to open
+ * next, so clicking them costs nothing. Idle only — never on the critical
+ * path, and skipped entirely on a metered or 2G connection. */
+const PREFETCH: (() => Promise<unknown>)[] = [
+  () => import("./features/users/pages/Users"),
+  () => import("./features/jobs/pages/Jobs"),
+  () => import("./features/financials/pages/FinancialsPage"),
+  () => import("./features/notifications/pages/NotificationsPage"),
+];
+
+function useIdlePrefetch() {
+  useEffect(() => {
+    const conn = (navigator as any).connection;
+    if (conn?.saveData) return;
+    if (conn?.effectiveType && /2g/.test(conn.effectiveType)) return;
+
+    const idle: (cb: () => void) => number =
+      (window as any).requestIdleCallback ??
+      ((cb: () => void) => window.setTimeout(cb, 2000));
+
+    const handle = idle(() => {
+      PREFETCH.forEach((load) => {
+        load().catch(() => {
+          /* a prefetch that fails is a no-op; the route loads normally later */
+        });
+      });
+    });
+
+    return () => {
+      const cancel = (window as any).cancelIdleCallback;
+      if (cancel) cancel(handle);
+      else clearTimeout(handle);
+    };
+  }, []);
+}
+
 // AdminLayout mounts ONCE here and persists across all child routes.
 // Previously it was wrapped around every individual <Route>, causing a full
 // remount (sidebar, navbar, effects, state) on every navigation.
 function LayoutRoute() {
+  useIdlePrefetch();
   return (
     <AdminLayout>
       <Suspense fallback={<PageLoader />}>

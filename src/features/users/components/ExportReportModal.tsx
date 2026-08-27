@@ -74,9 +74,19 @@ export const ExportReportModal: React.FC<Props> = ({ users, locationOptions, onC
         exportUsersCSV(matched, buildMeta());
         onClose();
     };
-    const handleExportPDF = () => {
-        exportUsersPDF(matched, buildMeta());
-        onClose();
+    // The PDF engine is fetched on demand now, so this is a real wait on a
+    // slow connection — close only once the file has actually been produced,
+    // and say so meanwhile rather than looking like nothing happened.
+    const [buildingPdf, setBuildingPdf] = useState(false);
+    const handleExportPDF = async () => {
+        if (buildingPdf) return;
+        setBuildingPdf(true);
+        try {
+            await exportUsersPDF(matched, buildMeta());
+            onClose();
+        } finally {
+            setBuildingPdf(false);
+        }
     };
 
     return (
@@ -183,15 +193,17 @@ export const ExportReportModal: React.FC<Props> = ({ users, locationOptions, onC
                     </button>
                     <button
                         onClick={handleExportPDF}
-                        disabled={!matched.length}
+                        disabled={!matched.length || buildingPdf}
                         style={{
                             padding: "10px 18px", borderRadius: 10, border: "none", background: ORANGE,
-                            fontSize: 14, fontWeight: 700, color: "#fff", cursor: matched.length ? "pointer" : "not-allowed",
-                            opacity: matched.length ? 1 : 0.5, fontFamily: "inherit", display: "flex", alignItems: "center", gap: 8,
+                            fontSize: 14, fontWeight: 700, color: "#fff",
+                            cursor: !matched.length ? "not-allowed" : buildingPdf ? "wait" : "pointer",
+                            opacity: matched.length ? (buildingPdf ? 0.75 : 1) : 0.5,
+                            fontFamily: "inherit", display: "flex", alignItems: "center", gap: 8,
                         }}
                     >
                         <CsvGlyph color="#fff" />
-                        Export PDF
+                        {buildingPdf ? "Building PDF…" : "Export PDF"}
                     </button>
                 </div>
             </div>

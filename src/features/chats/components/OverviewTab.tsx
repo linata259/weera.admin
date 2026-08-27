@@ -35,6 +35,25 @@ const StatCard: React.FC<{
 
 const TYPE_COLORS = ["#EA580C", "#2563EB", "#7C3AED", "#059669", "#64748B"];
 
+/* The two charts sat in a hard-coded `2fr 1fr` grid, which on a phone squeezed
+ * the type breakdown into a column too narrow to read its own axis labels.
+ * A media query stacks them instead — CSS handles it, so there is no resize
+ * listener and no re-render on rotate. */
+const overviewCss = `
+.chat-overview-charts {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 16px;
+}
+.chat-overview-chart-body { width: 100%; height: 260px; }
+@media (max-width: 900px) {
+  .chat-overview-charts { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  .chat-overview-chart-body { height: 220px; }
+}
+`;
+
 export const OverviewTab: React.FC<Props> = ({ stats }) => {
   const chartData = stats.messagesPerDay.map((d) => ({
     ...d,
@@ -43,10 +62,11 @@ export const OverviewTab: React.FC<Props> = ({ stats }) => {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <style>{overviewCss}</style>
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
           gap: 16,
         }}
       >
@@ -74,22 +94,16 @@ export const OverviewTab: React.FC<Props> = ({ stats }) => {
         />
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(0, 2fr) minmax(0, 1fr)",
-          gap: 16,
-        }}
-      >
+      <div className="chat-overview-charts">
         {/* Messages over time */}
-        <div style={{ ...cardStyle, padding: 18 }}>
+        <div style={{ ...cardStyle, padding: 18, minWidth: 0 }}>
           <div style={{ fontWeight: 700, fontSize: 15, color: "#0F172A", marginBottom: 4 }}>
             Message activity
           </div>
           <div style={{ fontSize: 12, color: "#64748B", marginBottom: 14 }}>
             Daily messages and phone-sharing flags (last 30 days)
           </div>
-          <div style={{ width: "100%", height: 260 }}>
+          <div className="chat-overview-chart-body">
             <ResponsiveContainer>
               <AreaChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: -18 }}>
                 <defs>
@@ -128,14 +142,14 @@ export const OverviewTab: React.FC<Props> = ({ stats }) => {
         </div>
 
         {/* Message types */}
-        <div style={{ ...cardStyle, padding: 18 }}>
+        <div style={{ ...cardStyle, padding: 18, minWidth: 0 }}>
           <div style={{ fontWeight: 700, fontSize: 15, color: "#0F172A", marginBottom: 4 }}>
             Message types
           </div>
           <div style={{ fontSize: 12, color: "#64748B", marginBottom: 14 }}>
             Breakdown by content type
           </div>
-          <div style={{ width: "100%", height: 260 }}>
+          <div className="chat-overview-chart-body">
             <ResponsiveContainer>
               <BarChart
                 data={stats.messagesByType}

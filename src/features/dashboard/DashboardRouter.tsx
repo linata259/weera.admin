@@ -1,9 +1,15 @@
-import React from "react";
+import React, { lazy } from "react";
 import { usePermissions } from "../rolesPermissions/hooks/usePermissions";
-import SuperAdminDashboardPage from "./SuperAdminDashboard";
-import FinanceDashboardPage from "./FinanceDashboard";
-import MarketingDashboardPage from "./MarketingDashboard";
-import CustomerCareDashboardPage from "./CustomerCareDashboard";
+import { LazyBoundary, Spinner } from "../../components/LazyBoundary";
+
+/* All four dashboards used to be imported here, so every admin downloaded the
+ * Super Admin, Finance, Marketing and Customer Care views — and the charting
+ * library each of them pulls in — to render exactly one. Split per role: you
+ * now fetch the dashboard you are actually shown. */
+const SuperAdminDashboardPage = lazy(() => import("./SuperAdminDashboard"));
+const FinanceDashboardPage = lazy(() => import("./FinanceDashboard"));
+const MarketingDashboardPage = lazy(() => import("./MarketingDashboard"));
+const CustomerCareDashboardPage = lazy(() => import("./CustomerCareDashboard"));
 
 /**
  * Renders the dashboard that matches the signed-in admin's role.
@@ -12,23 +18,22 @@ import CustomerCareDashboardPage from "./CustomerCareDashboard";
 const DashboardRouter: React.FC = () => {
   const { loading, roleName } = usePermissions();
 
-  if (loading) {
-    return (
-      <div style={{ display: "flex", justifyContent: "center", padding: 64 }}>
-        <div style={{
-          width: 32, height: 32, borderRadius: "50%",
-          border: "3px solid #E2E8F0", borderTopColor: "#EA580C",
-          animation: "weera-dr-spin 0.7s linear infinite",
-        }} />
-        <style>{`@keyframes weera-dr-spin { to { transform: rotate(360deg) } }`}</style>
-      </div>
-    );
-  }
+  if (loading) return <Spinner />;
 
-  if (roleName === "Finance") return <FinanceDashboardPage />;
-  if (roleName === "Marketing") return <MarketingDashboardPage />;
-  if (roleName === "Customer Care") return <CustomerCareDashboardPage />;
-  return <SuperAdminDashboardPage />;
+  const Dashboard =
+    roleName === "Finance"
+      ? FinanceDashboardPage
+      : roleName === "Marketing"
+        ? MarketingDashboardPage
+        : roleName === "Customer Care"
+          ? CustomerCareDashboardPage
+          : SuperAdminDashboardPage;
+
+  return (
+    <LazyBoundary fallback={<Spinner />}>
+      <Dashboard />
+    </LazyBoundary>
+  );
 };
 
 export default DashboardRouter;
