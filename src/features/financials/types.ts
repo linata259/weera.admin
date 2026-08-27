@@ -61,6 +61,43 @@ export interface MonthlyCommission {
   feeRate?: number;     // optional — e.g. 5 (for 5%)
 }
 
+export type WithdrawalStatus =
+  | 'queued'
+  | 'processing'
+  | 'dispatched'
+  | 'completed'
+  | 'failed'
+  | 'cancelled';
+
+// Backed by public.admin_withdrawal_queue (a view over withdrawal_requests,
+// security_invoker so admins see every row and regular users would only see
+// their own — this dashboard always calls it as an admin).
+export interface WithdrawalRequest {
+  id: string;
+  reference: string;
+  userId: string;
+  amount: number;
+  feeAmount: number;
+  netAmount: number;
+  phoneNumber: string;
+  status: WithdrawalStatus;
+  scheduledFor: string;
+  hoursUntilDue: number;
+  requestedAt: string;
+  dispatchedAt: string | null;
+  settledAt: string | null;
+  attempts: number;
+  failureReason: string | null;
+  /* set when this request was created by admin_retry_withdrawal to replace a
+     failed one; alreadyRetried is the reverse view — this request has a
+     replacement, so retrying it again would only raise. */
+  retryOf: string | null;
+  alreadyRetried: boolean;
+  /* joined */
+  userName: string;
+  userAvatar: string | null;
+}
+
 export interface RefundRequest {
   id: string;
   reference?: string;

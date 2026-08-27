@@ -3,14 +3,15 @@ import { FinancialDashboard } from '../components/FinancialDashboard';
 import { TransactionsTable }  from '../components/TransactionsTable';
 import { EscrowManagement }   from '../components/EscrowManagement';
 import { PlatformRevenue }    from '../components/PlatformRevenue';
+import { WithdrawalsTable }   from '../components/WithdrawalsTable';
 
 const ORANGE='#EA580C'; const SLATE='#64748B'; const BORDER='#E2E8F0';
 
-type Tab = 'dashboard' | 'transactions' | 'escrow' | 'revenue';
-
+type Tab = 'dashboard' | 'transactions' | 'escrow' | 'revenue' | 'Withdrawals';
 const TABS: { id: Tab; label: string }[] = [
   { id: 'dashboard',    label: 'Financial Dashboard' },
   { id: 'transactions', label: 'Transactions'         },
+  { id: 'Withdrawals',    label: 'Pending Withdrawals' },
   { id: 'escrow',       label: 'Escrow Management'    },
   { id: 'revenue',      label: 'Platform Revenue'     },
 ];
@@ -79,6 +80,7 @@ const FinancialsPage: React.FC = () => {
         {tab === 'transactions' && <TransactionsTable />}
         {tab === 'escrow'       && <EscrowManagement />}
         {tab === 'revenue'      && <PlatformRevenue />}
+        {tab === 'Withdrawals'  && <WithdrawalsTable />}
       </div>
     </div>
   );

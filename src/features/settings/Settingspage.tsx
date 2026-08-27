@@ -4,7 +4,7 @@ import FinancialSettings from './components/FinancialSettings';
 import GeneralSettings from './components/GeneralSettings';
 import PaymentConfiguration from './components/PaymentConfiguration';
 import UserSecuritySettings from './components/UserSecuritySettings';
-import { PlatformSettings, fetchSettings, updateSetting, updateSettings } from './settingsApi';
+import { PlatformSettings, SettingsUpdate, fetchSettings, updateSetting, saveSettings } from './settingsApi';
 import { useNavbar } from '../../hooks/Navbarcontext';
 
 const ORANGE   = '#EA580C';
@@ -71,10 +71,30 @@ export default function SettingsPage() {
   );
 
   const handleSaveSection = useCallback(
-    async (updates: Partial<PlatformSettings>): Promise<boolean> => {
-      const ok = await updateSettings(updates);
-      if (ok) setSettings((prev) => prev ? { ...prev, ...updates } : prev);
-      return ok;
+    async (updates: SettingsUpdate): Promise<boolean> => {
+      const result = await saveSettings(updates);
+      if (!result.ok) {
+        setGlobalStatus('error');
+        setTimeout(() => setGlobalStatus('idle'), 3000);
+        return false;
+      }
+
+      setSettings((prev) => {
+        if (!prev) return prev;
+        // fee_reason is an audit note, not a stored setting — keep it out of state.
+        const stored = { ...updates };
+        delete stored.fee_reason;
+        const next = { ...prev, ...stored };
+        // commission_rate is derived by update_platform_fees. Recompute it
+        // here so the header total updates without a round-trip.
+        if (stored.client_fee_pct !== undefined || stored.freelancer_fee_pct !== undefined) {
+          next.commission_rate =
+            (stored.client_fee_pct ?? prev.client_fee_pct) +
+            (stored.freelancer_fee_pct ?? prev.freelancer_fee_pct);
+        }
+        return next;
+      });
+      return true;
     },
     [],
   );

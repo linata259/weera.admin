@@ -5,7 +5,8 @@ import {
   FinancialSummary,
   MonthlyRevenue,
   MonthlyCommission,
-  RefundRequest
+  RefundRequest,
+  WithdrawalRequest
 } from "../types";
 
 const pf = (v: any) => parseFloat(v?.toString() ?? "0");
@@ -233,6 +234,192 @@ export async function fetchPendingWithdrawals(): Promise<WalletTransaction[]> {
       jobTitle: null,
     }),
   );
+}
+
+// ─── Withdrawal queue (public.admin_withdrawal_queue) ─────────────────────────
+// Backs the "Pending Withdrawals" tab. Distinct from fetchPendingWithdrawals()
+// above, which reads the legacy wallet_transactions rows — those still exist
+// for withdrawals that paid out immediately (already-matured balance). This
+// reads public.admin_withdrawal_queue, the view over withdrawal_requests that
+// the queue-and-notify system writes to: every request that had to wait on
+// the 72-hour maturity clock, from the moment it's accepted through to
+// completed/failed/cancelled.
+
+// The columns the view has always had, and the two that arrive with
+// 20260825140000_admin_retry_withdrawal.sql.
+//
+// Split deliberately. PostgREST answers 400 for a column that does not exist,
+// and this function returns [] on error — so selecting a not-yet-migrated
+// column empties the entire Pending Withdrawals tab. Nothing is wrong with
+// the data and nothing says so on screen; it just renders "No withdrawal
+// requests found" over a queue full of held money. A dashboard that goes
+// blank because a migration lags behind a deploy is worse than one missing
+// two optional fields, so ask for them, and do without them if they are not
+// there yet.
+const WQ_BASE_COLS =
+  "id,reference,user_id,full_name,amount,fee_amount,net_amount,phone_number," +
+  "status,scheduled_for,hours_until_due,requested_at,dispatched_at,settled_at," +
+  "attempts,failure_reason";
+const WQ_RETRY_COLS = ",retry_of,already_retried";
+
+export async function fetchWithdrawalQueue(): Promise<WithdrawalRequest[]> {
+  const query = (cols: string) =>
+    supabase
+      .from("admin_withdrawal_queue")
+      .select(cols)
+      .order("requested_at", { ascending: false })
+      .limit(500);
+
+  let { data, error } = await query(WQ_BASE_COLS + WQ_RETRY_COLS);
+
+  if (error) {
+    console.warn(
+      "withdrawal queue: retry columns unavailable, falling back " +
+        "(apply 20260825140000_admin_retry_withdrawal.sql) —",
+      error.message,
+    );
+    ({ data, error } = await query(WQ_BASE_COLS));
+  }
+
+  if (error || !data) {
+    if (error) console.warn("admin_withdrawal_queue unavailable:", error.message);
+    return [];
+  }
+
+  // full_name is already composed server-side (first_name + last_name) by
+  // the view, so it works even if this profile hasn't been fetched before —
+  // the cache is only needed here for the avatar image.
+  const profiles = await buildProfileMap(
+    Array.from(new Set(data.map((r: any) => r.user_id).filter(Boolean))) as string[],
+  );
+
+  return data.map(
+    (r: any): WithdrawalRequest => ({
+      id: r.id,
+      reference: r.reference,
+      userId: r.user_id,
+      amount: pf(r.amount),
+      feeAmount: pf(r.fee_amount),
+      netAmount: pf(r.net_amount),
+      phoneNumber: r.phone_number ?? "—",
+      status: r.status,
+      scheduledFor: r.scheduled_for,
+      hoursUntilDue: r.hours_until_due != null ? Number(r.hours_until_due) : 0,
+      requestedAt: r.requested_at,
+      dispatchedAt: r.dispatched_at ?? null,
+      settledAt: r.settled_at ?? null,
+      attempts: r.attempts ?? 0,
+      failureReason: r.failure_reason ?? null,
+      // Absent on the fallback path — a row is then simply never shown as
+      // already-retried, and the RPC's own guard refuses a second retry.
+      retryOf: r.retry_of ?? null,
+      alreadyRetried: r.already_retried === true,
+      userName: r.full_name ?? profiles.get(r.user_id)?.name ?? "—",
+      userAvatar: profiles.get(r.user_id)?.avatar ?? null,
+    }),
+  );
+}
+
+// Admin-only RPC (public.admin_release_withdrawal_now) — moves scheduled_for
+// to now(). It does NOT dispatch the payout directly; the worker's next run
+// claims it like any other due request. Safe to call on a request that's
+// already due (no-ops the schedule, worker still just claims it once).
+export async function releaseWithdrawalNow(
+  id: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const { data, error } = await supabase.rpc("admin_release_withdrawal_now", {
+    p_id: id,
+  });
+  if (error) return { ok: false, error: error.message };
+  if (data && (data as any).ok === false) {
+    return { ok: false, error: (data as any).error ?? "Request failed" };
+  }
+  return { ok: true };
+}
+
+// ─── Dispatch one queued withdrawal immediately ───────────────────────────────
+//
+// The difference from releaseWithdrawalNow above matters. That RPC only sets
+// scheduled_for = now(), which does nothing whatsoever to a request that is
+// already overdue — the date is in the past and the row is still sitting
+// there waiting for a worker run. This actually sends the money: it invokes
+// process-withdrawal-queue, which verifies the caller is an admin (is_admin()
+// evaluated as them, inside the function) and then runs the same claim →
+// dispatch → notify path the cron worker runs.
+//
+// The browser never holds a dispatch capability of its own. claim_withdrawal_
+// request has no grant to `authenticated`; all this can do is ask.
+//
+// Outcomes, all of which are normal and none of which are exceptions:
+//   dispatched — handed to IntaSend, tracking_id returned, user notified
+//   requeued   — transient refusal (float short, provider 5xx); it stays
+//                queued and the next worker run tries again
+//   failed     — terminal refusal, or the attempts cap was reached. The hold
+//                has been reversed and the freelancer has their money back
+export async function dispatchWithdrawalNow(
+  id: string,
+): Promise<{ ok: boolean; outcome?: string; reason?: string | null; error?: string }> {
+  const { data, error } = await supabase.functions.invoke(
+    "process-withdrawal-queue",
+    { body: { request_id: id } },
+  );
+
+  // A non-2xx comes back as FunctionsHttpError with the body unread on
+  // error.context. The function puts the useful sentence in there — "no
+  // longer queued", "INTASEND_SECRET_KEY is not set" — and dropping it in
+  // favour of error.message would show the admin "Edge Function returned a
+  // non-2xx status code", which tells them nothing.
+  if (error) {
+    let detail = error.message;
+    try {
+      const body = await (error as any)?.context?.json?.();
+      if (body?.error) detail = String(body.error);
+    } catch {
+      /* body already consumed, or not JSON — keep error.message */
+    }
+    return { ok: false, error: detail };
+  }
+
+  const res = (data ?? {}) as {
+    ok?: boolean;
+    outcome?: string;
+    reason?: string | null;
+    error?: string;
+  };
+
+  if (res.ok) return { ok: true, outcome: res.outcome ?? "dispatched" };
+
+  return {
+    ok: false,
+    outcome: res.outcome,
+    reason: res.reason ?? null,
+    error: res.error ?? res.reason ?? "Dispatch failed",
+  };
+}
+
+// ─── Retry a failed withdrawal ────────────────────────────────────────────────
+//
+// NOT a re-send. By the time a request reads 'failed', fail_withdrawal has
+// already reversed it: the gross is back in the freelancer's spendable
+// balance and there is no hold left to dispatch. So admin_retry_withdrawal
+// creates a NEW withdrawal — new reference, new debit, new hold, new queue
+// row — linked to the original through retry_of.
+//
+// It refuses rather than guessing when the original was not actually
+// reversed, when a payout already exists at the provider under the old
+// reference, when it has already been retried once, or when the user has
+// since spent the refund. Those all arrive here as error.message, already
+// written for a human to read.
+export async function retryWithdrawal(
+  id: string,
+): Promise<{ ok: boolean; reference?: string; error?: string }> {
+  const { data, error } = await supabase.rpc("admin_retry_withdrawal", {
+    p_id: id,
+  });
+  if (error) return { ok: false, error: error.message };
+  const res = (data ?? {}) as { ok?: boolean; reference?: string; error?: string };
+  if (!res.ok) return { ok: false, error: res.error ?? "Retry failed" };
+  return { ok: true, reference: res.reference };
 }
 
 // ─── Escrow transactions ──────────────────────────────────────────────────────

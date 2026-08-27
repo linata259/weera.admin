@@ -196,15 +196,19 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 interface SaveBarProps {
   onSave: () => void;
   saveState: SaveState;
+  /** Shown instead of the generic failure text. The database's own messages
+   *  ("Combined fee of 60% looks wrong…") are written for admins to read. */
+  errorMessage?: string;
+  disabled?: boolean;
 }
 
-export function SaveBar({ onSave, saveState }: SaveBarProps) {
+export function SaveBar({ onSave, saveState, errorMessage, disabled }: SaveBarProps) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 24, paddingTop: 20, borderTop: `1px solid ${BORDER}` }}>
       <button
         type="button"
         onClick={onSave}
-        disabled={saveState === 'saving'}
+        disabled={saveState === 'saving' || disabled}
         style={{
           background: ORANGE,
           color: '#fff',
@@ -213,9 +217,9 @@ export function SaveBar({ onSave, saveState }: SaveBarProps) {
           padding: '9px 20px',
           fontSize: 13,
           fontWeight: 600,
-          cursor: saveState === 'saving' ? 'default' : 'pointer',
+          cursor: saveState === 'saving' || disabled ? 'default' : 'pointer',
           fontFamily: 'inherit',
-          opacity: saveState === 'saving' ? 0.7 : 1,
+          opacity: saveState === 'saving' || disabled ? 0.7 : 1,
         }}
       >
         {saveState === 'saving' ? 'Saving…' : 'Save Changes'}
@@ -224,7 +228,9 @@ export function SaveBar({ onSave, saveState }: SaveBarProps) {
         <span style={{ fontSize: 13, color: '#16A34A', fontWeight: 500 }}>✓ Changes saved</span>
       )}
       {saveState === 'error' && (
-        <span style={{ fontSize: 13, color: '#DC2626', fontWeight: 500 }}>Failed to save. Try again.</span>
+        <span style={{ fontSize: 13, color: '#DC2626', fontWeight: 500 }}>
+          {errorMessage || 'Failed to save. Try again.'}
+        </span>
       )}
     </div>
   );
