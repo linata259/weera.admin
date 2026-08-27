@@ -1,5 +1,5 @@
 /* ─── src/features/reports/components/DetailDrawer.tsx ──────── */
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { supabase } from 'services/supabaseClient';
 import { Avatar } from '../../shared/Avatar';
 import { BLUE, BORDER, capitalize, fmt, fmtTime, GREEN, JobReport, JobReportReply, MessageReport, NAVY, ORANGE, SLATE, stS, Tab } from '../hooks/types';
@@ -24,7 +24,7 @@ const ReplyThread: React.FC<{ reportId: string }> = ({ reportId }) => {
   const [draft, setDraft]     = useState('');
   const [sending, setSending] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('job_report_replies')
@@ -33,9 +33,9 @@ const ReplyThread: React.FC<{ reportId: string }> = ({ reportId }) => {
       .order('created_at', { ascending: true });
     if (!error && data) setReplies(data as JobReportReply[]);
     setLoading(false);
-  };
+  }, [reportId]);
 
-  useEffect(() => { load(); }, [reportId]);
+  useEffect(() => { load(); }, [load]);
 
   const handleSend = async () => {
     const message = draft.trim();
