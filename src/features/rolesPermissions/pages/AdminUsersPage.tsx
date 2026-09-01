@@ -8,12 +8,20 @@ import {
   card, th, td, input, MUTED, TEXT, BORDER,
   PrimaryButton, GhostButton, RoleBadge, ErrorNote, Spinner,
 } from "../components/ui";
+import { readDashboardCache, writeDashboardCache } from "../../../utils/dashboardCache";
+
+interface AdminUsersCache {
+  users: AdminUser[];
+  roles: Role[];
+}
+const CACHE_KEY = "adminUsersPage";
 
 const AdminUsersPage: React.FC = () => {
   const navigate = useNavigate();
-  const [users, setUsers] = useState<AdminUser[]>([]);
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = readDashboardCache<AdminUsersCache>(CACHE_KEY);
+  const [users, setUsers] = useState<AdminUser[]>(cached?.users ?? []);
+  const [roles, setRoles] = useState<Role[]>(cached?.roles ?? []);
+  const [loading, setLoading] = useState(cached === null);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -28,6 +36,7 @@ const AdminUsersPage: React.FC = () => {
         setUsers(u);
         setRoles(r);
         setError(null);
+        writeDashboardCache<AdminUsersCache>(CACHE_KEY, { users: u, roles: r });
       })
       .catch((e) =>
         setError(

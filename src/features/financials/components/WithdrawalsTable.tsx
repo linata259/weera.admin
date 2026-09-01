@@ -206,6 +206,7 @@ export const WithdrawalsTable: React.FC = () => {
   const isMobile = useIsMobile();
   const t = useServerTable<WithdrawalRequest>(fetchWithdrawalQueuePage, {
     defaultSort: "requested_at",
+    cacheKey: "withdrawalsTable",
   });
 
   const [summary, setSummary] = useState({

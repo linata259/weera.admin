@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { readDashboardCache, writeDashboardCache } from "../../../utils/dashboardCache";
 import {
   fetchSupportTickets,
   updateSupportTicketStatus,
@@ -30,12 +31,14 @@ const loadSavedNotes = (): Record<string, string> => {
   }
 };
 
+const CACHE_KEY = "helpSupportTickets";
+
 const HelpSupport: React.FC = () => {
-  const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [tickets, setTickets] = useState<SupportTicket[]>(() => readDashboardCache<SupportTicket[]>(CACHE_KEY) ?? []);
   const [statusFilter, setStatusFilter] = useState("all");
   const [userTypeFilter, setUserTypeFilter] = useState("all");
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => readDashboardCache<SupportTicket[]>(CACHE_KEY) === null);
   const [errorMessage, setErrorMessage] = useState("");
 
   const {
@@ -52,6 +55,7 @@ const HelpSupport: React.FC = () => {
       .then((data) => {
         setTickets(data);
         setErrorMessage("");
+        writeDashboardCache(CACHE_KEY, data);
       })
       .catch((error) => {
         console.error("Support tickets fetch failed:", error);

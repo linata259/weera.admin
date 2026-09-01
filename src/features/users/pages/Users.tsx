@@ -4,6 +4,9 @@ import { fetchUsers } from "../api/userServices";
 import { TableToolbar } from "../components/table/TableToolbar";
 import { UserTable } from "../components/table/UserTable";
 import { LazyBoundary } from "../../../components/LazyBoundary";
+import { readDashboardCache, writeDashboardCache } from "../../../utils/dashboardCache";
+
+const CACHE_KEY = "usersPage";
 
 /* Only rendered once someone clicks Export, so there is no reason for it — or
  * for the PDF engine behind it — to be part of the Users page download. */
@@ -33,8 +36,8 @@ const COLUMNS: Column[] = [
 
 /* ────────────────────────────────────────────────────────────── */
 const UsersPage: React.FC = () => {
-  const [users,      setUsers]      = useState<User[]>([]);
-  const [loading,    setLoading]    = useState(true);
+  const [users,      setUsers]      = useState<User[]>(() => readDashboardCache<User[]>(CACHE_KEY) ?? []);
+  const [loading,    setLoading]    = useState(() => readDashboardCache<User[]>(CACHE_KEY) === null);
   const [searchTerm, setSearchTerm] = useState("");
   const [locationFilter,  setLocationFilter]  = useState("all");
   const [userTypeFilter,  setUserTypeFilter]  = useState<"all" | "clients" | "bidders">("all");
@@ -59,6 +62,7 @@ const UsersPage: React.FC = () => {
           user_type_names:       (u.user_type_names ?? []).map(sanitizeText),
         }));
         setUsers(clean);
+        writeDashboardCache(CACHE_KEY, clean);
       })
       .catch(console.error)
       .finally(() => setLoading(false));

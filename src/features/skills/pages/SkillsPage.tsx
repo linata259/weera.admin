@@ -7,6 +7,13 @@ import {
   updateCategory, updateSkill,
 } from '../api/skillsService';
 import { JobCategory, Skill } from '../types';
+import { readDashboardCache, writeDashboardCache } from '../../../utils/dashboardCache';
+
+interface SkillsPageCache {
+  skills: Skill[];
+  categories: JobCategory[];
+}
+const CACHE_KEY = 'skillsPage';
 
 /* ── design tokens ──────────────────────────────────────────── */
 const ORANGE = '#EA580C';
@@ -262,10 +269,11 @@ type SkillModal  = { type: 'create' } | { type: 'edit'; item: Skill }       | { 
 type CatModal    = { type: 'create' } | { type: 'edit'; item: JobCategory }  | { type: 'delete'; item: JobCategory };
 
 const SkillsPage: React.FC = () => {
+  const cached = readDashboardCache<SkillsPageCache>(CACHE_KEY);
   const [tab,        setTab]        = useState<Tab>('skills');
-  const [skills,     setSkills]     = useState<Skill[]>([]);
-  const [categories, setCategories] = useState<JobCategory[]>([]);
-  const [loading,    setLoading]    = useState(true);
+  const [skills,     setSkills]     = useState<Skill[]>(cached?.skills ?? []);
+  const [categories, setCategories] = useState<JobCategory[]>(cached?.categories ?? []);
+  const [loading,    setLoading]    = useState(cached === null);
   const [saving,     setSaving]     = useState(false);
   const [search,     setSearch]     = useState('');
   const [isMobile,   setIsMobile]   = useState(false); // NEW
@@ -292,7 +300,11 @@ const SkillsPage: React.FC = () => {
   /* load */
   useEffect(() => {
     Promise.all([fetchSkills(), fetchCategories()])
-      .then(([s, c]) => { setSkills(s); setCategories(c); })
+      .then(([s, c]) => {
+        setSkills(s);
+        setCategories(c);
+        writeDashboardCache<SkillsPageCache>(CACHE_KEY, { skills: s, categories: c });
+      })
       .finally(() => setLoading(false));
   }, []);
 

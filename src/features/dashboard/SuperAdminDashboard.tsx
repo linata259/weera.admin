@@ -4,11 +4,12 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import {
-  FiDollarSign, FiUsers, FiBriefcase, FiActivity, FiAlertCircle, FiLock,
-  FiTrendingUp, FiPercent, FiArrowUpRight, FiArrowDownRight,
-} from "react-icons/fi";
+  IconCurrencyDollar, IconUsers, IconBriefcase, IconActivity, IconAlertCircle,
+  IconArrowUpRight, IconArrowDownRight,
+} from "@tabler/icons-react";
 
 import { fetchSuperAdminData, SuperAdminData, KpiTrend } from "./services/superAdminService";
+import { readDashboardCache, writeDashboardCache } from "../../utils/dashboardCache";
 import { useUserGrowthChart } from "./hooks/useUserGrowthChart";
 import { UserGrowthChart } from "./components/UserGrowthChart";
 import { useRecentActivity } from "./hooks/useRecentActivity";
@@ -25,7 +26,7 @@ const AMBER = "#D97706";
 const BLUE = "#2563EB";
 const PINK = "#EC4899";
 
-/* react-icons TS2786 workaround (same pattern as Sidebar) */
+/* Tabler icons TS2786 workaround (same pattern as Sidebar) */
 const Icon: React.FC<{ icon: (props: any) => any; size?: number; color?: string }> = ({
   icon, size, color,
 }) => {
@@ -62,7 +63,7 @@ const TrendChip: React.FC<{ trend: KpiTrend; suffix?: string }> = ({
     <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: MUTED }}>
       {!flat && (
         <span style={{ display: "flex", alignItems: "center", color }}>
-          <Icon icon={up ? FiArrowUpRight : FiArrowDownRight} size={13} color={color} />
+          <Icon icon={up ? IconArrowUpRight : IconArrowDownRight} size={13} color={color} />
         </span>
       )}
       <span style={{ color, fontWeight: 700 }}>
@@ -118,8 +119,12 @@ const STATUS_COLORS: Record<string, { dot: string; text: string; bg: string }> =
 
 export function SuperAdminDashboardPage() {
   const navigate = useNavigate();
-  const [data, setData] = useState<SuperAdminData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<SuperAdminData | null>(
+    () => readDashboardCache<SuperAdminData>("superAdminData"),
+  );
+  const [loading, setLoading] = useState(
+    () => readDashboardCache<SuperAdminData>("superAdminData") === null,
+  );
 
   const { data: growthData, isLoading: growthLoading } = useUserGrowthChart();
   const { activity, isLoading: activityLoading } = useRecentActivity(6);
@@ -127,13 +132,16 @@ export function SuperAdminDashboardPage() {
 
   // page title lives in the navbar instead of on the page
   useEffect(() => {
-    setBreadcrumb({ parent: "", current: "Super Admin Dashboard" });
+    setBreadcrumb({ parent: "", current: "Dashboard" });
     return () => setBreadcrumb(null);
   }, [setBreadcrumb]);
 
   useEffect(() => {
     fetchSuperAdminData()
-      .then(setData)
+      .then((d) => {
+        setData(d);
+        writeDashboardCache("superAdminData", d);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -189,22 +197,16 @@ export function SuperAdminDashboardPage() {
           gap: 14,
         }}
       >
-        <KpiCard icon={FiDollarSign} label="Total Revenue" loading={loading}
+        <KpiCard icon={IconCurrencyDollar} label="Total Revenue" loading={loading}
           value={k ? fmtMoney(k.totalRevenue) : ""} trend={k?.revenueTrend} />
-        <KpiCard icon={FiPercent} label="Platform Fees" loading={loading}
-          value={k ? fmtMoney(k.platformFees) : ""} trend={k?.feesTrend} />
-        <KpiCard icon={FiUsers} label="Total Users" loading={loading}
+        <KpiCard icon={IconUsers} label="Total Users" loading={loading}
           value={k ? fmtNum(k.totalUsers) : ""} trend={k?.usersTrend} />
-        <KpiCard icon={FiBriefcase} label="Total Jobs" loading={loading}
+        <KpiCard icon={IconBriefcase} label="Total Jobs" loading={loading}
           value={k ? fmtNum(k.totalJobs) : ""} trend={k?.jobsTrend} />
-        <KpiCard icon={FiTrendingUp} label="Total Bids" loading={loading}
-          value={k ? fmtNum(k.totalBids) : ""} trend={k?.bidsTrend} />
-        <KpiCard icon={FiActivity} label="Platform Health" loading={loading}
+        <KpiCard icon={IconActivity} label="Platform Health" loading={loading}
           value={k ? `${k.healthScore}%` : ""} sub="live service checks" />
-        <KpiCard icon={FiAlertCircle} label="Open Issues" loading={loading}
+        <KpiCard icon={IconAlertCircle} label="Open Issues" loading={loading}
           value={k ? fmtNum(k.openIssues) : ""} sub="reports + open tickets" />
-        <KpiCard icon={FiLock} label="Funds in Escrow" loading={loading}
-          value={k ? fmtMoney(k.fundsInEscrow) : ""} sub="currently locked" />
       </div>
 
       {/* charts + system status */}

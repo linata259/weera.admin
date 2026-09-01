@@ -6,6 +6,9 @@ import PaymentConfiguration from './components/PaymentConfiguration';
 import UserSecuritySettings from './components/UserSecuritySettings';
 import { PlatformSettings, SettingsUpdate, fetchSettings, updateSetting, saveSettings } from './settingsApi';
 import { useNavbar } from '../../hooks/Navbarcontext';
+import { readDashboardCache, writeDashboardCache } from '../../utils/dashboardCache';
+
+const CACHE_KEY = 'platformSettings';
 
 const ORANGE   = '#EA580C';
 const SLATE    = '#64748B';
@@ -23,8 +26,8 @@ const TABS: Array<{ id: TabId; label: string }> = [
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabId>('general');
-  const [settings, setSettings] = useState<PlatformSettings | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [settings, setSettings] = useState<PlatformSettings | null>(() => readDashboardCache<PlatformSettings>(CACHE_KEY));
+  const [loading, setLoading] = useState(() => readDashboardCache<PlatformSettings>(CACHE_KEY) === null);
   const [globalStatus, setGlobalStatus] = useState<'idle' | 'saved' | 'error'>('idle');
 
   const { setBreadcrumb } = useNavbar();
@@ -40,6 +43,7 @@ export default function SettingsPage() {
   useEffect(() => {
     fetchSettings().then((s) => {
       setSettings(s);
+      writeDashboardCache(CACHE_KEY, s);
       setLoading(false);
     });
   }, []);

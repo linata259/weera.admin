@@ -6,6 +6,13 @@ import {
 import { supabase } from 'services/supabaseClient';
 import { fetchUsers } from '../api/userServices';
 import { User } from '../types';
+import { readDashboardCache, writeDashboardCache } from '../../../utils/dashboardCache';
+
+interface UserAnalyticsCache {
+  users: User[];
+  ratings: { user_id: string; client_rating: number }[];
+}
+const CACHE_KEY = 'userAnalyticsPage';
 
 // ── colour tokens ──────────────────────────────────────────────────────
 const ORANGE  = '#EA580C';
@@ -254,9 +261,10 @@ const PERIOD_OPTIONS: { value: GrowthPeriod; label: string }[] = [
 
 // ── main ───────────────────────────────────────────────────────────────
 const UserAnalytics: React.FC = () => {
-  const [users,   setUsers]   = useState<User[]>([]);
-  const [ratings, setRatings] = useState<{ user_id: string; client_rating: number }[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = readDashboardCache<UserAnalyticsCache>(CACHE_KEY);
+  const [users,   setUsers]   = useState<User[]>(cached?.users ?? []);
+  const [ratings, setRatings] = useState<{ user_id: string; client_rating: number }[]>(cached?.ratings ?? []);
+  const [loading, setLoading] = useState(cached === null);
   const [period,  setPeriod]  = useState<GrowthPeriod>('months');
 
   useEffect(() => {
@@ -268,7 +276,11 @@ const UserAnalytics: React.FC = () => {
           return (data ?? []) as { user_id: string; client_rating: number }[];
         }),
     ])
-      .then(([u, r]) => { setUsers(u); setRatings(r); })
+      .then(([u, r]) => {
+        setUsers(u);
+        setRatings(r);
+        writeDashboardCache<UserAnalyticsCache>(CACHE_KEY, { users: u, ratings: r });
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);

@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from "react";
 import {
-  FiGlobe, FiUserPlus, FiTrendingUp, FiVolume2, FiMail, FiRadio,
-  FiArrowUpRight, FiArrowDownRight,
-} from "react-icons/fi";
+  IconWorld, IconUserPlus, IconTrendingUp, IconVolume2, IconMail, IconBroadcast,
+  IconArrowUpRight, IconArrowDownRight,
+} from "@tabler/icons-react";
 
 import { fetchMarketingKpis, MarketingKpis } from "./services/marketingDashboardService";
 import { KpiTrend } from "./services/superAdminService";
 import { useUserGrowthChart } from "./hooks/useUserGrowthChart";
 import { UserGrowthChart } from "./components/UserGrowthChart";
 import { useNavbar } from "../../hooks/Navbarcontext";
+import { readDashboardCache, writeDashboardCache } from "../../utils/dashboardCache";
+
+const CACHE_KEY = "marketingKpis";
 
 const ORANGE = "#EA580C";
 const TEXT_DARK = "#0F172A";
@@ -39,7 +42,7 @@ const TrendChip: React.FC<{ trend: KpiTrend }> = ({ trend }) => {
   const color = flat ? MUTED : up ? GREEN : RED;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: MUTED }}>
-      {!flat && <Icon icon={up ? FiArrowUpRight : FiArrowDownRight} size={13} color={color} />}
+      {!flat && <Icon icon={up ? IconArrowUpRight : IconArrowDownRight} size={13} color={color} />}
       <span style={{ color, fontWeight: 700 }}>
         {flat ? "—" : `${up ? "+" : "-"}${trend.changePercent}%`}
       </span>
@@ -93,8 +96,12 @@ const TRAFFIC_SOURCES = [
 const CAMPAIGN_COLUMNS = ["Campaign", "Type", "Budget", "Spent", "Leads", "Conv.", "ROI", "Status", "Ends"];
 
 export function MarketingDashboardPage() {
-  const [kpis, setKpis] = useState<MarketingKpis | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [kpis, setKpis] = useState<MarketingKpis | null>(
+    () => readDashboardCache<MarketingKpis>(CACHE_KEY),
+  );
+  const [loading, setLoading] = useState(
+    () => readDashboardCache<MarketingKpis>(CACHE_KEY) === null,
+  );
   const { setBreadcrumb } = useNavbar();
 
   const { data: growthData, isLoading: growthLoading } = useUserGrowthChart();
@@ -106,7 +113,10 @@ export function MarketingDashboardPage() {
 
   useEffect(() => {
     fetchMarketingKpis()
-      .then(setKpis)
+      .then((d) => {
+        setKpis(d);
+        writeDashboardCache(CACHE_KEY, d);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -125,17 +135,17 @@ export function MarketingDashboardPage() {
         gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
         gap: 14,
       }}>
-        <KpiCard icon={FiGlobe} label="Website Visits MTD" loading={loading}
+        <KpiCard icon={IconWorld} label="Website Visits MTD" loading={loading}
           value="—" sub="analytics not connected yet" dim />
-        <KpiCard icon={FiUserPlus} label="Leads Generated" loading={loading}
+        <KpiCard icon={IconUserPlus} label="Leads Generated" loading={loading}
           value={k ? k.newUsersMtd.toLocaleString() : ""} trend={k?.newUsersTrend} />
-        <KpiCard icon={FiTrendingUp} label="Conversion Rate" loading={loading}
+        <KpiCard icon={IconTrendingUp} label="Conversion Rate" loading={loading}
           value="—" sub="needs visit tracking" dim />
-        <KpiCard icon={FiVolume2} label="Campaign ROI" loading={loading}
+        <KpiCard icon={IconVolume2} label="Campaign ROI" loading={loading}
           value="—" sub="no campaigns yet" dim />
-        <KpiCard icon={FiMail} label="Email Open Rate" loading={loading}
+        <KpiCard icon={IconMail} label="Email Open Rate" loading={loading}
           value="—" sub="email tracking coming soon" dim />
-        <KpiCard icon={FiRadio} label="Social Reach MTD" loading={loading}
+        <KpiCard icon={IconBroadcast} label="Social Reach MTD" loading={loading}
           value="—" sub="social not connected yet" dim />
       </div>
 

@@ -130,7 +130,8 @@ function LayoutRoute() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    // <BrowserRouter>
+    <BrowserRouter basename="/admin">
       <AuthGuard>
         <PermissionsProvider>
         <Routes>

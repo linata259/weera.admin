@@ -6,6 +6,10 @@ import { DetailDrawer } from '../components/Detaildrawer';
 import { MessageReportsTable } from '../components/Messagereportstable';
 import { ResponseModal } from '../components/Responsemodal';
 import { JobReportsTable } from '../components/table/Jobreportstable';
+import { readDashboardCache, writeDashboardCache } from '../../../utils/dashboardCache';
+
+const JR_CACHE_KEY = 'jobReportsPage';
+const MR_CACHE_KEY = 'messageReportsPage';
 
 
 /* ══════════════════════════════════════════════════════════════ */
@@ -13,10 +17,10 @@ const ReportsPage: React.FC = () => {
   const [tab, setTab] = useState<Tab>('job_reports');
 
   /* ── data ───────────────────────────────────────────────────── */
-  const [jobReports,     setJobReports]     = useState<JobReport[]>([]);
-  const [messageReports, setMessageReports] = useState<MessageReport[]>([]);
-  const [loadingJR,      setLoadingJR]      = useState(true);
-  const [loadingMR,      setLoadingMR]      = useState(true);
+  const [jobReports,     setJobReports]     = useState<JobReport[]>(() => readDashboardCache<JobReport[]>(JR_CACHE_KEY) ?? []);
+  const [messageReports, setMessageReports] = useState<MessageReport[]>(() => readDashboardCache<MessageReport[]>(MR_CACHE_KEY) ?? []);
+  const [loadingJR,      setLoadingJR]      = useState(() => readDashboardCache<JobReport[]>(JR_CACHE_KEY) === null);
+  const [loadingMR,      setLoadingMR]      = useState(() => readDashboardCache<MessageReport[]>(MR_CACHE_KEY) === null);
 
   /* ── filters ────────────────────────────────────────────────── */
   const [search,  setSearch]  = useState('');
@@ -56,12 +60,14 @@ const ReportsPage: React.FC = () => {
         { name: [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown', avatar: p.image_url ?? null },
       ]));
 
-      setJobReports(data.map((r: any): JobReport => ({
+      const mapped = data.map((r: any): JobReport => ({
         ...r,
         job_title:       jobMap.get(r.job_id)              ?? 'Unknown Job',
         reporter_name:   profMap.get(r.reporter_id)?.name   ?? 'Unknown',
         reporter_avatar: profMap.get(r.reporter_id)?.avatar ?? null,
-      })));
+      }));
+      setJobReports(mapped);
+      writeDashboardCache(JR_CACHE_KEY, mapped);
       setLoadingJR(false);
     };
     load();
@@ -84,11 +90,13 @@ const ReportsPage: React.FC = () => {
         { name: [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown', avatar: p.image_url ?? null },
       ]));
 
-      setMessageReports(data.map((r: any): MessageReport => ({
+      const mapped = data.map((r: any): MessageReport => ({
         ...r,
         reporter_name:   profMap.get(r.reporter_id)?.name   ?? 'Unknown',
         reporter_avatar: profMap.get(r.reporter_id)?.avatar ?? null,
-      })));
+      }));
+      setMessageReports(mapped);
+      writeDashboardCache(MR_CACHE_KEY, mapped);
       setLoadingMR(false);
     };
     load();

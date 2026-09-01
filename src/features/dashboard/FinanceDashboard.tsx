@@ -3,15 +3,18 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import {
-  FiDollarSign, FiPercent, FiAlertCircle, FiDownload, FiLock,
-  FiArrowUpRight, FiArrowDownRight,
-} from "react-icons/fi";
+  IconCurrencyDollar, IconPercentage, IconAlertCircle, IconDownload, IconLock,
+  IconArrowUpRight, IconArrowDownRight,
+} from "@tabler/icons-react";
 
 import {
   fetchFinanceDashboardData, FinanceDashboardData, TransactionRow,
 } from "./services/financeDashboardService";
 import { KpiTrend } from "./services/superAdminService";
 import { useNavbar } from "../../hooks/Navbarcontext";
+import { readDashboardCache, writeDashboardCache } from "../../utils/dashboardCache";
+
+const CACHE_KEY = "financeDashboardData";
 
 const ORANGE = "#EA580C";
 const TEXT_DARK = "#0F172A";
@@ -51,7 +54,7 @@ const TrendChip: React.FC<{ trend: KpiTrend }> = ({ trend }) => {
   const color = flat ? MUTED : up ? GREEN : RED;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: MUTED }}>
-      {!flat && <Icon icon={up ? FiArrowUpRight : FiArrowDownRight} size={13} color={color} />}
+      {!flat && <Icon icon={up ? IconArrowUpRight : IconArrowDownRight} size={13} color={color} />}
       <span style={{ color, fontWeight: 700 }}>
         {flat ? "—" : `${up ? "+" : "-"}${trend.changePercent}%`}
       </span>
@@ -140,8 +143,12 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
 /* ── Page ──────────────────────────────────────────────────── */
 
 export function FinanceDashboardPage() {
-  const [data, setData] = useState<FinanceDashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<FinanceDashboardData | null>(
+    () => readDashboardCache<FinanceDashboardData>(CACHE_KEY),
+  );
+  const [loading, setLoading] = useState(
+    () => readDashboardCache<FinanceDashboardData>(CACHE_KEY) === null,
+  );
   const [error, setError] = useState<string | null>(null);
   const [statusTab, setStatusTab] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -155,7 +162,7 @@ export function FinanceDashboardPage() {
 
   useEffect(() => {
     fetchFinanceDashboardData()
-      .then((d) => { setData(d); setError(null); })
+      .then((d) => { setData(d); setError(null); writeDashboardCache(CACHE_KEY, d); })
       .catch((e) => setError(e?.message ?? "Failed to load financial data"))
       .finally(() => setLoading(false));
   }, []);
@@ -197,15 +204,15 @@ export function FinanceDashboardPage() {
         gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
         gap: 14,
       }}>
-        <KpiCard icon={FiLock} label="Funds in Escrow" loading={loading}
+        <KpiCard icon={IconLock} label="Funds in Escrow" loading={loading}
           value={k ? fmtMoney(k.fundsInEscrow) : ""} sub="currently locked" />
-        <KpiCard icon={FiDollarSign} label="Total Revenue" loading={loading}
+        <KpiCard icon={IconCurrencyDollar} label="Total Revenue" loading={loading}
           value={k ? fmtMoney(k.totalRevenue) : ""} sub="all-time money in" />
-        <KpiCard icon={FiPercent} label="Platform Fees (10%)" loading={loading}
+        <KpiCard icon={IconPercentage} label="Platform Fees (10%)" loading={loading}
           value={k ? fmtMoney(k.platformFees) : ""} sub="earned commission" />
-        <KpiCard icon={FiAlertCircle} label="Failed Payments" loading={loading}
+        <KpiCard icon={IconAlertCircle} label="Failed Payments" loading={loading}
           value={k ? String(k.failedPayments) : ""} sub="all transactions" />
-        <KpiCard icon={FiDownload} label="Pending Withdrawals" loading={loading}
+        <KpiCard icon={IconDownload} label="Pending Withdrawals" loading={loading}
           value={k ? String(k.pendingWithdrawalsCount) : ""}
           sub={k ? `${fmtMoney(k.pendingWithdrawalsAmount)} total` : undefined} />
       </div>

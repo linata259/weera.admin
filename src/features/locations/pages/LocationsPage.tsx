@@ -6,6 +6,15 @@ import {
     createWard, updateWard, deleteWard,
 } from '../api/locationsService';
 import { County, SubCounty, Ward } from '../types';
+import { readDashboardCache, writeDashboardCache } from '../../../utils/dashboardCache';
+
+interface LocationsCache {
+    counties: County[];
+    subcounties: SubCounty[];
+    wards: Ward[];
+    selectedCounty: string | null;
+}
+const CACHE_KEY = 'locationsPage';
 
 const ORANGE = '#EA580C';
 const NAVY = '#0F172A';
@@ -251,11 +260,12 @@ function Column({
 
 /* ── page ──────────────────────────────────────────────────── */
 const LocationsPage: React.FC = () => {
-    const [counties, setCounties] = useState<County[]>([]);
-    const [subcounties, setSubcounties] = useState<SubCounty[]>([]);
-    const [wards, setWards] = useState<Ward[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [selectedCounty, setSelectedCounty] = useState<string | null>(null);
+    const cached = readDashboardCache<LocationsCache>(CACHE_KEY);
+    const [counties, setCounties] = useState<County[]>(cached?.counties ?? []);
+    const [subcounties, setSubcounties] = useState<SubCounty[]>(cached?.subcounties ?? []);
+    const [wards, setWards] = useState<Ward[]>(cached?.wards ?? []);
+    const [loading, setLoading] = useState(cached === null);
+    const [selectedCounty, setSelectedCounty] = useState<string | null>(cached?.selectedCounty ?? null);
     const [selectedSubcounty, setSelectedSubcounty] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
@@ -263,7 +273,13 @@ const LocationsPage: React.FC = () => {
         Promise.all([fetchCounties(), fetchSubcounties(), fetchWards()])
             .then(([c, s, w]) => {
                 setCounties(c); setSubcounties(s); setWards(w);
-                if (c.length > 0) setSelectedCounty(c[0].id);
+                setSelectedCounty((prev) => {
+                    const next = prev && c.some((county) => county.id === prev) ? prev : (c[0]?.id ?? null);
+                    writeDashboardCache<LocationsCache>(CACHE_KEY, {
+                        counties: c, subcounties: s, wards: w, selectedCounty: next,
+                    });
+                    return next;
+                });
             })
             .finally(() => setLoading(false));
     }, []);

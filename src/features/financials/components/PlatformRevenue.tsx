@@ -114,7 +114,7 @@ export const PlatformRevenue: React.FC = () => {
     [sourceTypes],
   );
 
-  const t = useServerTable<RevenueRow>(fetcher, { defaultSort: "created_at" });
+  const t = useServerTable<RevenueRow>(fetcher, { defaultSort: "created_at", cacheKey: "platformRevenueTable" });
 
   useEffect(() => {
     fetchRevenueTrend()

@@ -13,6 +13,15 @@ import { FinancialSummary, MonthlyCommission, MonthlyRevenue, RefundRequest } fr
 import { exportCsv } from "../utils/exportCsv";
 import { exportPdf } from "../utils/exportPdf";
 import { Avatar } from "../../shared/Avatar";
+import { readDashboardCache, writeDashboardCache } from "../../../utils/dashboardCache";
+
+interface FinancialDashboardCache {
+  summary: FinancialSummary;
+  monthly: MonthlyRevenue[];
+  commission: MonthlyCommission[];
+  refunds: RefundRequest[];
+}
+const CACHE_KEY = "financialDashboardPage";
 
 // ── Add RefundRequest to your ../types file if not already there:
 // export interface RefundRequest {
@@ -535,11 +544,12 @@ const DeclineBtn: React.FC<{ onClick?: () => void; block?: boolean }> = ({ onCli
 
 /* ─── FinancialDashboard ────────────────────────────────────── */
 export const FinancialDashboard: React.FC = () => {
-  const [summary, setSummary]         = useState<FinancialSummary | null>(null);
-  const [monthly, setMonthly]         = useState<MonthlyRevenue[]>([]);
-  const [commission, setCommission]   = useState<MonthlyCommission[]>([]);
-  const [refunds, setRefunds]         = useState<RefundRequest[]>([]);
-  const [loading, setLoading]         = useState(true);
+  const cached = readDashboardCache<FinancialDashboardCache>(CACHE_KEY);
+  const [summary, setSummary]         = useState<FinancialSummary | null>(cached?.summary ?? null);
+  const [monthly, setMonthly]         = useState<MonthlyRevenue[]>(cached?.monthly ?? []);
+  const [commission, setCommission]   = useState<MonthlyCommission[]>(cached?.commission ?? []);
+  const [refunds, setRefunds]         = useState<RefundRequest[]>(cached?.refunds ?? []);
+  const [loading, setLoading]         = useState(cached === null);
   const [sortKey, setSortKey]         = useState<keyof RefundRequest>("requestedAt");
   const [sortDir, setSortDir]         = useState<"asc" | "desc">("desc");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -557,6 +567,9 @@ export const FinancialDashboard: React.FC = () => {
         setMonthly(m);
         setCommission(c);
         setRefunds(r);
+        writeDashboardCache<FinancialDashboardCache>(CACHE_KEY, {
+          summary: s, monthly: m, commission: c, refunds: r,
+        });
       })
       .finally(() => setLoading(false));
   }, []);
@@ -710,6 +723,7 @@ export const FinancialDashboard: React.FC = () => {
             </div>
           ) : (
             /* ── DESKTOP table ── */
+            <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 800 }}>
               <thead>
                 <tr>
@@ -773,6 +787,7 @@ export const FinancialDashboard: React.FC = () => {
                 }
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </div>

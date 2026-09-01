@@ -1,4 +1,4 @@
-import React, { lazy, useCallback, useEffect, useMemo, useState } from "react";
+import React, { lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import {
   ChatModerationData,
@@ -9,6 +9,9 @@ import {
 } from "../api/chatService";
 import type { Conversation, FlagStatus, FlaggedMessage } from "../types";
 import { LazyBoundary } from "../../../components/LazyBoundary";
+import { readDashboardCache, writeDashboardCache } from "../../../utils/dashboardCache";
+
+const CACHE_KEY = "chatsPageData";
 
 /* Three tabs and a slide-over, all downloaded to show one of them. Overview is
  * the expensive one — it is the only part of this page that needs the charting
@@ -46,17 +49,28 @@ const EMPTY: ChatModerationData = {
 };
 
 const ChatsPage: React.FC = () => {
+  const cachedData = readDashboardCache<ChatModerationData>(CACHE_KEY);
+  const hadCache = useRef(cachedData !== null);
+  const isFirstLoad = useRef(true);
+
   const [tab, setTab] = useState<TabKey>("overview");
-  const [data, setData] = useState<ChatModerationData>(EMPTY);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<ChatModerationData>(cachedData ?? EMPTY);
+  const [loading, setLoading] = useState(cachedData === null);
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
   const [openConv, setOpenConv] = useState<Conversation | null>(null);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    // Skip re-blocking the UI only for the very first call when we already
+    // had cached data to show; any later refresh (after an action, etc.)
+    // still shows the loading state as before.
+    if (!(isFirstLoad.current && hadCache.current)) {
+      setLoading(true);
+    }
+    isFirstLoad.current = false;
     try {
       const result = await fetchChatModerationData();
       setData(result);
+      writeDashboardCache(CACHE_KEY, result);
     } catch (e) {
       console.error("Chat moderation load failed:", e);
       toast.error("Unable to load chats.");

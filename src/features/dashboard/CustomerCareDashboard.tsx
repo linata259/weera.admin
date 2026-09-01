@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  FiLifeBuoy, FiAlertOctagon, FiMessageSquare, FiFlag, FiUserPlus, FiBell,
-  FiArrowUpRight, FiArrowDownRight,
-} from "react-icons/fi";
+  IconLifebuoy, IconAlertOctagon, IconMessageCircle, IconFlag, IconUserPlus, IconBell,
+  IconArrowUpRight, IconArrowDownRight,
+} from "@tabler/icons-react";
 
 import { supabase } from "services/supabaseClient";
 import { fetchSupportTickets } from "../helpSupport/api/supportTicketService";
@@ -12,6 +12,17 @@ import { fetchNotifications } from "../notifications/services/notificationServic
 import { AdminNotification } from "../notifications/types";
 import { KpiTrend } from "./services/superAdminService";
 import { useNavbar } from "../../hooks/Navbarcontext";
+import { readDashboardCache, writeDashboardCache } from "../../utils/dashboardCache";
+
+interface CustomerCareCache {
+  tickets: SupportTicket[];
+  notifications: AdminNotification[];
+  flaggedChats: number;
+  jobReports: number;
+  newUsersMtd: number;
+}
+
+const CACHE_KEY = "customerCareDashboard";
 
 const ORANGE = "#EA580C";
 const TEXT_DARK = "#0F172A";
@@ -115,7 +126,7 @@ const KpiCard: React.FC<{
     {!loading && (trend ? (
       <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: MUTED }}>
         {trend.direction !== "flat" && (
-          <Icon icon={trend.direction === "up" ? FiArrowUpRight : FiArrowDownRight}
+          <Icon icon={trend.direction === "up" ? IconArrowUpRight : IconArrowDownRight}
             size={13} color={trend.direction === "up" ? GREEN : RED} />
         )}
         <span style={{ color: trend.direction === "flat" ? MUTED : trend.direction === "up" ? GREEN : RED, fontWeight: 700 }}>
@@ -133,12 +144,13 @@ export function CustomerCareDashboardPage() {
   const navigate = useNavigate();
   const { setBreadcrumb } = useNavbar();
 
-  const [tickets, setTickets] = useState<SupportTicket[]>([]);
-  const [notifications, setNotifications] = useState<AdminNotification[]>([]);
-  const [flaggedChats, setFlaggedChats] = useState(0);
-  const [jobReports, setJobReports] = useState(0);
-  const [newUsersMtd, setNewUsersMtd] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const cached = readDashboardCache<CustomerCareCache>(CACHE_KEY);
+  const [tickets, setTickets] = useState<SupportTicket[]>(cached?.tickets ?? []);
+  const [notifications, setNotifications] = useState<AdminNotification[]>(cached?.notifications ?? []);
+  const [flaggedChats, setFlaggedChats] = useState(cached?.flaggedChats ?? 0);
+  const [jobReports, setJobReports] = useState(cached?.jobReports ?? 0);
+  const [newUsersMtd, setNewUsersMtd] = useState(cached?.newUsersMtd ?? 0);
+  const [loading, setLoading] = useState(cached === null);
 
   useEffect(() => {
     setBreadcrumb({ parent: "", current: "Customer Care Dashboard" });
@@ -166,6 +178,9 @@ export function CustomerCareDashboardPage() {
         setFlaggedChats(chats);
         setJobReports(reports);
         setNewUsersMtd(users);
+        writeDashboardCache<CustomerCareCache>(CACHE_KEY, {
+          tickets: t, notifications: n, flaggedChats: chats, jobReports: reports, newUsersMtd: users,
+        });
       })
       .finally(() => setLoading(false));
   }, []);
@@ -222,17 +237,17 @@ export function CustomerCareDashboardPage() {
         gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
         gap: 14,
       }}>
-        <KpiCard icon={FiLifeBuoy} label="Open Tickets" loading={loading}
+        <KpiCard icon={IconLifebuoy} label="Open Tickets" loading={loading}
           value={String(openTickets.length)} sub={`${tickets.length} total`} />
-        <KpiCard icon={FiAlertOctagon} label="Urgent Tickets" accent={RED} loading={loading}
+        <KpiCard icon={IconAlertOctagon} label="Urgent Tickets" accent={RED} loading={loading}
           value={String(urgentCount)} sub="need attention now" />
-        <KpiCard icon={FiMessageSquare} label="Flagged Chats" accent={AMBER} loading={loading}
+        <KpiCard icon={IconMessageCircle} label="Flagged Chats" accent={AMBER} loading={loading}
           value={String(flaggedChats)} sub="awaiting moderation" />
-        <KpiCard icon={FiFlag} label="Job Reports" accent={AMBER} loading={loading}
+        <KpiCard icon={IconFlag} label="Job Reports" accent={AMBER} loading={loading}
           value={String(jobReports)} sub="pending review" />
-        <KpiCard icon={FiUserPlus} label="New Users" accent={BLUE} loading={loading}
+        <KpiCard icon={IconUserPlus} label="New Users" accent={BLUE} loading={loading}
           value={newUsersMtd.toLocaleString()} sub="this month" />
-        <KpiCard icon={FiBell} label="Notifications" loading={loading}
+        <KpiCard icon={IconBell} label="Notifications" loading={loading}
           value={String(unreadNotifications)} sub="unread" />
       </div>
 

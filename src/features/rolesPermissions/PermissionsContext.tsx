@@ -3,6 +3,31 @@ import React, {
 } from "react";
 import { supabase } from "services/supabaseClient";
 
+interface PermissionsCache {
+  roleName: string | null;
+  permissions: Record<string, ModulePermission>;
+  fullAccess: boolean;
+}
+
+const CACHE_KEY = "weera_admin_permissions";
+
+function readPermissionsCache(): PermissionsCache | null {
+  try {
+    const raw = window.localStorage.getItem(CACHE_KEY);
+    return raw ? (JSON.parse(raw) as PermissionsCache) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writePermissionsCache(cache: PermissionsCache): void {
+  try {
+    window.localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // ignore — this is a nice-to-have cache, not required for correctness
+  }
+}
+
 export interface ModulePermission {
   module: string;
   can_view: boolean;
@@ -31,17 +56,26 @@ const PermissionsContext = createContext<PermissionsState>({
  * shows the previous user's dashboard or navigation.
  */
 export function PermissionsProvider({ children }: { children: React.ReactNode }) {
-  const [loading, setLoading] = useState(true);
-  const [roleName, setRoleName] = useState<string | null>(null);
-  const [permissions, setPermissions] = useState<Record<string, ModulePermission>>({});
-  const [fullAccess, setFullAccess] = useState(false);
+  const cached = readPermissionsCache();
+  const [loading, setLoading] = useState(cached === null);
+  const [roleName, setRoleName] = useState<string | null>(cached?.roleName ?? null);
+  const [permissions, setPermissions] = useState<Record<string, ModulePermission>>(cached?.permissions ?? {});
+  const [fullAccess, setFullAccess] = useState(cached?.fullAccess ?? false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    // reset before fetching so a previous user's role never leaks through
-    setRoleName(null);
-    setPermissions({});
-    setFullAccess(false);
+  // `isInitial` is true only for the very first load on mount. When we
+  // already have a cached role/permission set to show (e.g. the browser
+  // discarded this tab in the background and reloaded it when the admin
+  // switched back), that first load runs quietly behind the cached UI
+  // instead of blanking the screen back to a spinner. A real auth change
+  // (sign in/out, a different user) always resets and shows the spinner,
+  // since stale permissions must never leak across accounts.
+  const load = useCallback(async (isInitial = false) => {
+    if (!isInitial) {
+      setLoading(true);
+      setRoleName(null);
+      setPermissions({});
+      setFullAccess(false);
+    }
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
@@ -54,6 +88,7 @@ export function PermissionsProvider({ children }: { children: React.ReactNode })
 
       if (!profile?.role_id) {
         setFullAccess(true); // legacy admin without an assigned role
+        writePermissionsCache({ roleName: null, permissions: {}, fullAccess: true });
         return;
       }
 
@@ -63,7 +98,8 @@ export function PermissionsProvider({ children }: { children: React.ReactNode })
         supabase.from("permissions").select("id, module"),
       ]);
 
-      setRoleName((roleRes.data as any)?.name ?? null);
+      const resolvedRoleName = (roleRes.data as any)?.name ?? null;
+      setRoleName(resolvedRoleName);
 
       const moduleById = new Map(
         ((allPermsRes.data ?? []) as any[]).map((p) => [p.id, p.module as string]),
@@ -81,19 +117,24 @@ export function PermissionsProvider({ children }: { children: React.ReactNode })
         };
       }
       setPermissions(map);
+      writePermissionsCache({ roleName: resolvedRoleName, permissions: map, fullAccess: false });
+    } catch {
+      window.localStorage.removeItem(CACHE_KEY);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    load();
+    load(cached !== null);
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
+        window.localStorage.removeItem(CACHE_KEY);
         load();
       }
     });
     return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [load]);
 
   const can: PermissionsState["can"] = (module, action = "can_view") => {

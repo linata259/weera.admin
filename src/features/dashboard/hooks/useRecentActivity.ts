@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { fetchRecentActivity } from '../services/dashboardService';
 import { ActivityItem } from '../types';
-
+import { readDashboardCache, writeDashboardCache } from '../../../utils/dashboardCache';
 
 interface UseRecentActivityResult {
   activity: ActivityItem[];
@@ -11,8 +11,13 @@ interface UseRecentActivityResult {
 }
 
 export function useRecentActivity(limit = 10): UseRecentActivityResult {
-  const [activity, setActivity] = useState<ActivityItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const cacheKey = `recentActivity::${limit}`;
+  const [activity, setActivity] = useState<ActivityItem[]>(
+    () => readDashboardCache<ActivityItem[]>(cacheKey) ?? [],
+  );
+  const [isLoading, setIsLoading] = useState(
+    () => readDashboardCache<ActivityItem[]>(cacheKey) === null,
+  );
   const [error, setError] = useState<string | null>(null);
   const [refetchToken, setRefetchToken] = useState(0);
 
@@ -20,12 +25,14 @@ export function useRecentActivity(limit = 10): UseRecentActivityResult {
 
   useEffect(() => {
     let isCancelled = false;
-    setIsLoading(true);
     setError(null);
 
     fetchRecentActivity(limit)
       .then((data) => {
-        if (!isCancelled) setActivity(data);
+        if (!isCancelled) {
+          setActivity(data);
+          writeDashboardCache(cacheKey, data);
+        }
       })
       .catch((err: unknown) => {
         if (!isCancelled) {
@@ -39,6 +46,7 @@ export function useRecentActivity(limit = 10): UseRecentActivityResult {
     return () => {
       isCancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [limit, refetchToken]);
 
   return { activity, isLoading, error, refetch };

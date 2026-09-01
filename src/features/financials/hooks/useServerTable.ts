@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Page, PageParams } from "../api/financialService";
+import { readDashboardCache, writeDashboardCache } from "../../../utils/dashboardCache";
 
 /* ─── Server-paged table state ────────────────────────────────────────────────
  *
@@ -17,6 +18,14 @@ export interface ServerTableOptions {
   defaultSort: string;
   defaultSortDir?: SortDir;
   defaultPageSize?: number;
+  /**
+   * When set, the default (page 1, no filters) result is cached in
+   * localStorage under this key so a fresh remount — e.g. the browser
+   * discarding this tab in the background and reloading it — can show the
+   * last-known rows immediately instead of an empty skeleton, while the
+   * real request runs quietly behind it. Omit to opt out.
+   */
+  cacheKey?: string;
 }
 
 export interface ServerTableState<T> {
@@ -53,13 +62,36 @@ export interface ServerTableState<T> {
 
 const SEARCH_DEBOUNCE_MS = 350;
 
+function defaultParamsFor(opts: ServerTableOptions): PageParams {
+  return {
+    page: 1,
+    pageSize: opts.defaultPageSize ?? 25,
+    search: "",
+    status: "all",
+    type: "all",
+    dateFrom: "",
+    dateTo: "",
+    sortKey: opts.defaultSort,
+    sortDir: opts.defaultSortDir ?? "desc",
+  };
+}
+
 export function useServerTable<T>(
   fetcher: (p: PageParams) => Promise<Page<T>>,
   opts: ServerTableOptions,
 ): ServerTableState<T> {
-  const [rows, setRows] = useState<T[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
+  // Only the default (page 1, unfiltered) view is ever cached — that's the
+  // one a fresh remount actually shows.
+  const defaultCacheStorageKey = opts.cacheKey
+    ? `${opts.cacheKey}::${JSON.stringify(defaultParamsFor(opts))}`
+    : null;
+  const cached = defaultCacheStorageKey
+    ? readDashboardCache<{ rows: T[]; total: number }>(defaultCacheStorageKey)
+    : null;
+
+  const [rows, setRows] = useState<T[]>(cached?.rows ?? []);
+  const [total, setTotal] = useState(cached?.total ?? 0);
+  const [loading, setLoading] = useState(cached === null);
   const [refreshing, setRefreshing] = useState(false);
 
   const [page, setPage] = useState(1);
@@ -117,7 +149,9 @@ export function useServerTable<T>(
   // Serialised so the effect below compares values, not object identity.
   const key = JSON.stringify(params);
 
-  const firstLoad = useRef(true);
+  // When cache already put rows on screen, the first effect run is a quiet
+  // background refresh (refreshing), not a blocking first load (loading).
+  const firstLoad = useRef(cached === null);
   const latest = useRef(0);
 
   useEffect(() => {
@@ -131,6 +165,9 @@ export function useServerTable<T>(
         if (req !== latest.current) return;
         setRows(res.rows);
         setTotal(res.total);
+        if (defaultCacheStorageKey && key === JSON.stringify(defaultParamsFor(opts))) {
+          writeDashboardCache(defaultCacheStorageKey, { rows: res.rows, total: res.total });
+        }
       })
       .finally(() => {
         if (req !== latest.current) return;
@@ -138,6 +175,7 @@ export function useServerTable<T>(
         setLoading(false);
         setRefreshing(false);
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, fetcher, nonce]);
 
   // Read in a callback that must not re-create itself on every sort change.

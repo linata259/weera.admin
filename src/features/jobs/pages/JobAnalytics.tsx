@@ -5,6 +5,13 @@ import { BidStats, buildGrowthBuckets, ChartCard, DonutChart, DonutSegment, GREE
 import { effectiveStatus, getExpiredAt, getRepostedAt, isJobExpired, isJobReposted } from '../utils/jobLifecycle';
 import type { LifecyclePoint } from '../components/LifecycleChart';
 import { LazyBoundary, LazyChart } from '../../../components/LazyBoundary';
+import { readDashboardCache, writeDashboardCache } from '../../../utils/dashboardCache';
+
+interface JobAnalyticsCache {
+  jobs: Job[];
+  bids: BidRecord[];
+}
+const CACHE_KEY = 'jobAnalyticsPage';
 
 /* Both of these draw with recharts. Splitting them out lets the KPI cards and
  * tables on this page paint before the charting library has finished
@@ -25,15 +32,20 @@ const MAIN_TABS: { id: TabView; label: string }[] = [
 
 // ── main component ─────────────────────────────────────────────────────
 const JobAnalytics: React.FC = () => {
-  const [jobs, setJobs]     = useState<Job[]>([]);
-  const [bids, setBids]     = useState<BidRecord[]>([]);
-  const [loading, setLoading]               = useState(true);
+  const cached = readDashboardCache<JobAnalyticsCache>(CACHE_KEY);
+  const [jobs, setJobs]     = useState<Job[]>(cached?.jobs ?? []);
+  const [bids, setBids]     = useState<BidRecord[]>(cached?.bids ?? []);
+  const [loading, setLoading]               = useState(cached === null);
   const [tab, setTab]                       = useState<TabView>('overview');
   const [combinedPeriod, setCombinedPeriod] = useState<GrowthPeriod>('months');
 
   useEffect(() => {
     Promise.all([fetchJobs(), fetchBids()])
-      .then(([j, b]) => { setJobs(j); setBids(b as BidRecord[]); })
+      .then(([j, b]) => {
+        setJobs(j);
+        setBids(b as BidRecord[]);
+        writeDashboardCache<JobAnalyticsCache>(CACHE_KEY, { jobs: j, bids: b as BidRecord[] });
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);

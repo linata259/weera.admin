@@ -81,6 +81,7 @@ export const EscrowManagement: React.FC = () => {
   const isMobile = useIsMobile();
   const t = useServerTable<EscrowTransaction>(fetchEscrowPage, {
     defaultSort: "created_at",
+    cacheKey: "escrowTable",
   });
 
   const [statusOpts, setStatusOpts] = useState<string[]>([]);

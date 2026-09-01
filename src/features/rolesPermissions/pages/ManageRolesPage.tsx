@@ -6,18 +6,21 @@ import {
   card, th, td, MUTED, TEXT, BORDER,
   PrimaryButton, GhostButton, RoleBadge, ErrorNote, Spinner,
 } from "../components/ui";
+import { readDashboardCache, writeDashboardCache } from "../../../utils/dashboardCache";
+
+const CACHE_KEY = "manageRolesPage";
 
 const ManageRolesPage: React.FC = () => {
   const navigate = useNavigate();
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [roles, setRoles] = useState<Role[]>(() => readDashboardCache<Role[]>(CACHE_KEY) ?? []);
+  const [loading, setLoading] = useState(() => readDashboardCache<Role[]>(CACHE_KEY) === null);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const load = () => {
     setLoading(true);
     fetchRoles()
-      .then((r) => { setRoles(r); setError(null); })
+      .then((r) => { setRoles(r); setError(null); writeDashboardCache(CACHE_KEY, r); })
       .catch((e) =>
         setError(
           e?.message?.includes("does not exist") || e?.code === "42P01"

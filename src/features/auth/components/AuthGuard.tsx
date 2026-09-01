@@ -8,13 +8,26 @@ interface Props {
 
 type AuthState = "loading" | "authenticated" | "unauthenticated";
 
+// Remembers "this browser was a verified admin" so a remount — e.g. the
+// browser discarding a background tab and reloading it when the admin
+// switches back — can skip straight to the app instead of blocking behind
+// a full-page spinner while checkSession() re-does the round trip. The
+// session itself is still re-verified in the background on every mount;
+// this only changes what's shown while that happens.
+const VERIFIED_KEY = "weera_admin_verified";
+
 export const AuthGuard: React.FC<Props> = ({ children }) => {
-  const [state, setState] = useState<AuthState>("loading");
+  const [state, setState] = useState<AuthState>(() => (
+    (typeof window !== "undefined" && window.localStorage.getItem(VERIFIED_KEY) === "1")
+      ? "authenticated"
+      : "loading"
+  ));
 
   const checkSession = async () => {
     const { data: { session } } = await supabase.auth.getSession();
 
     if (!session) {
+      window.localStorage.removeItem(VERIFIED_KEY);
       setState("unauthenticated");
       return;
     }
@@ -27,8 +40,10 @@ export const AuthGuard: React.FC<Props> = ({ children }) => {
       .single();
 
     if (profile?.role === "admin") {
+      window.localStorage.setItem(VERIFIED_KEY, "1");
       setState("authenticated");
     } else {
+      window.localStorage.removeItem(VERIFIED_KEY);
       await supabase.auth.signOut();
       setState("unauthenticated");
     }
@@ -39,7 +54,10 @@ export const AuthGuard: React.FC<Props> = ({ children }) => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event) => {
-        if (event === "SIGNED_OUT") setState("unauthenticated");
+        if (event === "SIGNED_OUT") {
+          window.localStorage.removeItem(VERIFIED_KEY);
+          setState("unauthenticated");
+        }
         if (event === "SIGNED_IN")  checkSession();
       }
     );

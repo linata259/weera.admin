@@ -6,6 +6,10 @@ import { JobTable } from "../components/table/JobTable";
 import { JobDetailsModal } from "../components/JobDetailsModal";
 import { JobAgeStatusTable } from "../components/table/Jobagestatustable";
 import { useSearchParams } from 'react-router-dom';
+import { readDashboardCache, writeDashboardCache } from "../../../utils/dashboardCache";
+
+const JOBS_CACHE_KEY = "jobsPage";
+const BIDS_CACHE_KEY = "jobsPageBids";
 /* -------------------------------------------------------------------------- */
 /*                                   TYPES                                    */
 /* -------------------------------------------------------------------------- */
@@ -305,8 +309,8 @@ const sanitizeImageUrl = (url: string | null): string | null => {
 type MainTab = "all" | "bids" | "ageStatus";
 
 const Jobs: React.FC = () => {
-    const [jobs, setJobs]                 = useState<Job[]>([]);
-    const [bids, setBids]                 = useState<BidRecord[]>([]);
+    const [jobs, setJobs]                 = useState<Job[]>(() => readDashboardCache<Job[]>(JOBS_CACHE_KEY) ?? []);
+    const [bids, setBids]                 = useState<BidRecord[]>(() => readDashboardCache<BidRecord[]>(BIDS_CACHE_KEY) ?? []);
     const [viewingJob, setViewingJob]     = useState<Job | null>(null);
     const [mainTab, setMainTab]           = useState<MainTab>("all");
     const [bidTableGroup, setBidTableGroup] = useState<BidTableGroup>('all');
@@ -344,11 +348,17 @@ const Jobs: React.FC = () => {
                 };
             });
             setJobs(sanitizedJobs);
+            writeDashboardCache(JOBS_CACHE_KEY, sanitizedJobs);
         });
     }, []);
 
     useEffect(() => {
-        fetchBids().then(data => setBids(data as BidRecord[])).catch(console.error);
+        fetchBids()
+            .then(data => {
+                setBids(data as BidRecord[]);
+                writeDashboardCache(BIDS_CACHE_KEY, data);
+            })
+            .catch(console.error);
     }, []);
 
     /* ---------------------------------------------------------------------- */

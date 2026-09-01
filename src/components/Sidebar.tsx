@@ -3,20 +3,22 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  FiGrid,
-  FiUsers,
-  FiBriefcase,
-  FiDollarSign,
-  FiAlertTriangle,
-  FiBell,
-  FiShield,
-  FiBarChart2,
-  FiSettings,
-  FiMessageSquare,
-  FiTarget,
-  FiChevronDown,
-  FiChevronRight,
-  FiMapPin,} from "react-icons/fi";
+  IconLayoutGrid,
+  IconUsers,
+  IconBriefcase,
+  IconCurrencyDollar,
+  IconAlertTriangle,
+  IconBell,
+  IconShield,
+  IconChartBar,
+  IconSettings,
+  IconMessageCircle,
+  IconTarget,
+  IconChevronDown,
+  IconChevronRight,
+  IconMapPin,
+  IconLifebuoy,
+} from "@tabler/icons-react";
 
 const PRIMARY = "#EA580C";
 const PRIMARY_LIGHT = "#FFF4EE";
@@ -48,7 +50,8 @@ interface SidebarProps {
 
 const WeeraIcon: React.FC<{ size?: number }> = ({ size = 15 }) => (
   <img
-    src="/images/app_icon_fg.png"
+    // src="/images/app_icon_fg.png"
+    src={`${process.env.PUBLIC_URL}/images/4.png`}
     width={size}
     height={size}
     alt="Weera logo"
@@ -59,7 +62,7 @@ const WeeraIcon: React.FC<{ size?: number }> = ({ size = 15 }) => (
   />
 );
 
-// NEW — react-icons' bundled types resolve to a return type TS won't accept
+// Tabler icons' component types resolve to a return type TS won't accept
 // directly as a JSX tag under newer @types/react (TS2786). This wrapper casts
 // once, in one place, instead of needing `as any` at every icon usage.
 const Icon: React.FC<{ icon: (props: any) => any; size?: number }> = ({ icon, size }) => {
@@ -72,18 +75,19 @@ const Icon: React.FC<{ icon: (props: any) => any; size?: number }> = ({ icon, si
 // so this works without needing to touch wherever `features` is built.
 const getModernIcon = (label: string): React.ReactNode | null => {
   const l = label.toLowerCase();
-  if (l.includes("dashboard")) return <Icon icon={FiGrid} size={18} />;
-  if (l.includes("user")) return <Icon icon={FiUsers} size={18} />;
-  if (l.includes("job")) return <Icon icon={FiBriefcase} size={18} />;
-  if (l.includes("financ")) return <Icon icon={FiDollarSign} size={18} />;
-  if (l.includes("skill")) return <Icon icon={FiTarget} size={18} />;
-  if (l.includes("location")) return <Icon icon={FiMapPin} size={18} />;
-  if (l.includes("chat") || l.includes("moderation")) return <Icon icon={FiMessageSquare} size={18} />;
-  if (l.includes("dispute")) return <Icon icon={FiAlertTriangle} size={18} />;
-  if (l.includes("notification")) return <Icon icon={FiBell} size={18} />;
-  if (l.includes("role") || l.includes("permission")) return <Icon icon={FiShield} size={18} />;
-  if (l.includes("report")) return <Icon icon={FiBarChart2} size={18} />;
-  if (l.includes("setting")) return <Icon icon={FiSettings} size={18} />;
+  if (l.includes("dashboard")) return <Icon icon={IconLayoutGrid} size={18} />;
+  if (l.includes("user")) return <Icon icon={IconUsers} size={18} />;
+  if (l.includes("job")) return <Icon icon={IconBriefcase} size={18} />;
+  if (l.includes("financ")) return <Icon icon={IconCurrencyDollar} size={18} />;
+  if (l.includes("skill")) return <Icon icon={IconTarget} size={18} />;
+  if (l.includes("location")) return <Icon icon={IconMapPin} size={18} />;
+  if (l.includes("help") || l.includes("support")) return <Icon icon={IconLifebuoy} size={18} />;
+  if (l.includes("chat") || l.includes("moderation")) return <Icon icon={IconMessageCircle} size={18} />;
+  if (l.includes("dispute")) return <Icon icon={IconAlertTriangle} size={18} />;
+  if (l.includes("notification")) return <Icon icon={IconBell} size={18} />;
+  if (l.includes("role") || l.includes("permission")) return <Icon icon={IconShield} size={18} />;
+  if (l.includes("report")) return <Icon icon={IconChartBar} size={18} />;
+  if (l.includes("setting")) return <Icon icon={IconSettings} size={18} />;
   return null;
 };
 
@@ -101,6 +105,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     users: true,
   });
+
+  // Icons/labels are black by default, orange on hover, orange while active.
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   // NEW — same mobile-detection pattern used elsewhere in the app
   const [isMobile, setIsMobile] = useState(false);
@@ -304,6 +311,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           });
                         }
                       }}
+                      onMouseEnter={() => setHoveredId(group.id)}
+                      onMouseLeave={() => setHoveredId(null)}
                       title={effectiveCollapsed ? group.label : undefined}
                       style={{
                         width: "100%",
@@ -317,13 +326,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         gap: 14,
                         padding: effectiveCollapsed ? "0" : "0 16px",
                         background: groupActive ? PRIMARY_LIGHT : "transparent",
-                        color: groupActive ? PRIMARY_TEXT : "#475569",
+                        color: groupActive || hoveredId === group.id ? PRIMARY_TEXT : "#000000",
                         fontWeight: groupActive ? 600 : 500,
                         fontSize: 14,
                         transition: "all 0.2s ease",
                       }}
                     >
-                      {/* ICON — CHANGED: modern react-icons, label-matched */}
+                      {/* ICON — Tabler icons, label-matched */}
                       <span
                         style={{
                           flexShrink: 0,
@@ -348,7 +357,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             {group.label}
                           </span>
 
-                          {/* CHEVRON — CHANGED: react-icons instead of text glyphs */}
+                          {/* CHEVRON — Tabler icons instead of text glyphs */}
                           {hasChildren && (
                             <span
                               style={{
@@ -358,7 +367,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                 opacity: 0.7,
                               }}
                             >
-                              {isOpen ? <Icon icon={FiChevronDown} size={14} /> : <Icon icon={FiChevronRight} size={14} />}
+                              {isOpen ? <Icon icon={IconChevronDown} size={14} /> : <Icon icon={IconChevronRight} size={14} />}
                             </span>
                           )}
                         </>
@@ -382,6 +391,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         >
                           <button
                             onClick={() => handleClick(child)}
+                            onMouseEnter={() => setHoveredId(child.id)}
+                            onMouseLeave={() => setHoveredId(null)}
                             style={{
                               width: "100%",
                               height: 44,
@@ -395,13 +406,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                               background: childActive
                                 ? PRIMARY_LIGHT
                                 : "transparent",
-                              color: childActive ? PRIMARY_TEXT : "#64748B",
+                              color: childActive || hoveredId === child.id ? PRIMARY_TEXT : "#000000",
                               fontWeight: childActive ? 600 : 400,
                               fontSize: 13,
                               transition: "all 0.2s ease",
                             }}
                           >
-                            {/* CHANGED: modern react-icons, label-matched, falls back to original */}
+                            {/* Tabler icons, label-matched, falls back to original */}
                             {child.icon && (
                               <span
                                 style={{

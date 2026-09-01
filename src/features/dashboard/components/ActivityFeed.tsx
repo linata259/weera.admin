@@ -1,3 +1,4 @@
+import { IconBriefcase, IconCurrencyDollar, IconUser } from '@tabler/icons-react';
 import type { ActivityItem, ActivityType } from '../types';
 import { formatRelativeTime } from '../Formatters';
 
@@ -18,32 +19,17 @@ const TYPE_CONFIG: Record<ActivityType, { bg: string; icon: JSX.Element; title: 
   job_posted: {
     bg: '#FFF4EE',
     title: 'New Job Posted',
-    icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EA580C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2" y="7" width="20" height="14" rx="2" />
-        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-      </svg>
-    ),
+    icon: <IconBriefcase size={16} color="#EA580C" />,
   },
   withdrawal_requested: {
     bg: '#FFFBEB',
     title: 'Withdrawal Requested',
-    icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="12" y1="1" x2="12" y2="23" />
-        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-      </svg>
-    ),
+    icon: <IconCurrencyDollar size={16} color="#D97706" />,
   },
   user_signed_up: {
     bg: '#EFF6FF',
     title: 'New User Signed Up',
-    icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-        <circle cx="12" cy="7" r="4" />
-      </svg>
-    ),
+    icon: <IconUser size={16} color="#2563EB" />,
   },
 };
 

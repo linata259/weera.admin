@@ -95,6 +95,7 @@ export const TransactionsTable: React.FC = () => {
   const isMobile = useIsMobile();
   const t = useServerTable<WalletTransaction>(fetchTransactionsPage, {
     defaultSort: "created_at",
+    cacheKey: "transactionsTable",
   });
 
   const [typeOpts, setTypeOpts] = useState<string[]>([]);
