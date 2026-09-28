@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "services/supabaseClient";
 import { User } from "../types";
+import { Ico, IconDateRange, iconSize } from "../../../components/icons";
 
 /* ─── types ──────────────────────────────────────────────────── */
 interface WalletSummary {
@@ -388,10 +389,7 @@ export const FinancialTab: React.FC<{ user: User }> = ({ user }) => {
 
             {/* date range */}
             <div style={{ display: "flex", alignItems: "center", gap: 6, border: `1px solid ${BORDER}`, borderRadius: 10, padding: "6px 12px", background: "#fff" }}>
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                <rect x="1" y="3" width="14" height="12" rx="2" stroke="#94A3B8" strokeWidth="1.4" />
-                <path d="M1 7h14M5 1v4M11 1v4" stroke="#94A3B8" strokeWidth="1.4" strokeLinecap="round" />
-              </svg>
+              <Ico icon={IconDateRange} size={iconSize.sm} color="#94A3B8" />
               <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(1); }}
                 style={{ border: "none", outline: "none", fontSize: 12, color: SLATE, fontFamily: "inherit", background: "transparent" }} />
               <span style={{ color: "#CBD5E1" }}>–</span>

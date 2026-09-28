@@ -1,6 +1,7 @@
 // src/features/logs/components/TokenGate.tsx
 
 import { useState } from "react";
+import { Ico, IconLogs, iconSize } from "../../../components/icons";
 
 interface Props {
   onToken: (token: string) => void;
@@ -16,9 +17,7 @@ export function TokenGate({ onToken }: Props) {
         {/* Logo + title */}
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-lg bg-[#6c5ce7] flex items-center justify-center">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            </svg>
+            <Ico icon={IconLogs} size={iconSize.xl} color="white" />
           </div>
           <div>
             <h1 className="text-white font-semibold text-lg">Sentry Logs</h1>

@@ -1,5 +1,6 @@
 // src/features/logs/components/IssueDrawer/DrawerHeader.tsx
 
+import { Ico, IconClose, iconSize } from "../../../components/icons";
 import { LEVEL_STYLES } from "../constants";
 import { SentryIssue } from "../types";
 
@@ -28,9 +29,7 @@ export function DrawerHeader({ issue, onClose }: Props) {
         onClick={onClose}
         className="text-[#6e7681] hover:text-white transition-colors ml-2 shrink-0"
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M18 6L6 18M6 6l12 12" />
-        </svg>
+        <Ico icon={IconClose} size={iconSize.xl} />
       </button>
     </div>
   );

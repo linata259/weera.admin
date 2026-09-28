@@ -2,6 +2,17 @@ import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../hooks/useNotifications';
 import type { AdminNotification, NotificationCategory } from '../types';
+import {
+  Ico,
+  IconPageNext,
+  IconPagePrev,
+  IconRefreshAction,
+  IconSearchControl,
+  IconNotifications,
+  IconVerified,
+  iconSize,
+} from '../../../components/icons';
+import { PageHeader } from '../../../components/PageHeader';
 
 /* ── Design tokens (matches the rest of the admin panel) ───── */
 const ORANGE = '#EA580C';
@@ -131,9 +142,7 @@ const Pagination: React.FC<{
             disabled={page === 1}
             style={{ ...btn, opacity: page === 1 ? 0.4 : 1, cursor: page === 1 ? 'not-allowed' : 'pointer' }}
           >
-            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-              <path d="M9 2L4 7l5 5" stroke={NAVY} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <Ico icon={IconPagePrev} size={iconSize.sm} color={NAVY} />
           </button>
 
           {pages.map((p, i) =>
@@ -158,9 +167,7 @@ const Pagination: React.FC<{
             disabled={page === totalPages}
             style={{ ...btn, opacity: page === totalPages ? 0.4 : 1, cursor: page === totalPages ? 'not-allowed' : 'pointer' }}
           >
-            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-              <path d="M5 2l5 5-5 5" stroke={NAVY} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <Ico icon={IconPageNext} size={iconSize.sm} color={NAVY} />
           </button>
         </div>
       )}
@@ -271,6 +278,33 @@ const NotificationsPage: React.FC = () => {
   return (
     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 20, fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif" }}>
 
+      <PageHeader
+        title="Notifications"
+        subtitle="Platform events that need an admin's attention — signups, withdrawals, tickets, disputes and reports."
+        icon={IconNotifications}
+        actions={
+          <>
+            <button
+              onClick={refresh}
+              style={{ padding: '8px 14px', border: `1px solid ${BORDER}`, borderRadius: 8, background: '#fff', fontSize: 13, fontWeight: 600, color: NAVY, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}
+            >
+              <Ico icon={IconRefreshAction} size={iconSize.sm} />
+              Refresh
+            </button>
+
+            {unreadCount > 0 && (
+              <button
+                onClick={markAllAsRead}
+                style={{ padding: '8px 14px', border: `1px solid ${ORANGE}40`, borderRadius: 8, background: `${ORANGE}08`, fontSize: 13, fontWeight: 600, color: ORANGE, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}
+              >
+                <Ico icon={IconVerified} size={iconSize.sm} />
+                Mark all read
+              </button>
+            )}
+          </>
+        }
+      />
+
       {/* ── Stat cards ──────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
         {[
@@ -294,10 +328,12 @@ const NotificationsPage: React.FC = () => {
 
           {/* Search */}
           <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: 320 }}>
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
-              <circle cx="7" cy="7" r="5" stroke="#94A3B8" strokeWidth="1.5" />
-              <path d="M11 11l2.5 2.5" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
+            <Ico
+              icon={IconSearchControl}
+              size={iconSize.md}
+              color="#94A3B8"
+              style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
+            />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -328,33 +364,6 @@ const NotificationsPage: React.FC = () => {
             <option value="unread">Unread</option>
             <option value="read">Read</option>
           </select>
-        </div>
-
-        {/* Action buttons */}
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            onClick={refresh}
-            style={{ padding: '8px 14px', border: `1px solid ${BORDER}`, borderRadius: 8, background: '#fff', fontSize: 13, fontWeight: 600, color: NAVY, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="23 4 23 10 17 10" />
-              <polyline points="1 20 1 14 7 14" />
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-            </svg>
-            Refresh
-          </button>
-
-          {unreadCount > 0 && (
-            <button
-              onClick={markAllAsRead}
-              style={{ padding: '8px 14px', border: `1px solid ${ORANGE}40`, borderRadius: 8, background: `${ORANGE}08`, fontSize: 13, fontWeight: 600, color: ORANGE, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              Mark all read
-            </button>
-          )}
         </div>
       </div>
 
@@ -465,9 +474,7 @@ const NotificationsPage: React.FC = () => {
                           }}
                         >
                           View
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="9 18 15 12 9 6" />
-                          </svg>
+                          <Ico icon={IconPageNext} size={iconSize.sm} />
                         </button>
                       </td>
                     </tr>

@@ -3,22 +3,24 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  IconLayoutGrid,
-  IconUsers,
-  IconBriefcase,
-  IconCurrencyDollar,
-  IconAlertTriangle,
-  IconBell,
-  IconShield,
-  IconChartBar,
-  IconSettings,
-  IconMessageCircle,
-  IconTarget,
-  IconChevronDown,
-  IconChevronRight,
-  IconMapPin,
-  IconLifebuoy,
-} from "@tabler/icons-react";
+  Ico,
+  IconChats,
+  IconChevronDownControl,
+  IconDashboard,
+  IconDisclosure,
+  IconDisputes,
+  IconFinancials,
+  IconHelpSupport,
+  IconJobs,
+  IconLocations,
+  IconNotifications,
+  IconReports,
+  IconRoles,
+  IconSettingsNav,
+  IconSkills,
+  IconUserManagement,
+  iconSize,
+} from "./icons";
 
 const PRIMARY = "#EA580C";
 const PRIMARY_LIGHT = "#FFF4EE";
@@ -28,14 +30,16 @@ export type NavItem = {
   id: string;
   label: string;
   path: string;
-  icon?: string;
+  /** Fallback glyph for labels `getModernIcon` doesn't recognise — an <Ico>
+   *  element now, previously an emoji string. ReactNode covers both. */
+  icon?: React.ReactNode;
 };
 
 export type NavGroup = {
   id: string;
   label: string;
   path: string;
-  icon?: string;
+  icon?: React.ReactNode;
   children?: NavItem[];
 };
 
@@ -62,32 +66,24 @@ const WeeraIcon: React.FC<{ size?: number }> = ({ size = 15 }) => (
   />
 );
 
-// Tabler icons' component types resolve to a return type TS won't accept
-// directly as a JSX tag under newer @types/react (TS2786). This wrapper casts
-// once, in one place, instead of needing `as any` at every icon usage.
-const Icon: React.FC<{ icon: (props: any) => any; size?: number }> = ({ icon, size }) => {
-  const Component = icon as React.ComponentType<{ size?: number }>;
-  return <Component size={size} />;
-};
-
-// NEW — maps nav labels to modern line icons; falls back to whatever was
-// originally passed in `icon` (e.g. an emoji glyph) for anything unrecognized,
-// so this works without needing to touch wherever `features` is built.
+// Maps nav labels to the shared Tabler vocabulary; falls back to whatever was
+// originally passed in `icon` for anything unrecognized, so this works without
+// needing to touch wherever `features` is built.
 const getModernIcon = (label: string): React.ReactNode | null => {
   const l = label.toLowerCase();
-  if (l.includes("dashboard")) return <Icon icon={IconLayoutGrid} size={18} />;
-  if (l.includes("user")) return <Icon icon={IconUsers} size={18} />;
-  if (l.includes("job")) return <Icon icon={IconBriefcase} size={18} />;
-  if (l.includes("financ")) return <Icon icon={IconCurrencyDollar} size={18} />;
-  if (l.includes("skill")) return <Icon icon={IconTarget} size={18} />;
-  if (l.includes("location")) return <Icon icon={IconMapPin} size={18} />;
-  if (l.includes("help") || l.includes("support")) return <Icon icon={IconLifebuoy} size={18} />;
-  if (l.includes("chat") || l.includes("moderation")) return <Icon icon={IconMessageCircle} size={18} />;
-  if (l.includes("dispute")) return <Icon icon={IconAlertTriangle} size={18} />;
-  if (l.includes("notification")) return <Icon icon={IconBell} size={18} />;
-  if (l.includes("role") || l.includes("permission")) return <Icon icon={IconShield} size={18} />;
-  if (l.includes("report")) return <Icon icon={IconChartBar} size={18} />;
-  if (l.includes("setting")) return <Icon icon={IconSettings} size={18} />;
+  if (l.includes("dashboard")) return <Ico icon={IconDashboard} size={iconSize.lg} />;
+  if (l.includes("user")) return <Ico icon={IconUserManagement} size={iconSize.lg} />;
+  if (l.includes("job")) return <Ico icon={IconJobs} size={iconSize.lg} />;
+  if (l.includes("financ")) return <Ico icon={IconFinancials} size={iconSize.lg} />;
+  if (l.includes("skill")) return <Ico icon={IconSkills} size={iconSize.lg} />;
+  if (l.includes("location")) return <Ico icon={IconLocations} size={iconSize.lg} />;
+  if (l.includes("help") || l.includes("support")) return <Ico icon={IconHelpSupport} size={iconSize.lg} />;
+  if (l.includes("chat") || l.includes("moderation")) return <Ico icon={IconChats} size={iconSize.lg} />;
+  if (l.includes("dispute")) return <Ico icon={IconDisputes} size={iconSize.lg} />;
+  if (l.includes("notification")) return <Ico icon={IconNotifications} size={iconSize.lg} />;
+  if (l.includes("role") || l.includes("permission")) return <Ico icon={IconRoles} size={iconSize.lg} />;
+  if (l.includes("report")) return <Ico icon={IconReports} size={iconSize.lg} />;
+  if (l.includes("setting")) return <Ico icon={IconSettingsNav} size={iconSize.lg} />;
   return null;
 };
 
@@ -332,7 +328,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         transition: "all 0.2s ease",
                       }}
                     >
-                      {/* ICON — Tabler icons, label-matched */}
+                      {/* ICON — label-matched from the shared icon module */}
                       <span
                         style={{
                           flexShrink: 0,
@@ -357,7 +353,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             {group.label}
                           </span>
 
-                          {/* CHEVRON — Tabler icons instead of text glyphs */}
+                          {/* CHEVRON — shared icon module */}
                           {hasChildren && (
                             <span
                               style={{
@@ -367,7 +363,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                 opacity: 0.7,
                               }}
                             >
-                              {isOpen ? <Icon icon={IconChevronDown} size={14} /> : <Icon icon={IconChevronRight} size={14} />}
+                              {isOpen ? (
+                                <Ico icon={IconChevronDownControl} size={iconSize.sm} />
+                              ) : (
+                                <Ico icon={IconDisclosure} size={iconSize.sm} />
+                              )}
                             </span>
                           )}
                         </>
@@ -412,7 +412,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                               transition: "all 0.2s ease",
                             }}
                           >
-                            {/* Tabler icons, label-matched, falls back to original */}
+                            {/* Label-matched from the shared icon module, falls back to original */}
                             {child.icon && (
                               <span
                                 style={{

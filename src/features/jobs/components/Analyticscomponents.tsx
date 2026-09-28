@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Ico, IconChevronDownControl, iconSize, TablerIcon } from '../../../components/icons';
 
 // ── colour tokens ──────────────────────────────────────────────────────
 export const ORANGE = '#EA580C';
@@ -111,12 +112,11 @@ export function AnimatedNumber({ value }: { value: number }) {
 }
 
 // ── stat card ──────────────────────────────────────────────────────────
-export function StatCard({ label, value, sub, accent }: { label: string; value: number; sub: string; accent: string }) {
+export function StatCard({ label, value, sub }: { label: string; value: number; sub: string }) {
   return (
-    <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 16, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 6, position: 'relative', overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: accent, borderRadius: '16px 16px 0 0' }} />
-      <span style={{ fontSize: 11, fontWeight: 600, color: SLATE, textTransform: 'uppercase', letterSpacing: 1 }}>{label}</span>
-      <span style={{ fontSize: 32, fontWeight: 800, color: NAVY, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+    <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 12, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <span style={{ fontSize: 13, fontWeight: 500, color: SLATE }}>{label}</span>
+      <span style={{ fontSize: 28, fontWeight: 600, color: NAVY, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
         <AnimatedNumber value={value} />
       </span>
       <span style={{ fontSize: 12, color: SLATE }}>{sub}</span>
@@ -259,7 +259,7 @@ export function HBarList({ items, color, empty }: { items: { name: string; count
 // ── chart card wrapper ─────────────────────────────────────────────────
 export function ChartCard({ title, sub, children, action }: { title: string; sub: string; children: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 16, padding: 24 }}>
+    <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 12, padding: 24 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
         <div>
           <div style={{ fontSize: 13, fontWeight: 700, color: NAVY }}>{title}</div>
@@ -273,12 +273,12 @@ export function ChartCard({ title, sub, children, action }: { title: string; sub
 }
 
 // ── section head ───────────────────────────────────────────────────────
-export function SectionHead({ title, sub, icon }: { title: string; sub: string; icon: string }) {
+export function SectionHead({ title, sub, icon }: { title: string; sub: string; icon: TablerIcon }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-      <div style={{ width: 32, height: 32, borderRadius: 10, background: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>{icon}</div>
+      <Ico icon={icon} size={iconSize.lg} color={SLATE} />
       <div>
-        <div style={{ fontSize: 14, fontWeight: 800, color: NAVY, letterSpacing: -0.3 }}>{title}</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: NAVY, letterSpacing: -0.3 }}>{title}</div>
         <div style={{ fontSize: 11, color: SLATE, marginTop: 1 }}>{sub}</div>
       </div>
     </div>
@@ -293,10 +293,12 @@ export function PeriodDropdown({ value, onChange }: { value: GrowthPeriod; onCha
         style={{ fontSize: 11, fontWeight: 600, color: NAVY, background: '#F8FAFC', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '4px 28px 4px 10px', cursor: 'pointer', outline: 'none', appearance: 'none' }}>
         {PERIOD_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
-      <svg width="10" height="6" viewBox="0 0 10 6" fill="none"
-        style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
-        <path d="M1 1L5 5L9 1" stroke={SLATE} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
+      <Ico
+        icon={IconChevronDownControl}
+        size={iconSize.sm}
+        color={SLATE}
+        style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
+      />
     </div>
   );
 }

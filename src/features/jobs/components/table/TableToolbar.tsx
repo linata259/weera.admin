@@ -1,4 +1,12 @@
 import React, { useState } from "react";
+import {
+    Ico,
+    IconChevronDownControl,
+    IconSearchControl,
+    iconSize,
+  IconColumnPicker,
+  IconClose
+} from "../../../../components/icons";
 
 export interface JobColumn {
     label: string;
@@ -53,7 +61,7 @@ const Dropdown: React.FC<DropdownProps> = ({
                 style={{
                     padding: "10px 14px",
                     paddingRight: "36px", // Space for icon
-                    borderRadius: 10,
+                    borderRadius: 8,
                     border: "1px solid #E2E8F0",
                     background: "#fff",
                     fontSize: 14,
@@ -72,11 +80,10 @@ const Dropdown: React.FC<DropdownProps> = ({
                     </option>
                 ))}
             </select>
-            <svg
-                width="10"
-                height="6"
-                viewBox="0 0 10 6"
-                fill="none"
+            <Ico
+                icon={IconChevronDownControl}
+                size={iconSize.sm}
+                color="#64748B"
                 style={{
                     position: "absolute",
                     right: 14,
@@ -84,9 +91,7 @@ const Dropdown: React.FC<DropdownProps> = ({
                     transform: "translateY(-50%)",
                     pointerEvents: "none",
                 }}
-            >
-                <path d="M1 1L5 5L9 1" stroke="#64748B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            />
         </div>
     );
 };
@@ -137,7 +142,7 @@ const ColVisPopover = ({
                         cursor: "pointer",
                     }}
                 >
-                    ✕
+                    <Ico icon={IconClose} size={iconSize.md} color="#64748B" />
                 </button>
             </div>
 
@@ -213,11 +218,10 @@ export const TableToolbar: React.FC<ToolbarProps> = ({
                         width: isMobile ? "100%" : 320,
                     }}
                 >
-                    <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 16 16"
-                        fill="none"
+                    <Ico
+                        icon={IconSearchControl}
+                        size={iconSize.md}
+                        color="#94A3B8"
                         style={{
                             position: "absolute",
                             left: 12,
@@ -225,30 +229,16 @@ export const TableToolbar: React.FC<ToolbarProps> = ({
                             transform: "translateY(-50%)",
                             pointerEvents: "none",
                         }}
-                    >
-                        <circle
-                            cx="7"
-                            cy="7"
-                            r="5.5"
-                            stroke="#94A3B8"
-                            strokeWidth="1.5"
-                        />
-                        <path
-                            d="M11 11l2.5 2.5"
-                            stroke="#94A3B8"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                        />
-                    </svg>
+                    />
 
                     <input
                         type="text"
-                        placeholder="Search..."
+                        placeholder="Search jobs"
                         value={searchTerm}
                         onChange={(e) => onSearch(e.target.value)}
                         style={{
                             padding: "11px 14px 11px 38px",
-                            borderRadius: 12,
+                            borderRadius: 8,
                             border: "1px solid #E2E8F0",
                             width: "100%",
                             outline: "none",
@@ -272,7 +262,7 @@ export const TableToolbar: React.FC<ToolbarProps> = ({
                         value={jobTypeFilter}
                         options={jobTypeOptions}
                         onChange={onJobTypeChange}
-                        placeholder="Job Categories"
+                        placeholder="All categories"
                         isMobile={isMobile}
                     />
 
@@ -284,7 +274,7 @@ export const TableToolbar: React.FC<ToolbarProps> = ({
                             { label: "This Year", value: "1y" },
                         ]}
                         onChange={onDateRangeChange}
-                        placeholder="Date Range"
+                        placeholder="Any date"
                         isMobile={isMobile}
                     />
 
@@ -298,12 +288,12 @@ export const TableToolbar: React.FC<ToolbarProps> = ({
                             { label: "Completed", value: "completed" },
                         ]}
                         onChange={onStatusChange}
-                        placeholder="Status"
+                        placeholder="All statuses"
                         isMobile={isMobile}
                     />
 
-                    {/* Column picker (looks like an icon button) */}
-                    <div style={{ position: "relative" }}>
+                    {/* Column picker — only when there are optional columns to pick */}
+                    {ALL_EXTRA_JOB_COLUMNS.length > 0 && <div style={{ position: "relative" }}>
                         <button
                             onClick={() => setShowColPicker((v) => !v)}
                             style={{
@@ -318,10 +308,7 @@ export const TableToolbar: React.FC<ToolbarProps> = ({
                                 justifyContent: "center",
                             }}
                         >
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                <line x1="9" y1="3" x2="9" y2="21"></line>
-                            </svg>
+                            <Ico icon={IconColumnPicker} size={iconSize.lg} color="#64748B" />
                         </button>
 
                         {showColPicker && onToggleCol && (
@@ -331,7 +318,7 @@ export const TableToolbar: React.FC<ToolbarProps> = ({
                                 onClose={() => setShowColPicker(false)}
                             />
                         )}
-                    </div>
+                    </div>}
                 </div>
             </div>
         </div>

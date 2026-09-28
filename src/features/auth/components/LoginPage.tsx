@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { supabase } from "services/supabaseClient";
 import { useIsMobile } from "../../../hooks/useIsMobile";
+import { Ico, IconHide, IconView, iconSize } from "../../../components/icons";
 
 const ORANGE = "#EA580C";
 const NAVY   = "#0F172A";
@@ -232,14 +233,9 @@ export const LoginPage: React.FC<Props> = ({ onLogin }) => {
                     }}
                   >
                     {showPass ? (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <path d="M3 3l18 18M10.5 10.5A3 3 0 0013.5 13.5M9 4.2A10 10 0 0121 12a10 10 0 01-1.5 2.5M6.5 6.5A10 10 0 003 12a10 10 0 0010 5 10 10 0 004.5-1" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-                      </svg>
+                      <Ico icon={IconHide} size={iconSize.lg} />
                     ) : (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-                        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.7" />
-                      </svg>
+                      <Ico icon={IconView} size={iconSize.lg} />
                     )}
                   </button>
                 </div>

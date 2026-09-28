@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import type { DateRangeOption } from '../types';
+import { Ico, IconClose, IconSearchControl } from '../../../components/icons';
+import { iconSize } from '../../../theme/tokens';
 
 const ORANGE = '#EA580C';
 const SLATE = '#64748B';
@@ -61,20 +63,12 @@ export function DashboardHeader({
           transition: 'border-color 0.15s',
         }}
       >
-        <svg
-          width="15"
-          height="15"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke={focused ? ORANGE : SLATE}
-          strokeWidth="2.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          style={{ flexShrink: 0, transition: 'stroke 0.15s' }}
-        >
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
+        <Ico
+          icon={IconSearchControl}
+          size={iconSize.md}
+          color={focused ? ORANGE : SLATE}
+          style={{ transition: 'color 0.15s' }}
+        />
         <input
           type="text"
           value={query}
@@ -107,10 +101,7 @@ export function DashboardHeader({
               flexShrink: 0,
             }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <Ico icon={IconClose} size={iconSize.sm} />
           </button>
         )}
       </div>

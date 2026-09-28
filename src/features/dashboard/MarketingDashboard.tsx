@@ -1,8 +1,17 @@
 import React, { useEffect, useState } from "react";
 import {
-  IconWorld, IconUserPlus, IconTrendingUp, IconVolume2, IconMail, IconBroadcast,
-  IconArrowUpRight, IconArrowDownRight,
-} from "@tabler/icons-react";
+  Ico,
+  IconBroadcast,
+  IconDeltaDown,
+  IconDeltaUp,
+  IconEmail,
+  IconGlobe,
+  IconNewUser,
+  IconSound,
+  IconTrendUp,
+  TablerIcon,
+  iconSize,
+} from "../../components/icons";
 
 import { fetchMarketingKpis, MarketingKpis } from "./services/marketingDashboardService";
 import { KpiTrend } from "./services/superAdminService";
@@ -13,19 +22,11 @@ import { readDashboardCache, writeDashboardCache } from "../../utils/dashboardCa
 
 const CACHE_KEY = "marketingKpis";
 
-const ORANGE = "#EA580C";
 const TEXT_DARK = "#0F172A";
 const MUTED = "#64748B";
 const BORDER = "#EEF2F6";
 const GREEN = "#16A34A";
 const RED = "#DC2626";
-
-const Icon: React.FC<{ icon: (props: any) => any; size?: number; color?: string }> = ({
-  icon, size, color,
-}) => {
-  const Component = icon as React.ComponentType<{ size?: number; color?: string }>;
-  return <Component size={size} color={color} />;
-};
 
 const card: React.CSSProperties = {
   borderRadius: 16,
@@ -42,7 +43,9 @@ const TrendChip: React.FC<{ trend: KpiTrend }> = ({ trend }) => {
   const color = flat ? MUTED : up ? GREEN : RED;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: MUTED }}>
-      {!flat && <Icon icon={up ? IconArrowUpRight : IconArrowDownRight} size={13} color={color} />}
+      {!flat && (
+        <Ico icon={up ? IconDeltaUp : IconDeltaDown} size={iconSize.sm} color={color} />
+      )}
       <span style={{ color, fontWeight: 700 }}>
         {flat ? "—" : `${up ? "+" : "-"}${trend.changePercent}%`}
       </span>
@@ -52,7 +55,7 @@ const TrendChip: React.FC<{ trend: KpiTrend }> = ({ trend }) => {
 };
 
 const KpiCard: React.FC<{
-  icon: (props: any) => any;
+  icon: TablerIcon;
   label: string;
   value: string;
   trend?: KpiTrend;
@@ -62,18 +65,13 @@ const KpiCard: React.FC<{
 }> = ({ icon, label, value, trend, sub, dim, loading }) => (
   <div style={{ ...card, display: "flex", flexDirection: "column", gap: 10, opacity: dim ? 0.6 : 1 }}>
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <div style={{
-        width: 32, height: 32, borderRadius: 8, background: "#FFF4EE",
-        display: "flex", alignItems: "center", justifyContent: "center",
-      }}>
-        <Icon icon={icon} size={16} color={ORANGE} />
-      </div>
+      <Ico icon={icon} size={iconSize.md} color="#94A3B8" />
       <span style={{ fontSize: 13, fontWeight: 600, color: MUTED }}>{label}</span>
     </div>
     {loading ? (
       <div style={{ height: 30, width: "60%", borderRadius: 6, background: "#F1F5F9" }} />
     ) : (
-      <div style={{ fontSize: 26, fontWeight: 800, color: dim ? MUTED : TEXT_DARK, letterSpacing: -0.5 }}>
+      <div style={{ fontSize: 26, fontWeight: 600, color: dim ? MUTED : TEXT_DARK, letterSpacing: -0.5 }}>
         {value}
       </div>
     )}
@@ -135,15 +133,15 @@ export function MarketingDashboardPage() {
         gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
         gap: 14,
       }}>
-        <KpiCard icon={IconWorld} label="Website Visits MTD" loading={loading}
+        <KpiCard icon={IconGlobe} label="Website Visits MTD" loading={loading}
           value="—" sub="analytics not connected yet" dim />
-        <KpiCard icon={IconUserPlus} label="Leads Generated" loading={loading}
+        <KpiCard icon={IconNewUser} label="Leads Generated" loading={loading}
           value={k ? k.newUsersMtd.toLocaleString() : ""} trend={k?.newUsersTrend} />
-        <KpiCard icon={IconTrendingUp} label="Conversion Rate" loading={loading}
+        <KpiCard icon={IconTrendUp} label="Conversion Rate" loading={loading}
           value="—" sub="needs visit tracking" dim />
-        <KpiCard icon={IconVolume2} label="Campaign ROI" loading={loading}
+        <KpiCard icon={IconSound} label="Campaign ROI" loading={loading}
           value="—" sub="no campaigns yet" dim />
-        <KpiCard icon={IconMail} label="Email Open Rate" loading={loading}
+        <KpiCard icon={IconEmail} label="Email Open Rate" loading={loading}
           value="—" sub="email tracking coming soon" dim />
         <KpiCard icon={IconBroadcast} label="Social Reach MTD" loading={loading}
           value="—" sub="social not connected yet" dim />

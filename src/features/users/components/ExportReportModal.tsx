@@ -7,6 +7,13 @@ import {
     exportUsersCSV,
     exportUsersPDF,
 } from "../utils/reportExport";
+import {
+    Ico,
+    IconClose,
+    IconExportCsv,
+    IconExportPdf,
+    iconSize,
+} from "../../../components/icons";
 
 const ORANGE = "#EA580C";
 const NAVY = "#0F172A";
@@ -41,13 +48,6 @@ const labelStyle: React.CSSProperties = {
     marginBottom: 6,
 };
 
-const CsvGlyph = ({ color }: { color: string }) => (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-        <path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" stroke={color} strokeWidth="1.3" />
-        <path d="M9 1.5V5h3.5" stroke={color} strokeWidth="1.3" />
-    </svg>
-);
-
 export const ExportReportModal: React.FC<Props> = ({ users, locationOptions, onClose }) => {
     const [userType, setUserType] = useState<ReportFilters["userType"]>("all");
     const [status, setStatus] = useState<ReportFilters["status"]>("all");
@@ -70,22 +70,27 @@ export const ExportReportModal: React.FC<Props> = ({ users, locationOptions, onC
         totalCount: matched.length,
     });
 
-    const handleExportCSV = () => {
-        exportUsersCSV(matched, buildMeta());
-        onClose();
-    };
-    // The PDF engine is fetched on demand now, so this is a real wait on a
-    // slow connection — close only once the file has actually been produced,
-    // and say so meanwhile rather than looking like nothing happened.
-    const [buildingPdf, setBuildingPdf] = useState(false);
-    const handleExportPDF = async () => {
-        if (buildingPdf) return;
-        setBuildingPdf(true);
+    const [format, setFormat] = useState<"csv" | "pdf">("csv");
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const handleExport = async () => {
+        if (busy || !matched.length) return;
+        setBusy(true);
+        setError(null);
         try {
-            await exportUsersPDF(matched, buildMeta());
+            if (format === "csv") exportUsersCSV(matched, buildMeta());
+            else await exportUsersPDF(matched, buildMeta());
             onClose();
+        } catch (err) {
+            console.error("Users export failed", err);
+            setError(
+                format === "pdf"
+                    ? "Couldn't build the PDF. Refresh the page and try again."
+                    : "Couldn't build the CSV. Please try again."
+            );
         } finally {
-            setBuildingPdf(false);
+            setBusy(false);
         }
     };
 
@@ -116,15 +121,13 @@ export const ExportReportModal: React.FC<Props> = ({ users, locationOptions, onC
                 <div style={{ padding: "18px 24px", borderBottom: `1px solid ${BORDER}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div>
                         <div style={{ fontSize: 15, fontWeight: 700, color: NAVY }}>Export Users Report</div>
-                        <div style={{ fontSize: 12, color: SLATE, marginTop: 2 }}>Choose filters, then export as CSV or PDF</div>
+                        <div style={{ fontSize: 12, color: SLATE, marginTop: 2 }}>Choose filters and a format, then export</div>
                     </div>
                     <button
                         onClick={onClose}
                         style={{ width: 30, height: 30, borderRadius: 8, border: `1px solid ${BORDER}`, background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
                     >
-                        <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-                            <path d="M2 2l10 10M12 2L2 12" stroke={SLATE} strokeWidth="1.8" strokeLinecap="round" />
-                        </svg>
+                        <Ico icon={IconClose} size={iconSize.sm} color={SLATE} />
                     </button>
                 </div>
 
@@ -163,6 +166,34 @@ export const ExportReportModal: React.FC<Props> = ({ users, locationOptions, onC
                         <label style={labelStyle}>To</label>
                         <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} style={fieldStyle} />
                     </div>
+                    <div style={{ gridColumn: "1 / -1" }}>
+                        <label style={labelStyle}>Format</label>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                            {([
+                                { value: "csv", label: "CSV", icon: IconExportCsv },
+                                { value: "pdf", label: "PDF", icon: IconExportPdf },
+                            ] as const).map((opt) => {
+                                const active = format === opt.value;
+                                return (
+                                    <button
+                                        key={opt.value}
+                                        type="button"
+                                        onClick={() => setFormat(opt.value)}
+                                        style={{
+                                            padding: "10px 12px", borderRadius: 10, fontFamily: "inherit", cursor: "pointer",
+                                            border: `1.5px solid ${active ? ORANGE : BORDER}`,
+                                            background: active ? "#FFF7ED" : "#fff",
+                                            color: active ? ORANGE : NAVY, fontSize: 13, fontWeight: 600,
+                                            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                                        }}
+                                    >
+                                        <Ico icon={opt.icon} size={iconSize.sm} color={active ? ORANGE : SLATE} />
+                                        {opt.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
                 </div>
 
                 {/* live count */}
@@ -170,6 +201,12 @@ export const ExportReportModal: React.FC<Props> = ({ users, locationOptions, onC
                     <span style={{ width: 8, height: 8, borderRadius: "50%", background: matched.length ? ORANGE : "#CBD5E1", flexShrink: 0 }} />
                     <span><strong>{matched.length}</strong> user{matched.length === 1 ? "" : "s"} match these filters</span>
                 </div>
+
+                {error && (
+                    <div style={{ margin: "12px 24px 0", padding: "10px 14px", background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 10, fontSize: 13, color: "#B91C1C" }}>
+                        {error}
+                    </div>
+                )}
 
                 {/* footer */}
                 <div style={{ padding: "20px 24px", display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" }}>
@@ -180,30 +217,18 @@ export const ExportReportModal: React.FC<Props> = ({ users, locationOptions, onC
                         Cancel
                     </button>
                     <button
-                        onClick={handleExportCSV}
-                        disabled={!matched.length}
-                        style={{
-                            padding: "10px 18px", borderRadius: 10, border: `1.5px solid ${NAVY}`, background: "#fff",
-                            fontSize: 14, fontWeight: 700, color: NAVY, cursor: matched.length ? "pointer" : "not-allowed",
-                            opacity: matched.length ? 1 : 0.5, fontFamily: "inherit", display: "flex", alignItems: "center", gap: 8,
-                        }}
-                    >
-                        <CsvGlyph color={NAVY} />
-                        Export CSV
-                    </button>
-                    <button
-                        onClick={handleExportPDF}
-                        disabled={!matched.length || buildingPdf}
+                        onClick={handleExport}
+                        disabled={!matched.length || busy}
                         style={{
                             padding: "10px 18px", borderRadius: 10, border: "none", background: ORANGE,
                             fontSize: 14, fontWeight: 700, color: "#fff",
-                            cursor: !matched.length ? "not-allowed" : buildingPdf ? "wait" : "pointer",
-                            opacity: matched.length ? (buildingPdf ? 0.75 : 1) : 0.5,
+                            cursor: !matched.length ? "not-allowed" : busy ? "wait" : "pointer",
+                            opacity: matched.length ? (busy ? 0.75 : 1) : 0.5,
                             fontFamily: "inherit", display: "flex", alignItems: "center", gap: 8,
                         }}
                     >
-                        <CsvGlyph color="#fff" />
-                        {buildingPdf ? "Building PDF…" : "Export PDF"}
+                        <Ico icon={format === "csv" ? IconExportCsv : IconExportPdf} size={iconSize.sm} color="#fff" />
+                        {busy ? `Building ${format.toUpperCase()}…` : `Export ${format.toUpperCase()}`}
                     </button>
                 </div>
             </div>

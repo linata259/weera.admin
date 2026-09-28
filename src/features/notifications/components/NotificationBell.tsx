@@ -2,6 +2,20 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../hooks/useNotifications';
 import type { AdminNotification } from '../types';
+import {
+  Ico,
+  IconDisputes,
+  IconError,
+  IconFlagged,
+  IconHelpSupport,
+  IconJobs,
+  IconMessageThread,
+  IconNewUser,
+  IconNotifications,
+  IconWarning,
+  IconWithdrawal,
+  iconSize,
+} from '../../../components/icons';
 
 const PRIMARY = '#EA580C';
 const NAVY    = '#0F172A';
@@ -21,61 +35,15 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  user_signup: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
-    </svg>
-  ),
-  withdrawal_request: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="12" y1="1" x2="12" y2="23" />
-      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-    </svg>
-  ),
-  support_ticket_open: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-    </svg>
-  ),
-  support_ticket_urgent: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <line x1="12" y1="8" x2="12" y2="12" />
-      <line x1="12" y1="16" x2="12.01" y2="16" />
-    </svg>
-  ),
-  new_job: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-    </svg>
-  ),
-  escrow_dispute: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="1 4 1 10 7 10" />
-      <path d="M3.51 15a9 9 0 1 0 .49-3.31" />
-    </svg>
-  ),
-  job_report: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 9v4" />
-      <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L14.71 3.86a2 2 0 0 0-3.42 0z" />
-      <line x1="12" y1="17" x2="12.01" y2="17" />
-    </svg>
-  ),
-  message_report: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-      <line x1="12" y1="8" x2="12" y2="12" />
-      <line x1="12" y1="15.5" x2="12.01" y2="15.5" />
-    </svg>
-  ),
-  report_reply: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 17H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-4l-4 4v-4z" />
-    </svg>
-  ),
+  user_signup:           <Ico icon={IconNewUser}       size={iconSize.sm} />,
+  withdrawal_request:    <Ico icon={IconWithdrawal}    size={iconSize.sm} />,
+  support_ticket_open:   <Ico icon={IconHelpSupport}   size={iconSize.sm} />,
+  support_ticket_urgent: <Ico icon={IconError}         size={iconSize.sm} />,
+  new_job:               <Ico icon={IconJobs}          size={iconSize.sm} />,
+  escrow_dispute:        <Ico icon={IconDisputes}      size={iconSize.sm} />,
+  job_report:            <Ico icon={IconWarning}       size={iconSize.sm} />,
+  message_report:        <Ico icon={IconFlagged}       size={iconSize.sm} />,
+  report_reply:          <Ico icon={IconMessageThread} size={iconSize.sm} />,
 };
 
 function timeAgo(dateStr: string): string {
@@ -194,10 +162,11 @@ export const NotificationBell: React.FC = () => {
           transition: 'border-color 0.15s, background 0.15s',
         }}
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={open ? PRIMARY : '#64748B'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-        </svg>
+        <Ico
+          icon={IconNotifications}
+          size={iconSize.lg}
+          color={open ? PRIMARY : '#64748B'}
+        />
 
         {unreadCount > 0 && (
           <span style={{

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavbar } from "../../hooks/Navbarcontext";
 import { useNavigate } from "react-router-dom";
 
 import { DashboardStatId, DateRangeOption } from "./types";
@@ -20,20 +21,16 @@ import { ProjectValueChart } from "./components/Projectvaluechart";
 import { DonutBreakdown } from "./components/Donutbreakdown";
 import { HorizontalBarBreakdown } from "./components/Horizontalbarbreakdown";
 
-const ORANGE = "#EA580C";
-const BLUE = "#2563EB";
-const AMBER = "#D97706";
 const TEXT_DARK = "#0F172A";
 const BG_PAGE = "#F8FAFC";
 const AMBER_BG = "#FFFBEB";
 const AMBER_BORDER = "#FDE68A";
 const AMBER_TEXT = "#92400E";
 
-const STAT_ACCENTS: Record<DashboardStatId, string> = {
-  totalActiveUsers: BLUE,
-  newJobsPosted: ORANGE,
-  totalFundsInEscrow: ORANGE,
-  pendingWithdrawals: AMBER,
+/** Which Financials tab owns each figure. Absent = the card is not a link. */
+const FINANCIALS_TAB: Partial<Record<DashboardStatId, string>> = {
+  totalFundsInEscrow: "escrow",
+  pendingWithdrawals: "Withdrawals",
 };
 
 const skeletonAnimationCss = `
@@ -63,8 +60,7 @@ function Card({
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ width: 8, height: 8, borderRadius: 3, background: ORANGE, flexShrink: 0 }} />
-        <h2 style={{ margin: 0, fontSize: 14.5, fontWeight: 800, color: TEXT_DARK, letterSpacing: -0.2 }}>
+        <h2 style={{ margin: 0, fontSize: 14.5, fontWeight: 600, color: TEXT_DARK, letterSpacing: -0.2 }}>
           {title}
         </h2>
       </div>
@@ -74,6 +70,11 @@ function Card({
 }
 
 export function DashboardPage() {
+  const { setBreadcrumb } = useNavbar();
+  useEffect(() => {
+    setBreadcrumb({ parent: "", current: "Dashboard" });
+    return () => setBreadcrumb(null);
+  }, [setBreadcrumb]);
   const [range, setRange] = useState<DateRangeOption>("30d");
   const navigate = useNavigate();
 
@@ -148,7 +149,7 @@ export function DashboardPage() {
         }}
       >
         {statsLoading || !stats
-          ? Array.from({ length: 2 }).map((_, index) => (
+          ? Array.from({ length: 4 }).map((_, index) => (
               <div
                 key={index}
                 style={{
@@ -161,20 +162,26 @@ export function DashboardPage() {
             ))
           : (
               Object.values(stats) as Array<(typeof stats)[DashboardStatId]>
-            )
-              // Funds figures (escrow / withdrawals) live in the Financials tab
-              .filter((stat) => stat.id !== "totalFundsInEscrow" && stat.id !== "pendingWithdrawals")
-              .map((stat) => (
-              <StatCard
-                key={stat.id}
-                stat={stat}
-                accentColor={STAT_ACCENTS[stat.id as DashboardStatId]}
-              />
-            ))}
+            ).map((stat) => {
+              // The two money figures are owned by Financials — they are shown
+              // here because the design calls for them, and they click through
+              // to the tab that can actually act on them rather than leaving
+              // you to find it from the sidebar.
+              const financialsTab = FINANCIALS_TAB[stat.id as DashboardStatId];
+              return (
+                <StatCard
+                  key={stat.id}
+                  stat={stat}
+                  onClick={
+                    financialsTab
+                      ? () => navigate(`/financials?tab=${financialsTab}`)
+                      : undefined
+                  }
+                  linkHint={financialsTab ? "View in Financials" : undefined}
+                />
+              );
+            })}
       </div>
-
-      {/* Platform health — live monitor across all modules */}
-      <HealthOverview health={health} isLoading={healthLoading} />
 
       {/* Row 2 — growth chart, locations, categories */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
@@ -225,6 +232,13 @@ export function DashboardPage() {
           </Card>
         </div>
       </div>
+
+      {/* Live platform monitor. Not part of the Figma, kept below the designed
+          content so the screen matches the spec from the top down without
+          losing the health check. */}
+      <HealthOverview health={health} isLoading={healthLoading} />
     </div>
   );
 }
+
+export default DashboardPage;

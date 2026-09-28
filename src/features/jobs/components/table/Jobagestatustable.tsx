@@ -5,6 +5,13 @@ import { JobStatusBadge } from "./JobStatusBadge";
 import { IconBtn } from "../../../shared/IconBtn";
 import { PageBtn } from "../../../shared/PageBtn";
 import {
+    Ico,
+    IconDelete,
+    IconRating,
+    IconView,
+    iconSize,
+} from "../../../../components/icons";
+import {
     ageInDays,
     daysUntilExpiry,
     effectiveStatus,
@@ -122,36 +129,12 @@ function formatDate(iso: string | null): string {
 }
 
 const SponsorIcon = ({ active }: { active: boolean }) => (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <path
-            d="M8 1.5l1.9 4.8 5.1.4-3.9 3.3 1.3 5-4.4-2.7-4.4 2.7 1.3-5-3.9-3.3 5.1-.4L8 1.5z"
-            fill={active ? "#F59E0B" : "none"}
-            stroke={active ? "#F59E0B" : "#94A3B8"}
-            strokeWidth="1.3"
-            strokeLinejoin="round"
-        />
-    </svg>
+    <Ico icon={IconRating} size={iconSize.md} color={active ? "#F59E0B" : "#94A3B8"} />
 );
 
-const DeleteIcon = () => (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <path
-            d="M3 4.5h10M6.5 4.5V3a1 1 0 011-1h1a1 1 0 011 1v1.5M4.5 4.5l.6 8.4a1 1 0 001 .9h3.8a1 1 0 001-.9l.6-8.4"
-            stroke="#94A3B8"
-            strokeWidth="1.3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        />
-    </svg>
-);
+const DeleteIcon = () => <Ico icon={IconDelete} size={iconSize.md} color="#94A3B8" />;
 
-const ViewIcon = () => (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <circle cx="8" cy="8" r="7" stroke="#94A3B8" strokeWidth="1.5" />
-        <path d="M8 7v4" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" />
-        <circle cx="8" cy="5" r="0.75" fill="#94A3B8" />
-    </svg>
-);
+const ViewIcon = () => <Ico icon={IconView} size={iconSize.md} color="#94A3B8" />;
 
 export const JobAgeStatusTable: React.FC<Props> = ({
     data,
@@ -345,13 +328,12 @@ export const JobAgeStatusTable: React.FC<Props> = ({
                                         <div>
                                             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                                                 {job.isSponsored && (
-                                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                                                        <title>Sponsored</title>
-                                                        <path
-                                                            d="M8 1l1.8 4.6 4.9.4-3.7 3.2 1.2 4.8L8 11.4 3.8 14l1.2-4.8L1.3 6l4.9-.4L8 1z"
-                                                            fill="#F59E0B"
-                                                        />
-                                                    </svg>
+                                                    <Ico
+                                                        icon={IconRating}
+                                                        size={iconSize.sm}
+                                                        color="#F59E0B"
+                                                        title="Sponsored"
+                                                    />
                                                 )}
                                                 <span style={{ fontSize: 15, fontWeight: 700, color: "#0F172A", lineHeight: 1.3 }}>
                                                     {job.title}
@@ -472,13 +454,12 @@ export const JobAgeStatusTable: React.FC<Props> = ({
                                             <td style={{ ...tdBase, color: "#0F172A", fontWeight: 500 }}>
                                                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                                                     {job.isSponsored && (
-                                                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                                                            <title>Sponsored</title>
-                                                            <path
-                                                                d="M8 1l1.8 4.6 4.9.4-3.7 3.2 1.2 4.8L8 11.4 3.8 14l1.2-4.8L1.3 6l4.9-.4L8 1z"
-                                                                fill="#F59E0B"
-                                                            />
-                                                        </svg>
+                                                        <Ico
+                                                            icon={IconRating}
+                                                            size={iconSize.sm}
+                                                            color="#F59E0B"
+                                                            title="Sponsored"
+                                                        />
                                                     )}
                                                     {job.title}
                                                 </div>

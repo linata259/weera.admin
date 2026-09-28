@@ -10,6 +10,8 @@ import {
 import type { Conversation, FlagStatus, FlaggedMessage } from "../types";
 import { LazyBoundary } from "../../../components/LazyBoundary";
 import { readDashboardCache, writeDashboardCache } from "../../../utils/dashboardCache";
+import { PageHeader } from "../../../components/PageHeader";
+import { IconChats } from "../../../components/icons";
 
 const CACHE_KEY = "chatsPageData";
 
@@ -172,79 +174,74 @@ const ChatsPage: React.FC = () => {
         fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
       }}
     >
-      {/* header */}
-      <div>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: "#0F172A" }}>
-          Chat Moderation
-        </h1>
-        <p style={{ margin: "4px 0 0", fontSize: 13.5, color: "#64748B" }}>
-          Analyse in-app conversations, review phone-number sharing, and manage
-          blocked chats. This view is read-only for messages.
-        </p>
-      </div>
-
-      {/* tabs */}
-      <div
-        style={{
-          display: "flex",
-          gap: 4,
-          borderBottom: "1px solid #E2E8F0",
-        }}
-      >
-        {TABS.map((t) => {
-          const active = tab === t.key;
-          return (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              style={{
-                border: "none",
-                background: "transparent",
-                padding: "10px 16px",
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: "pointer",
-                color: active ? "#EA580C" : "#64748B",
-                borderBottom: `2px solid ${active ? "#EA580C" : "transparent"}`,
-                marginBottom: -1,
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-              }}
-            >
-              {t.label}
-              {t.key === "flagged" && flaggedBadge > 0 && (
-                <span
+      <PageHeader
+        title="Chat Moderation"
+        subtitle="Analyse in-app conversations, review phone-number sharing, and manage blocked chats. This view is read-only for messages."
+        icon={IconChats}
+        below={
+          <div
+            style={{
+              display: "flex",
+              gap: 4,
+              borderBottom: "1px solid #E2E8F0",
+            }}
+          >
+            {TABS.map((t) => {
+              const active = tab === t.key;
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
                   style={{
-                    background: "#FEE2E2",
-                    color: "#B91C1C",
-                    borderRadius: 999,
-                    fontSize: 11,
-                    fontWeight: 700,
-                    padding: "1px 7px",
+                    border: "none",
+                    background: "transparent",
+                    padding: "10px 16px",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    color: active ? "#EA580C" : "#64748B",
+                    borderBottom: `2px solid ${active ? "#EA580C" : "transparent"}`,
+                    marginBottom: -1,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
                   }}
                 >
-                  {flaggedBadge}
-                </span>
-              )}
-              {t.key === "blocked" && data.blocked.length > 0 && (
-                <span
-                  style={{
-                    background: "#EDE9FE",
-                    color: "#6D28D9",
-                    borderRadius: 999,
-                    fontSize: 11,
-                    fontWeight: 700,
-                    padding: "1px 7px",
-                  }}
-                >
-                  {data.blocked.length}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+                  {t.label}
+                  {t.key === "flagged" && flaggedBadge > 0 && (
+                    <span
+                      style={{
+                        background: "#FEE2E2",
+                        color: "#B91C1C",
+                        borderRadius: 999,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        padding: "1px 7px",
+                      }}
+                    >
+                      {flaggedBadge}
+                    </span>
+                  )}
+                  {t.key === "blocked" && data.blocked.length > 0 && (
+                    <span
+                      style={{
+                        background: "#EDE9FE",
+                        color: "#6D28D9",
+                        borderRadius: 999,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        padding: "1px 7px",
+                      }}
+                    >
+                      {data.blocked.length}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        }
+      />
 
       {!data.migrationApplied && !loading && (
         <div

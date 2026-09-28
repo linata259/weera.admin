@@ -1,5 +1,13 @@
 import React, { useMemo, useState } from "react";
-import { FiCheck, FiSlash, FiEye, FiRotateCcw } from "react-icons/fi";
+import {
+  Ico,
+  IconBlocked,
+  IconClose,
+  IconRetry,
+  IconVerified,
+  IconView,
+  iconSize,
+} from "../../../components/icons";
 import type { FlagStatus, FlaggedMessage } from "../types";
 import {
   Avatar,
@@ -17,11 +25,6 @@ interface Props {
   onOpenConversation: (conversationId: string) => void;
   busyIds: Set<string>;
 }
-
-const Icon: React.FC<{ icon: (props: any) => any; size?: number }> = ({ icon, size }) => {
-  const C = icon as React.ComponentType<{ size?: number }>;
-  return <C size={size} />;
-};
 
 const FILTERS: { key: FlagStatus | "all"; label: string }[] = [
   { key: "all", label: "All" },
@@ -207,14 +210,14 @@ export const FlaggedTab: React.FC<Props> = ({
                         style={actionBtn}
                         onClick={() => onOpenConversation(f.conversationId)}
                       >
-                        <Icon icon={FiEye} size={14} /> View chat
+                        <Ico icon={IconView} size={iconSize.sm} /> View chat
                       </button>
                       {f.status !== "reviewed" && (
                         <button
                           style={{ ...actionBtn, color: "#15803D", borderColor: "#BBF7D0" }}
                           onClick={() => onSetStatus(f, "reviewed")}
                         >
-                          <Icon icon={FiCheck} size={14} /> Mark reviewed
+                          <Ico icon={IconVerified} size={iconSize.sm} /> Mark reviewed
                         </button>
                       )}
                       {f.status !== "dismissed" ? (
@@ -222,21 +225,21 @@ export const FlaggedTab: React.FC<Props> = ({
                           style={actionBtn}
                           onClick={() => onSetStatus(f, "dismissed")}
                         >
-                          <Icon icon={FiSlash} size={14} /> Dismiss
+                          <Ico icon={IconClose} size={iconSize.sm} /> Dismiss
                         </button>
                       ) : (
                         <button
                           style={actionBtn}
                           onClick={() => onSetStatus(f, "pending")}
                         >
-                          <Icon icon={FiRotateCcw} size={14} /> Reopen
+                          <Ico icon={IconRetry} size={iconSize.sm} /> Reopen
                         </button>
                       )}
                       <button
                         style={{ ...actionBtn, color: "#B91C1C", borderColor: "#FECACA" }}
                         onClick={() => onBlock(f)}
                       >
-                        <Icon icon={FiSlash} size={14} /> Block conversation
+                        <Ico icon={IconBlocked} size={iconSize.sm} /> Block conversation
                       </button>
                     </div>
                   </div>

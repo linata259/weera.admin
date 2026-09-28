@@ -7,6 +7,9 @@ import { MessageReportsTable } from '../components/Messagereportstable';
 import { ResponseModal } from '../components/Responsemodal';
 import { JobReportsTable } from '../components/table/Jobreportstable';
 import { readDashboardCache, writeDashboardCache } from '../../../utils/dashboardCache';
+import { Ico, IconDateRange, IconReports, IconSearchControl, iconSize } from '../../../components/icons';
+import { PageHeader } from '../../../components/PageHeader';
+import { useNavigate } from 'react-router-dom';
 
 const JR_CACHE_KEY = 'jobReportsPage';
 const MR_CACHE_KEY = 'messageReportsPage';
@@ -14,6 +17,7 @@ const MR_CACHE_KEY = 'messageReportsPage';
 
 /* ══════════════════════════════════════════════════════════════ */
 const ReportsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('job_reports');
 
   /* ── data ───────────────────────────────────────────────────── */
@@ -171,13 +175,15 @@ const ReportsPage: React.FC = () => {
   return (
     <div style={{ fontFamily: "'Inter','Helvetica Neue',sans-serif", display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-      {/* header */}
-      <div>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: NAVY }}>Reports</h1>
-        <p style={{ margin: '4px 0 0', fontSize: 13, color: SLATE }}>
-          Review and action job and message reports submitted by users
-        </p>
-      </div>
+      <PageHeader
+        title="Reports"
+        subtitle="Review and action job and message reports submitted by users"
+        icon={IconReports}
+        breadcrumbs={[
+          { label: 'Jobs', onClick: () => navigate('/jobs') },
+          { label: 'Reports' },
+        ]}
+      />
 
       {/* stat chips */}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -223,10 +229,12 @@ const ReportsPage: React.FC = () => {
         <div style={{ padding: '12px 20px', display: 'flex', gap: 10, alignItems: 'center', borderBottom: `1px solid ${BORDER}`, background: BG, flexWrap: 'wrap' }}>
           {/* search */}
           <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: 300 }}>
-            <svg style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} width="14" height="14" viewBox="0 0 16 16" fill="none">
-              <circle cx="7" cy="7" r="5" stroke={SLATE} strokeWidth="1.5"/>
-              <path d="M11 11l3 3" stroke={SLATE} strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
+            <Ico
+              icon={IconSearchControl}
+              size={iconSize.sm}
+              color={SLATE}
+              style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
+            />
             <input
               value={search} onChange={e => setSearch(e.target.value)} placeholder="Search reports…"
               style={{ width: '100%', boxSizing: 'border-box', padding: '8px 12px 8px 34px', borderRadius: 10, border: `1px solid ${BORDER}`, fontSize: 13, color: NAVY, fontFamily: 'inherit', background: '#fff', outline: 'none' }}
@@ -253,10 +261,7 @@ const ReportsPage: React.FC = () => {
 
           {/* date range */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '6px 12px', background: '#fff' }}>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-              <rect x="1" y="3" width="14" height="12" rx="2" stroke="#94A3B8" strokeWidth="1.4"/>
-              <path d="M1 7h14M5 1v4M11 1v4" stroke="#94A3B8" strokeWidth="1.4" strokeLinecap="round"/>
-            </svg>
+            <Ico icon={IconDateRange} size={iconSize.sm} color="#94A3B8" />
             <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={{ border: 'none', outline: 'none', fontSize: 12, color: SLATE, fontFamily: 'inherit', background: 'transparent' }}/>
             <span style={{ color: '#CBD5E1' }}>–</span>
             <input type="date" value={dateTo}   onChange={e => setDateTo(e.target.value)}   style={{ border: 'none', outline: 'none', fontSize: 12, color: SLATE, fontFamily: 'inherit', background: 'transparent' }}/>

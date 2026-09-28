@@ -7,6 +7,13 @@ import { UserDetailPanel } from "./UserDetailPanel";
 import { SortIcon } from "../../../shared/SortIcon";
 import { IconBtn } from "../../../shared/IconBtn";
 import { PageBtn } from "../../../shared/PageBtn";
+import {
+  Ico,
+  IconBack,
+  IconBlocked,
+  IconView,
+  iconSize,
+} from "../../../../components/icons";
 
 interface Props {
   data: User[];
@@ -98,9 +105,7 @@ const MobileDetailView: React.FC<{
             fontFamily: "inherit",
           }}
         >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M10 3L5 8l5 5" stroke={NAVY} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <Ico icon={IconBack} size={iconSize.md} />
           Back
         </button>
         <span style={{ fontSize: 13, color: SLATE }}>User Profile</span>
@@ -442,17 +447,10 @@ export const UserTable: React.FC<Props> = ({
                         <td style={{ ...tdBase, textAlign: "right" }} onClick={(e) => e.stopPropagation()}>
                           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
                             <IconBtn title="View details" onClick={() => { onViewUser?.(user); setSelectedUser(user); }}>
-                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                <circle cx="8" cy="8" r="7" stroke="#94A3B8" strokeWidth="1.5" />
-                                <path d="M8 7v4" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" />
-                                <circle cx="8" cy="5" r="0.75" fill="#94A3B8" />
-                              </svg>
+                              <Ico icon={IconView} size={iconSize.md} color="#94A3B8" />
                             </IconBtn>
                             <IconBtn title="Suspend user" onClick={() => onSuspendUser?.(user)}>
-                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                <circle cx="8" cy="8" r="7" stroke="#94A3B8" strokeWidth="1.5" />
-                                <path d="M3.5 3.5l9 9" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" />
-                              </svg>
+                              <Ico icon={IconBlocked} size={iconSize.md} color="#94A3B8" />
                             </IconBtn>
                           </div>
                         </td>

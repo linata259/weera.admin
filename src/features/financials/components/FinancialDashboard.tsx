@@ -14,6 +14,15 @@ import { exportCsv } from "../utils/exportCsv";
 import { exportPdf } from "../utils/exportPdf";
 import { Avatar } from "../../shared/Avatar";
 import { readDashboardCache, writeDashboardCache } from "../../../utils/dashboardCache";
+import {
+  Ico,
+  IconEscrow,
+  IconExport,
+  IconRetry,
+  IconRevenue,
+  IconTrendUp,
+  iconSize,
+} from "../../../components/icons";
 
 interface FinancialDashboardCache {
   summary: FinancialSummary;
@@ -81,23 +90,15 @@ function useIsMobile() {
 
 /* ─── StatCard ─────────────────────────────────────────────── */
 const StatCard: React.FC<{
-  icon: React.ReactNode; label: string; value: string; sub: string; accent: string;
-}> = ({ icon, label, value, sub, accent }) => (
-  <div style={{ background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 14, padding: "20px 24px", display: "flex", flexDirection: "column", gap: 8, position: "relative", overflow: "hidden" }}>
-    <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: accent, borderRadius: "14px 14px 0 0" }} />
-    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <div style={{ width: 36, height: 36, borderRadius: 10, background: BG, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        {icon}
-      </div>
+  icon: React.ReactNode; label: string; value: string; sub: string;
+}> = ({ icon, label, value, sub }) => (
+  <div style={{ background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 12, padding: "20px 24px", display: "flex", flexDirection: "column", gap: 8 }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
       <span style={{ fontSize: 13, color: SLATE, fontWeight: 500 }}>{label}</span>
+      {icon}
     </div>
-    <div style={{ fontSize: 28, fontWeight: 800, color: NAVY, letterSpacing: -0.5 }}>{value}</div>
-    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-        <path d="M6 2v8M2 6l4-4 4 4" stroke="#16A34A" strokeWidth="1.5" strokeLinecap="round" />
-      </svg>
-      <span style={{ fontSize: 12, color: "#16A34A", fontWeight: 600 }}>{sub}</span>
-    </div>
+    <div style={{ fontSize: 28, fontWeight: 600, color: NAVY, letterSpacing: -0.5 }}>{value}</div>
+    <div style={{ fontSize: 12, color: SLATE }}>{sub}</div>
   </div>
 );
 
@@ -295,9 +296,7 @@ export const DualLineChart: React.FC<{ data: MonthlyRevenue[]; title: string }> 
 /* ─── ExportBtn ─────────────────────────────────────────────── */
 const ExportBtn: React.FC<{ label: string; onClick: () => void }> = ({ label, onClick }) => (
   <button onClick={onClick} style={{ padding: "7px 14px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#fff", fontSize: 13, fontWeight: 600, color: NAVY, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "inherit" }}>
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-      <path d="M14 10v2a2 2 0 01-2 2H4a2 2 0 01-2-2v-2M8 2v8M5 5l3-3 3 3" stroke={NAVY} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
+    <Ico icon={IconExport} size={iconSize.sm} />
     {label}
   </button>
 );
@@ -619,28 +618,23 @@ export const FinancialDashboard: React.FC = () => {
 
       {/* ── stat cards ─────────────────────────────────────────── */}
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: isMobile ? 12 : 16 }}>
-        <StatCard accent={NAVY} label="Total Revenue"
+        <StatCard label="Total Revenue"
           value={`KES ${fmtK(summary?.totalRevenue ?? 0)}`} sub="Platform earnings"
-          icon={<svg width="18" height="18" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke={NAVY} strokeWidth="1.4" /><path d="M8 4v8M5 6h4.5a1.5 1.5 0 010 3H5" stroke={NAVY} strokeWidth="1.4" strokeLinecap="round" /></svg>}
+          icon={<Ico icon={IconRevenue} size={iconSize.lg} color="#94A3B8" />}
         />
-        <StatCard accent="#2563EB" label="Funds in Escrow"
+        <StatCard label="Funds in Escrow"
           value={`KES ${fmtK(summary?.fundsInEscrow ?? 0)}`} sub="Held securely"
-          icon={<svg width="18" height="18" viewBox="0 0 16 16" fill="none"><rect x="2" y="6" width="12" height="8" rx="2" stroke="#2563EB" strokeWidth="1.4" /><path d="M5 6V5a3 3 0 016 0v1" stroke="#2563EB" strokeWidth="1.4" strokeLinecap="round" /></svg>}
+          icon={<Ico icon={IconEscrow} size={iconSize.lg} color="#94A3B8" />}
         />
         {/* ── CHANGED: was Pending Withdrawals, now Pending Refunds ── */}
-        <StatCard accent={RED} label="Pending Refunds"
+        <StatCard label="Pending Refunds"
           value={String(refunds.length)}
           sub={`KES ${fmtK(refunds.reduce((s, r) => s + r.amount, 0))} total`}
-          icon={
-            <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
-              <path d="M2 8a6 6 0 1 0 6-6" stroke={RED} strokeWidth="1.4" strokeLinecap="round" />
-              <path d="M2 4v4h4"           stroke={RED} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          }
+          icon={<Ico icon={IconRetry} size={iconSize.lg} color="#94A3B8" />}
         />
-        <StatCard accent="#16A34A" label="New Deposits (30d)"
+        <StatCard label="New Deposits (30d)"
           value={`KES ${fmtK(summary?.newDeposits ?? 0)}`} sub="Last 30 days"
-          icon={<svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M8 10V2M5 5l3-3 3 3" stroke="#16A34A" strokeWidth="1.4" strokeLinecap="round" /><path d="M2 12h12" stroke="#16A34A" strokeWidth="1.4" strokeLinecap="round" /></svg>}
+          icon={<Ico icon={IconTrendUp} size={iconSize.lg} color="#94A3B8" />}
         />
       </div>
 

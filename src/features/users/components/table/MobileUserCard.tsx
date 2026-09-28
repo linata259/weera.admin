@@ -2,6 +2,7 @@ import React from "react";
 import { User, deriveStatus } from "../../types";
 import { StatusBadge } from "../../../shared/StatusBadge";
 import { Avatar } from "../../../shared/Avatar";
+import { Ico, IconPageNext, iconSize } from "../../../../components/icons";
 
 interface Props {
   user: User;
@@ -49,9 +50,7 @@ export const MobileUserCard: React.FC<Props> = ({ user, index, onClick }) => {
 
       <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
         <StatusBadge status={status} />
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <path d="M5 3l4 4-4 4" stroke="#CBD5E1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <Ico icon={IconPageNext} size={iconSize.sm} color="#CBD5E1" />
       </div>
     </div>
   );

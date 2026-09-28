@@ -6,7 +6,11 @@ import { LazyBoundary, Spinner } from "../../components/LazyBoundary";
  * Super Admin, Finance, Marketing and Customer Care views — and the charting
  * library each of them pulls in — to render exactly one. Split per role: you
  * now fetch the dashboard you are actually shown. */
-const SuperAdminDashboardPage = lazy(() => import("./SuperAdminDashboard"));
+// The Super Admin view is Dashboard.tsx — the layout the Figma specifies
+// (four KPI cards, growth chart, top locations, top categories, average
+// project value, recent actions). SuperAdminDashboard.tsx is the older
+// screen it replaces; it is left in the tree but no longer routed.
+const SuperAdminDashboardPage = lazy(() => import("./Dashboard"));
 const FinanceDashboardPage = lazy(() => import("./FinanceDashboard"));
 const MarketingDashboardPage = lazy(() => import("./MarketingDashboard"));
 const CustomerCareDashboardPage = lazy(() => import("./CustomerCareDashboard"));

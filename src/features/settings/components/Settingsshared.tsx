@@ -225,7 +225,7 @@ export function SaveBar({ onSave, saveState, errorMessage, disabled }: SaveBarPr
         {saveState === 'saving' ? 'Saving…' : 'Save Changes'}
       </button>
       {saveState === 'saved' && (
-        <span style={{ fontSize: 13, color: '#16A34A', fontWeight: 500 }}>✓ Changes saved</span>
+        <span style={{ fontSize: 13, color: '#16A34A', fontWeight: 500 }}>Changes saved</span>
       )}
       {saveState === 'error' && (
         <span style={{ fontSize: 13, color: '#DC2626', fontWeight: 500 }}>

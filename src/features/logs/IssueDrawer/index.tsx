@@ -1,6 +1,7 @@
 // src/features/logs/components/IssueDrawer/index.tsx
 
 import { useState, useEffect } from "react";
+import { Ico, IconLoading, iconSize } from "../../../components/icons";
 import { SentryEvent, SentryIssue } from "../types";
 import { SENTRY_BASE, SENTRY_ORG } from "../constants";
 import { DrawerHeader } from "./DrawerHeader";
@@ -63,9 +64,9 @@ export function IssueDrawer({ issue, token, onClose }: Props) {
           {/* Loading state */}
           {loading && (
             <div className="flex items-center gap-2 text-[#8b949e] text-sm">
-              <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-              </svg>
+              <span className="animate-spin inline-flex">
+                <Ico icon={IconLoading} size={iconSize.md} />
+              </span>
               Loading latest event…
             </div>
           )}

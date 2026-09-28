@@ -26,7 +26,7 @@ const StatCard: React.FC<{
 }> = ({ label, value, accent = "#0F172A", hint }) => (
   <div style={{ ...cardStyle, padding: 18, display: "grid", alignContent: "space-between", minHeight: 96 }}>
     <div style={{ color: "#64748B", fontSize: 13, fontWeight: 700 }}>{label}</div>
-    <div style={{ color: accent, fontSize: 30, fontWeight: 800 }}>
+    <div style={{ color: accent, fontSize: 28, fontWeight: 600 }}>
       {value.toLocaleString("en-US")}
     </div>
     {hint && <div style={{ color: "#94A3B8", fontSize: 12 }}>{hint}</div>}
@@ -79,18 +79,15 @@ export const OverviewTab: React.FC<Props> = ({ stats }) => {
         <StatCard
           label="Active (7 days)"
           value={stats.activeConversations}
-          accent="#059669"
         />
         <StatCard
           label="Flagged Messages"
           value={stats.flaggedMessages}
-          accent="#B91C1C"
           hint={`${stats.pendingFlags} pending review`}
         />
         <StatCard
           label="Blocked Chats"
           value={stats.blockedConversations}
-          accent="#7C3AED"
         />
       </div>
 

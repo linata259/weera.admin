@@ -7,6 +7,7 @@ import { SortIcon } from "../../../shared/SortIcon";
 import { IconBtn } from "../../../shared/IconBtn";
 import { PageBtn } from "../../../shared/PageBtn";
 import { BanJobModal } from "../Banjobmodal";
+import { Ico, IconBlocked, IconView, iconSize } from "../../../../components/icons";
 
 interface Props {
     data: Job[];
@@ -147,25 +148,9 @@ export const JobTable: React.FC<Props> = ({
         </th>
     );
 
-    const ViewIcon = (
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <circle cx="8" cy="8" r="7" stroke="#94A3B8" strokeWidth="1.5" />
-            <path d="M8 7v4" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" />
-            <circle cx="8" cy="5" r="0.75" fill="#94A3B8" />
-        </svg>
-    );
-    const SuspendIcon = (
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <circle cx="8" cy="8" r="7" stroke="#94A3B8" strokeWidth="1.5" />
-            <path d="M3.5 3.5l9 9" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" />
-        </svg>
-    );
-    const BanIcon = (
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <circle cx="8" cy="8" r="7" fill="#DC2626" />
-            <path d="M4.2 4.2l7.6 7.6" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" />
-        </svg>
-    );
+    const ViewIcon = <Ico icon={IconView} size={iconSize.md} color="#94A3B8" />;
+    const SuspendIcon = <Ico icon={IconBlocked} size={iconSize.md} color="#94A3B8" />;
+    const BanIcon = <Ico icon={IconBlocked} size={iconSize.md} color="#DC2626" />;
 
     return (
         <>
@@ -176,9 +161,8 @@ export const JobTable: React.FC<Props> = ({
                     display: "flex",
                     flexDirection: "column",
                     background: "#fff",
-                    borderRadius: 16,
+                    borderRadius: 12,
                     border: "1px solid #E8EDF2",
-                    boxShadow: "0 1px 4px rgba(15,23,42,0.06)",
                     overflow: "hidden",
                 }}
             >
@@ -255,17 +239,17 @@ export const JobTable: React.FC<Props> = ({
                                         {/* Meta grid */}
                                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontSize: 13 }}>
                                             <div>
-                                                <div style={{ color: "#94A3B8", fontSize: 11, textTransform: "uppercase" }}>Categories</div>
+                                                <div style={{ color: "#94A3B8", fontSize: 12 }}>Categories</div>
                                                 <div style={{ color: "#475569" }}>
                                                     {job.categories.length > 0 ? job.categories.join(", ") : "—"}
                                                 </div>
                                             </div>
                                             <div>
-                                                <div style={{ color: "#94A3B8", fontSize: 11, textTransform: "uppercase" }}>Proposals</div>
+                                                <div style={{ color: "#94A3B8", fontSize: 12 }}>Proposals</div>
                                                 <div style={{ color: "#475569" }}>{job.applicants}</div>
                                             </div>
                                             <div>
-                                                <div style={{ color: "#94A3B8", fontSize: 11, textTransform: "uppercase" }}>Posted</div>
+                                                <div style={{ color: "#94A3B8", fontSize: 12 }}>Posted</div>
                                                 <div style={{ color: "#475569" }}>{formatDate(job.posted_at) ?? "—"}</div>
                                             </div>
                                             {columns.map((col) => {
@@ -278,7 +262,7 @@ export const JobTable: React.FC<Props> = ({
                                                 }
                                                 return (
                                                     <div key={String(col.key)}>
-                                                        <div style={{ color: "#94A3B8", fontSize: 11, textTransform: "uppercase" }}>{col.label}</div>
+                                                        <div style={{ color: "#94A3B8", fontSize: 12 }}>{col.label}</div>
                                                         <div style={{ color: "#475569" }}>{display}</div>
                                                     </div>
                                                 );
@@ -337,14 +321,13 @@ export const JobTable: React.FC<Props> = ({
                                             style={{ cursor: "pointer", accentColor: "#EA580C" }}
                                         />
                                     </th>
-                                    <th style={{ ...thBase, width: 72 }}>Sr. No.</th>
-                                    {sortTh("jobId", "Job Id")}
-                                    {sortTh("categories", "Job Categories")}
-                                    {sortTh("title", "Job Title")}
-                                    {sortTh("posted_by_name", "Posted By")}
+                                    {sortTh("jobId", "Job ID")}
+                                    {sortTh("title", "Title")}
+                                    {sortTh("categories", "Categories")}
+                                    {sortTh("posted_by_name", "Posted by")}
                                     {sortTh("status", "Status")}
-                                    {sortTh("applicants", "Received Proposals")}
-                                    {sortTh("posted_at", "Posted Date")}
+                                    {sortTh("applicants", "Proposals")}
+                                    {sortTh("posted_at", "Posted")}
 
                                     {columns.map((col) => (
                                         <th
@@ -366,14 +349,14 @@ export const JobTable: React.FC<Props> = ({
                                         </th>
                                     ))}
 
-                                    <th style={{ ...thBase, textAlign: "right", paddingRight: 24 }}>Action</th>
+                                    <th style={{ ...thBase, textAlign: "right", paddingRight: 24 }}>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {paginatedData.length === 0 ? (
                                     <tr>
                                         <td
-                                            colSpan={columns.length + 10}
+                                            colSpan={columns.length + 9}
                                             style={{
                                                 padding: "48px 0",
                                                 textAlign: "center",
@@ -385,8 +368,7 @@ export const JobTable: React.FC<Props> = ({
                                         </td>
                                     </tr>
                                 ) : (
-                                    paginatedData.map((job, idx) => {
-                                        const globalIdx = (currentPage - 1) * rowsPerPage + idx + 1;
+                                    paginatedData.map((job) => {
                                         const isSelected = selectedIds.has(job.id);
                                         const isHighlighted = job.jobId === highlightJobId;
 
@@ -423,14 +405,14 @@ export const JobTable: React.FC<Props> = ({
                                                     />
                                                 </td>
 
-                                                {/* Sr. No. */}
-                                                <td style={{ ...tdBase, color: "#94A3B8", fontSize: 13 }}>
-                                                    {String(globalIdx).padStart(2, "0")}
-                                                </td>
-
                                                 {/* Job Id */}
                                                 <td style={{ ...tdBase, color: "#475569" }}>
                                                     {job.jobId}
+                                                </td>
+
+                                                {/* Job Title */}
+                                                <td style={{ ...tdBase, color: "#0F172A", fontWeight: 500 }}>
+                                                    {job.title}
                                                 </td>
 
                                                 {/* Job Categories */}
@@ -440,11 +422,6 @@ export const JobTable: React.FC<Props> = ({
                                                     ) : (
                                                         <span style={{ color: "#CBD5E1" }}>—</span>
                                                     )}
-                                                </td>
-
-                                                {/* Job Title */}
-                                                <td style={{ ...tdBase, color: "#475569" }}>
-                                                    {job.title}
                                                 </td>
 
                                                 {/* Posted By */}
@@ -465,7 +442,7 @@ export const JobTable: React.FC<Props> = ({
                                                 </td>
 
                                                 {/* Received Proposals */}
-                                                <td style={{ ...tdBase, color: "#475569", textAlign: "center" }}>
+                                                <td style={{ ...tdBase, color: "#475569", fontVariantNumeric: "tabular-nums" }}>
                                                     {job.applicants}
                                                 </td>
 
@@ -553,7 +530,7 @@ export const JobTable: React.FC<Props> = ({
                         </span>
                         <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                             <PageBtn
-                                label="< Previous"
+                                label="Previous"
                                 disabled={currentPage === 1}
                                 onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                             />
@@ -591,36 +568,10 @@ export const JobTable: React.FC<Props> = ({
                                 </>
                             )}
                             <PageBtn
-                                label="Next >"
+                                label="Next"
                                 disabled={currentPage === totalPages}
                                 onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
                             />
-                            {!isMobile && (
-                                <>
-                                    <span style={{ fontSize: 13, color: "#94A3B8", marginLeft: "20px" }}>Go to</span>
-                                    <div
-                                        style={{
-                                            background: "#F8FAFC",
-                                            border: "1px solid #E2E8F0",
-                                            color: "#CBD5E1",
-                                            borderRadius: 6,
-                                            padding: "3px 12px",
-                                            fontSize: 13
-                                        }}
-                                    >Page</div>
-                                    <div
-                                        style={{
-                                            background: "#F8FAFC",
-                                            border: "1px solid #E2E8F0",
-                                            color: "#64748B",
-                                            borderRadius: 6,
-                                            padding: "3px 12px",
-                                            fontSize: 13,
-                                            marginLeft: '10px'
-                                        }}
-                                    >{rowsPerPage} / page ˅</div>
-                                </>
-                            )}
                         </div>
                     </div>
                 )}

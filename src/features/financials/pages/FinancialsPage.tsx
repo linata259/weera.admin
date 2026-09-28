@@ -1,6 +1,9 @@
 import React, { lazy, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { LazyBoundary } from '../../../components/LazyBoundary';
+import { PageHeader } from '../../../components/PageHeader';
+import { IconFinancials } from '../../../components/icons';
 
 /* Five tabs, one of which is on screen. Loading all five meant every visit to
  * Financials also downloaded the escrow grid, the withdrawal queue and the
@@ -31,12 +34,19 @@ const scrollbarHideCss = `
 `;
 
 const FinancialsPage: React.FC = () => {
-  const [tab, setTab] = useState<Tab>('dashboard');
+  // The dashboard's escrow and withdrawal cards link here with ?tab=, so the
+  // click lands on the figure it was about rather than on the default tab.
+  const [searchParams] = useSearchParams();
+  const requested = searchParams.get('tab');
+  const [tab, setTab] = useState<Tab>(
+    TABS.some((t) => t.id === requested) ? (requested as Tab) : 'dashboard',
+  );
   const isMobile = useIsMobile();
 
   return (
     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', fontFamily: "'Inter','Helvetica Neue',sans-serif" }}>
       <style>{scrollbarHideCss}</style>
+      <PageHeader title="Financials" subtitle="Revenue, escrow, transactions and withdrawals." icon={IconFinancials} />
 
       {/* tab bar — CHANGED: horizontally scrollable on mobile instead of overflowing/wrapping */}
       <div

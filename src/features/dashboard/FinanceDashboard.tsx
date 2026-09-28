@@ -3,9 +3,10 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import {
-  IconCurrencyDollar, IconPercentage, IconAlertCircle, IconDownload, IconLock,
-  IconArrowUpRight, IconArrowDownRight,
-} from "@tabler/icons-react";
+  Ico, IconRevenue, IconCommission, IconFailure, IconWithdrawal, IconEscrow,
+  IconDeltaUp, IconDeltaDown, TablerIcon,
+} from "../../components/icons";
+import { iconSize } from "../../theme/tokens";
 
 import {
   fetchFinanceDashboardData, FinanceDashboardData, TransactionRow,
@@ -25,13 +26,6 @@ const RED = "#DC2626";
 const AMBER = "#D97706";
 const BLUE = "#2563EB";
 const PINK = "#EC4899";
-
-const Icon: React.FC<{ icon: (props: any) => any; size?: number; color?: string }> = ({
-  icon, size, color,
-}) => {
-  const Component = icon as React.ComponentType<{ size?: number; color?: string }>;
-  return <Component size={size} color={color} />;
-};
 
 const card: React.CSSProperties = {
   borderRadius: 16,
@@ -54,7 +48,7 @@ const TrendChip: React.FC<{ trend: KpiTrend }> = ({ trend }) => {
   const color = flat ? MUTED : up ? GREEN : RED;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: MUTED }}>
-      {!flat && <Icon icon={up ? IconArrowUpRight : IconArrowDownRight} size={13} color={color} />}
+      {!flat && <Ico icon={up ? IconDeltaUp : IconDeltaDown} size={iconSize.sm} color={color} />}
       <span style={{ color, fontWeight: 700 }}>
         {flat ? "—" : `${up ? "+" : "-"}${trend.changePercent}%`}
       </span>
@@ -64,7 +58,7 @@ const TrendChip: React.FC<{ trend: KpiTrend }> = ({ trend }) => {
 };
 
 const KpiCard: React.FC<{
-  icon: (props: any) => any;
+  icon: TablerIcon;
   label: string;
   value: string;
   trend?: KpiTrend;
@@ -73,18 +67,13 @@ const KpiCard: React.FC<{
 }> = ({ icon, label, value, trend, sub, loading }) => (
   <div style={{ ...card, display: "flex", flexDirection: "column", gap: 10 }}>
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <div style={{
-        width: 32, height: 32, borderRadius: 8, background: "#FFF4EE",
-        display: "flex", alignItems: "center", justifyContent: "center",
-      }}>
-        <Icon icon={icon} size={16} color={ORANGE} />
-      </div>
+      <Ico icon={icon} size={iconSize.md} color="#94A3B8" />
       <span style={{ fontSize: 13, fontWeight: 600, color: MUTED }}>{label}</span>
     </div>
     {loading ? (
       <div style={{ height: 30, width: "60%", borderRadius: 6, background: "#F1F5F9" }} />
     ) : (
-      <div style={{ fontSize: 26, fontWeight: 800, color: TEXT_DARK, letterSpacing: -0.5 }}>
+      <div style={{ fontSize: 26, fontWeight: 600, color: TEXT_DARK, letterSpacing: -0.5 }}>
         {value}
       </div>
     )}
@@ -204,15 +193,15 @@ export function FinanceDashboardPage() {
         gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
         gap: 14,
       }}>
-        <KpiCard icon={IconLock} label="Funds in Escrow" loading={loading}
+        <KpiCard icon={IconEscrow} label="Funds in Escrow" loading={loading}
           value={k ? fmtMoney(k.fundsInEscrow) : ""} sub="currently locked" />
-        <KpiCard icon={IconCurrencyDollar} label="Total Revenue" loading={loading}
+        <KpiCard icon={IconRevenue} label="Total Revenue" loading={loading}
           value={k ? fmtMoney(k.totalRevenue) : ""} sub="all-time money in" />
-        <KpiCard icon={IconPercentage} label="Platform Fees (10%)" loading={loading}
+        <KpiCard icon={IconCommission} label="Platform Fees (10%)" loading={loading}
           value={k ? fmtMoney(k.platformFees) : ""} sub="earned commission" />
-        <KpiCard icon={IconAlertCircle} label="Failed Payments" loading={loading}
+        <KpiCard icon={IconFailure} label="Failed Payments" loading={loading}
           value={k ? String(k.failedPayments) : ""} sub="all transactions" />
-        <KpiCard icon={IconDownload} label="Pending Withdrawals" loading={loading}
+        <KpiCard icon={IconWithdrawal} label="Pending Withdrawals" loading={loading}
           value={k ? String(k.pendingWithdrawalsCount) : ""}
           sub={k ? `${fmtMoney(k.pendingWithdrawalsAmount)} total` : undefined} />
       </div>

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from 'services/supabaseClient';
 import { useNavbar } from '../hooks/Navbarcontext';
 import { NotificationBell } from '../features/notifications/components/NotificationBell';
 import { usePermissions } from '../features/rolesPermissions/hooks/usePermissions';
+import { Ico, IconDisclosure, IconMenu, IconSignOut, iconSize } from './icons';
 
 const PRIMARY = '#EA580C';
 const NAVY    = '#0F172A';
@@ -33,11 +34,9 @@ interface AdminProfile {
 
 const Navbar: React.FC<NavbarProps> = ({
   sidebarWidth = 280,
-  openTabs,
   isMobile = false,
   onMenuClick,
 }) => {
-  const location  = useLocation();
   const navigate  = useNavigate();
   const { breadcrumb } = useNavbar();
   const { roleName } = usePermissions();
@@ -46,8 +45,6 @@ const Navbar: React.FC<NavbarProps> = ({
   const [profile, setProfile] = useState<AdminProfile | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const activeTab     = openTabs.find((t) => t.path === location.pathname);
-  const fallbackLabel = activeTab?.label ?? '';
 
   // ── Fetch admin profile once on mount ──────────────────────────────────────
   useEffect(() => {
@@ -114,9 +111,7 @@ const Navbar: React.FC<NavbarProps> = ({
             aria-label="Open menu"
             style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 6, margin: '0 -2px 0 -8px', display: 'flex', alignItems: 'center' }}
           >
-            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-              <path d="M3 6h16M3 11h16M3 16h16" stroke={NAVY} strokeWidth="1.6" strokeLinecap="round" />
-            </svg>
+            <Ico icon={IconMenu} size={iconSize.xl} color={NAVY} />
           </button>
         )}
 
@@ -125,18 +120,12 @@ const Navbar: React.FC<NavbarProps> = ({
             {breadcrumb.parent && (
               <>
                 <span style={{ fontSize: 16, fontWeight: 500, color: SLATE }}>{breadcrumb.parent}</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
+                <Ico icon={IconDisclosure} size={iconSize.sm} stroke={2.5} color="#CBD5E1" />
               </>
             )}
             <span style={{ fontSize: 16, fontWeight: 700, color: NAVY }}>{breadcrumb.current}</span>
           </div>
-        ) : (
-          <span style={{ fontSize: 16, fontWeight: 700, color: NAVY, whiteSpace: 'nowrap' }}>
-            {fallbackLabel}
-          </span>
-        )}
+        ) : null}
       </div>
 
       {/* ── Right: notification bell + avatar + dropdown ── */}
@@ -250,11 +239,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 onMouseEnter={(e) => (e.currentTarget.style.background = '#FEF2F2')}
                 onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
+                <Ico icon={IconSignOut} size={iconSize.md} />
                 Sign out
               </button>
             </div>

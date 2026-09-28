@@ -1,4 +1,11 @@
 import React from "react";
+import {
+  Ico,
+  IconChevronDownControl,
+  IconSearchControl,
+  IconSettingsNav,
+  iconSize,
+} from "../../../../components/icons";
 
 interface SupportToolbarProps {
   searchTerm: string;
@@ -42,11 +49,10 @@ const Dropdown: React.FC<{
         </option>
       ))}
     </select>
-    <svg
-      width="10"
-      height="6"
-      viewBox="0 0 10 6"
-      fill="none"
+    <Ico
+      icon={IconChevronDownControl}
+      size={iconSize.sm}
+      color="#64748B"
       style={{
         position: "absolute",
         right: 14,
@@ -54,15 +60,7 @@ const Dropdown: React.FC<{
         transform: "translateY(-50%)",
         pointerEvents: "none",
       }}
-    >
-      <path
-        d="M1 1L5 5L9 1"
-        stroke="#64748B"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    />
   </div>
 );
 
@@ -85,11 +83,10 @@ export const SupportToolbar: React.FC<SupportToolbarProps> = ({
     }}
   >
     <div style={{ position: "relative", width: "min(340px, 100%)" }}>
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 16 16"
-        fill="none"
+      <Ico
+        icon={IconSearchControl}
+        size={iconSize.md}
+        color="#94A3B8"
         style={{
           position: "absolute",
           left: 12,
@@ -97,15 +94,7 @@ export const SupportToolbar: React.FC<SupportToolbarProps> = ({
           transform: "translateY(-50%)",
           pointerEvents: "none",
         }}
-      >
-        <circle cx="7" cy="7" r="5.5" stroke="#94A3B8" strokeWidth="1.5" />
-        <path
-          d="M11 11l2.5 2.5"
-          stroke="#94A3B8"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        />
-      </svg>
+      />
       <input
         type="text"
         placeholder="Search tickets"
@@ -158,19 +147,7 @@ export const SupportToolbar: React.FC<SupportToolbarProps> = ({
           justifyContent: "center",
         }}
       >
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#64748B"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <rect x="3" y="4" width="18" height="16" rx="2" />
-          <path d="M9 4v16M15 4v16" />
-        </svg>
+        <Ico icon={IconSettingsNav} size={iconSize.lg} color="#64748B" />
       </button>
     </div>
   </div>

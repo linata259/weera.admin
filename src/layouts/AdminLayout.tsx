@@ -4,15 +4,31 @@ import Navbar from "../components/Navbar";
 import Sidebar, { NavItem, NavGroup } from "../components/Sidebar";
 import { NavbarProvider } from "../hooks/Navbarcontext";
 import { usePermissions } from "../features/rolesPermissions/hooks/usePermissions";
+import {
+  Ico,
+  IconChats,
+  IconDashboard,
+  IconFinancials,
+  IconFormSubmissions,
+  IconHelpSupport,
+  IconJobs,
+  IconLocations,
+  IconNotifications,
+  IconRoles,
+  IconSettingsNav,
+  IconSkills,
+  IconUserManagement,
+  iconSize,
+} from "../components/icons";
 
 
 const NAV_FEATURES: NavGroup[] = [
-  { id: "dashboard", label: "Dashboard", path: "/dashboard", icon: "⊞" },
+  { id: "dashboard", label: "Dashboard", path: "/dashboard", icon: <Ico icon={IconDashboard} size={iconSize.lg} /> },
   {
     id: "users",
     label: "User Management",
     path: "/users",
-    icon: "👥",
+    icon: <Ico icon={IconUserManagement} size={iconSize.lg} />,
     children: [
       { id: "users-analytics", label: "Analytics", path: "/users/analytics" },
       { id: "users", label: "Users", path: "/users" },
@@ -22,7 +38,7 @@ const NAV_FEATURES: NavGroup[] = [
     id: "jobs",
     label: "Job Management",
     path: "/jobs",
-    icon: "💼",
+    icon: <Ico icon={IconJobs} size={iconSize.lg} />,
     children: [
       { id: "jobs-analytics", label: "Analytics", path: "/jobs/analytics" },
       { id: "jobs", label: "Jobs", path: "/jobs" },
@@ -30,43 +46,44 @@ const NAV_FEATURES: NavGroup[] = [
     ],
 
   },
-  { id: "help-support", label: "Help & Support", path: "/help-support", icon: "?" },
+  { id: "help-support", label: "Help & Support", path: "/help-support", icon: <Ico icon={IconHelpSupport} size={iconSize.lg} /> },
+  
   {
     id: "chats",
     label: "Chat Moderation",
     path: "/chats",
-    icon: "💬",
+    icon: <Ico icon={IconChats} size={iconSize.lg} />,
   },
 
   {
     id: "financials",
     label: "Financials",
     path: "/financials",
-    icon: "💰",
+    icon: <Ico icon={IconFinancials} size={iconSize.lg} />,
   },
   {
     id: "skills",
     label: "Skills",
     path: "/skills",
-    icon: "🎯",
+    icon: <Ico icon={IconSkills} size={iconSize.lg} />,
   },
   {
     id: "locations",
     label: "Locations",
     path: "/locations",
-    icon: "📍",
+    icon: <Ico icon={IconLocations} size={iconSize.lg} />,
   },
   {
     id: "notifications",
     label: "Notifications",
     path: "/notifications",
-    icon: "🔔",
+    icon: <Ico icon={IconNotifications} size={iconSize.lg} />,
   },
   {
     id: "roles",
     label: "Roles & Permissions",
     path: "/roles",
-    icon: "🛡️",
+    icon: <Ico icon={IconRoles} size={iconSize.lg} />,
     children: [
       { id: "roles-users", label: "Admin Users", path: "/roles" },
       { id: "roles-manage", label: "Manage Roles", path: "/roles/manage" },
@@ -76,8 +93,9 @@ const NAV_FEATURES: NavGroup[] = [
     id: "settings",
     label: "Settings",
     path: "/settings",
-    icon: "⚙️",
+    icon: <Ico icon={IconSettingsNav} size={iconSize.lg} />,
   },
+  { id: "form-submissions", label: "Form Submissions", path: "/form-submissions", icon: <Ico icon={IconFormSubmissions} size={iconSize.lg} /> },
 ];
 
 // ── Role-restricted navigation ────────────────────────────────
@@ -87,28 +105,28 @@ const NAV_FEATURES: NavGroup[] = [
 const ROLE_ACCESS: Record<string, { nav: NavGroup[]; allowed: string[] }> = {
   Finance: {
     nav: [
-      { id: "dashboard", label: "Dashboard", path: "/dashboard", icon: "⊞" },
-      { id: "financials", label: "Financials", path: "/financials", icon: "💰" },
-      { id: "users-analytics", label: "User Analytics", path: "/users/analytics", icon: "👥" },
-      { id: "jobs-analytics", label: "Job Analytics", path: "/jobs/analytics", icon: "💼" },
+      { id: "dashboard", label: "Dashboard", path: "/dashboard", icon: <Ico icon={IconDashboard} size={iconSize.lg} /> },
+      { id: "financials", label: "Financials", path: "/financials", icon: <Ico icon={IconFinancials} size={iconSize.lg} /> },
+      { id: "users-analytics", label: "User Analytics", path: "/users/analytics", icon: <Ico icon={IconUserManagement} size={iconSize.lg} /> },
+      { id: "jobs-analytics", label: "Job Analytics", path: "/jobs/analytics", icon: <Ico icon={IconJobs} size={iconSize.lg} /> },
     ],
     allowed: ["/dashboard", "/financials", "/users/analytics", "/jobs/analytics"],
   },
   Marketing: {
     // dashboard only for now — more modules will be added later
     nav: [
-      { id: "dashboard", label: "Dashboard", path: "/dashboard", icon: "⊞" },
+      { id: "dashboard", label: "Dashboard", path: "/dashboard", icon: <Ico icon={IconDashboard} size={iconSize.lg} /> },
     ],
     allowed: ["/dashboard"],
   },
   "Customer Care": {
     nav: [
-      { id: "dashboard", label: "Dashboard", path: "/dashboard", icon: "⊞" },
+      { id: "dashboard", label: "Dashboard", path: "/dashboard", icon: <Ico icon={IconDashboard} size={iconSize.lg} /> },
       {
         id: "users",
         label: "User Management",
         path: "/users",
-        icon: "👥",
+        icon: <Ico icon={IconUserManagement} size={iconSize.lg} />,
         children: [
           { id: "users-analytics", label: "Analytics", path: "/users/analytics" },
           { id: "users", label: "Users", path: "/users" },
@@ -118,18 +136,18 @@ const ROLE_ACCESS: Record<string, { nav: NavGroup[]; allowed: string[] }> = {
         id: "jobs",
         label: "Job Management",
         path: "/jobs",
-        icon: "💼",
+        icon: <Ico icon={IconJobs} size={iconSize.lg} />,
         children: [
           { id: "jobs-analytics", label: "Analytics", path: "/jobs/analytics" },
           { id: "jobs", label: "Jobs", path: "/jobs" },
           { id: "reports", label: "Reports", path: "/jobs/reports" },
         ],
       },
-      { id: "help-support", label: "Help & Support", path: "/help-support", icon: "?" },
-      { id: "chats", label: "Chat Moderation", path: "/chats", icon: "💬" },
-      { id: "notifications", label: "Notifications", path: "/notifications", icon: "🔔" },
-      { id: "skills", label: "Skills", path: "/skills", icon: "🎯" },
-      { id: "locations", label: "Locations", path: "/locations", icon: "📍" },
+      { id: "help-support", label: "Help & Support", path: "/help-support", icon: <Ico icon={IconHelpSupport} size={iconSize.lg} /> },
+      { id: "chats", label: "Chat Moderation", path: "/chats", icon: <Ico icon={IconChats} size={iconSize.lg} /> },
+      { id: "notifications", label: "Notifications", path: "/notifications", icon: <Ico icon={IconNotifications} size={iconSize.lg} /> },
+      { id: "skills", label: "Skills", path: "/skills", icon: <Ico icon={IconSkills} size={iconSize.lg} /> },
+      { id: "locations", label: "Locations", path: "/locations", icon: <Ico icon={IconLocations} size={iconSize.lg} /> },
     ],
     allowed: [
       "/dashboard", "/users", "/jobs", "/help-support", "/chats",

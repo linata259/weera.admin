@@ -1,6 +1,7 @@
 /* ─── src/features/reports/components/Pagination.tsx ────────── */
 import React from 'react';
 import { BG, BORDER, NAVY, ORANGE, PAGE_SIZE_OPTIONS, SLATE } from '../hooks/types';
+import { Ico, IconPageNext, IconPagePrev, iconSize } from '../../../components/icons';
 
 
 interface Props {
@@ -62,9 +63,7 @@ export const Pagination: React.FC<Props> = ({
             onClick={() => onPage(page - 1)} disabled={page === 1}
             style={{ ...btn, opacity: page === 1 ? 0.4 : 1, cursor: page === 1 ? 'not-allowed' : 'pointer' }}
           >
-            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-              <path d="M9 2L4 7l5 5" stroke={NAVY} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+            <Ico icon={IconPagePrev} size={iconSize.sm} color={NAVY} />
           </button>
 
           {pages.map((p, i) => p === '…'
@@ -83,9 +82,7 @@ export const Pagination: React.FC<Props> = ({
             onClick={() => onPage(page + 1)} disabled={page === totalPages}
             style={{ ...btn, opacity: page === totalPages ? 0.4 : 1, cursor: page === totalPages ? 'not-allowed' : 'pointer' }}
           >
-            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-              <path d="M5 2l5 5-5 5" stroke={NAVY} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+            <Ico icon={IconPageNext} size={iconSize.sm} color={NAVY} />
           </button>
         </div>
       )}

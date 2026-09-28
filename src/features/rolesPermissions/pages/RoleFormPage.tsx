@@ -5,9 +5,11 @@ import {
 } from "../api/rolesApi";
 import { PermissionRow } from "../types";
 import {
-  card, th, td, input, label, MUTED, TEXT, BORDER,
+  card, th, td, input, label, MUTED, BORDER,
   PrimaryButton, GhostButton, Check, ErrorNote, Spinner,
 } from "../components/ui";
+import { PageHeader, SectionTitle } from "../../../components/PageHeader";
+import { IconRoles } from "../../../components/icons";
 
 type Action = "can_view" | "can_create" | "can_edit" | "can_delete";
 const ACTIONS: { key: Action; label: string }[] = [
@@ -128,16 +130,20 @@ const RoleFormPage: React.FC = () => {
 
   return (
     <div style={{ padding: 24, fontFamily: "'Inter', sans-serif", maxWidth: 860 }}>
-      <div style={{ marginBottom: 20 }}>
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: TEXT }}>
-          {isEdit ? "Edit Role" : "Add Role"}
-        </h1>
-        <p style={{ margin: "4px 0 0", fontSize: 13, color: MUTED }}>
-          {isEdit
+      <PageHeader
+        title={isEdit ? "Edit Role" : "Add Role"}
+        subtitle={
+          isEdit
             ? "Update the role details and its permissions"
-            : "Name the role and choose what it can access"}
-        </p>
-      </div>
+            : "Name the role and choose what it can access"
+        }
+        icon={IconRoles}
+        breadcrumbs={[
+          { label: "Roles & Permissions", onClick: () => navigate("/roles") },
+          { label: "Manage Roles", onClick: () => navigate("/roles/manage") },
+          { label: isEdit ? "Edit Role" : "Add Role" },
+        ]}
+      />
 
       <ErrorNote message={error} />
 
@@ -175,15 +181,15 @@ const RoleFormPage: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: TEXT, marginRight: "auto" }}>
-              Set Role Permissions
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#475569" }}>
-              <Check checked={allChecked} onChange={toggleAll} />
-              Full access (all modules)
-            </div>
-          </div>
+          <SectionTitle
+            title="Set Role Permissions"
+            actions={
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#475569" }}>
+                <Check checked={allChecked} onChange={toggleAll} />
+                Full access (all modules)
+              </div>
+            }
+          />
 
           <div style={{ border: `1px solid ${BORDER}`, borderRadius: 10, overflow: "hidden" }}>
             <div style={{ overflowX: "auto" }}>

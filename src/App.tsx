@@ -34,6 +34,9 @@ const LocationsPage = lazy(() => import("./features/locations/pages/LocationsPag
 const HelpSupportPage = lazy(
   () => import("./features/helpSupport/pages/HelpSupport"),
 );
+const FormSubmissionsPage = lazy(
+  () => import("./features/formSubmissions/pages/FormSubmissionsPage"),
+);
 const NotificationsPage = lazy(
   () => import("./features/notifications/pages/NotificationsPage"),
 );
@@ -150,6 +153,7 @@ export default function App() {
             <Route path="/skills" element={<SkillsPage />} />
             <Route path="/locations" element={<LocationsPage />} />
             <Route path="/help-support" element={<HelpSupportPage />} />
+            <Route path="/form-submissions" element={<FormSubmissionsPage />} />
             <Route path="/chats" element={<ChatsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />

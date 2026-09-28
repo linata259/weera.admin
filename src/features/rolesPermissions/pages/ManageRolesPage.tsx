@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { deleteRole, fetchRoles } from "../api/rolesApi";
 import { Role } from "../types";
 import {
-  card, th, td, MUTED, TEXT, BORDER,
+  card, th, td, MUTED, BORDER,
   PrimaryButton, GhostButton, RoleBadge, ErrorNote, Spinner,
 } from "../components/ui";
 import { readDashboardCache, writeDashboardCache } from "../../../utils/dashboardCache";
+import { PageHeader } from "../../../components/PageHeader";
+import { IconRoles } from "../../../components/icons";
 
 const CACHE_KEY = "manageRolesPage";
 
@@ -60,16 +62,21 @@ const ManageRolesPage: React.FC = () => {
 
   return (
     <div style={{ padding: 24, fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", marginBottom: 20 }}>
-        <div style={{ marginRight: "auto" }}>
-          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: TEXT }}>Manage Roles</h1>
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: MUTED }}>
-            Define what each admin role can see and do
-          </p>
-        </div>
-        <GhostButton onClick={() => navigate("/roles")}>Admin Users</GhostButton>
-        <PrimaryButton onClick={() => navigate("/roles/add")}>+ Add Role</PrimaryButton>
-      </div>
+      <PageHeader
+        title="Manage Roles"
+        subtitle="Define what each admin role can see and do"
+        icon={IconRoles}
+        breadcrumbs={[
+          { label: "Roles & Permissions", onClick: () => navigate("/roles") },
+          { label: "Manage Roles" },
+        ]}
+        actions={
+          <>
+            <GhostButton onClick={() => navigate("/roles")}>Admin Users</GhostButton>
+            <PrimaryButton onClick={() => navigate("/roles/add")}>+ Add Role</PrimaryButton>
+          </>
+        }
+      />
 
       <ErrorNote message={error} />
 

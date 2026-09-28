@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  IconLifebuoy, IconAlertOctagon, IconMessageCircle, IconFlag, IconUserPlus, IconBell,
-  IconArrowUpRight, IconArrowDownRight,
-} from "@tabler/icons-react";
+  Ico, IconHelpSupport, IconWarning, IconChats, IconFlagged, IconNewUser,
+  IconNotifications, IconDeltaUp, IconDeltaDown, TablerIcon,
+} from "../../components/icons";
+import { iconSize } from "../../theme/tokens";
 
 import { supabase } from "services/supabaseClient";
 import { fetchSupportTickets } from "../helpSupport/api/supportTicketService";
@@ -32,13 +33,6 @@ const GREEN = "#16A34A";
 const RED = "#DC2626";
 const AMBER = "#D97706";
 const BLUE = "#2563EB";
-
-const Icon: React.FC<{ icon: (props: any) => any; size?: number; color?: string }> = ({
-  icon, size, color,
-}) => {
-  const Component = icon as React.ComponentType<{ size?: number; color?: string }>;
-  return <Component size={size} color={color} />;
-};
 
 const card: React.CSSProperties = {
   borderRadius: 16,
@@ -98,36 +92,30 @@ const safeCount = async (build: (s: typeof supabase) => any): Promise<number> =>
 };
 
 const KpiCard: React.FC<{
-  icon: (props: any) => any;
+  icon: TablerIcon;
   label: string;
   value: string;
   sub?: string;
   trend?: KpiTrend;
-  accent?: string;
   loading: boolean;
-}> = ({ icon, label, value, sub, trend, accent = ORANGE, loading }) => (
+}> = ({ icon, label, value, sub, trend, loading }) => (
   <div style={{ ...card, display: "flex", flexDirection: "column", gap: 10 }}>
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <div style={{
-        width: 32, height: 32, borderRadius: 8, background: `${accent}14`,
-        display: "flex", alignItems: "center", justifyContent: "center",
-      }}>
-        <Icon icon={icon} size={16} color={accent} />
-      </div>
+      <Ico icon={icon} size={iconSize.md} color="#94A3B8" />
       <span style={{ fontSize: 13, fontWeight: 600, color: MUTED }}>{label}</span>
     </div>
     {loading ? (
       <div style={{ height: 30, width: "60%", borderRadius: 6, background: "#F1F5F9" }} />
     ) : (
-      <div style={{ fontSize: 26, fontWeight: 800, color: TEXT_DARK, letterSpacing: -0.5 }}>
+      <div style={{ fontSize: 26, fontWeight: 600, color: TEXT_DARK, letterSpacing: -0.5 }}>
         {value}
       </div>
     )}
     {!loading && (trend ? (
       <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: MUTED }}>
         {trend.direction !== "flat" && (
-          <Icon icon={trend.direction === "up" ? IconArrowUpRight : IconArrowDownRight}
-            size={13} color={trend.direction === "up" ? GREEN : RED} />
+          <Ico icon={trend.direction === "up" ? IconDeltaUp : IconDeltaDown}
+            size={iconSize.sm} color={trend.direction === "up" ? GREEN : RED} />
         )}
         <span style={{ color: trend.direction === "flat" ? MUTED : trend.direction === "up" ? GREEN : RED, fontWeight: 700 }}>
           {trend.direction === "flat" ? "—" : `${trend.direction === "up" ? "+" : "-"}${trend.changePercent}%`}
@@ -237,17 +225,17 @@ export function CustomerCareDashboardPage() {
         gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
         gap: 14,
       }}>
-        <KpiCard icon={IconLifebuoy} label="Open Tickets" loading={loading}
+        <KpiCard icon={IconHelpSupport} label="Open Tickets" loading={loading}
           value={String(openTickets.length)} sub={`${tickets.length} total`} />
-        <KpiCard icon={IconAlertOctagon} label="Urgent Tickets" accent={RED} loading={loading}
+        <KpiCard icon={IconWarning} label="Urgent Tickets" loading={loading}
           value={String(urgentCount)} sub="need attention now" />
-        <KpiCard icon={IconMessageCircle} label="Flagged Chats" accent={AMBER} loading={loading}
+        <KpiCard icon={IconChats} label="Flagged Chats" loading={loading}
           value={String(flaggedChats)} sub="awaiting moderation" />
-        <KpiCard icon={IconFlag} label="Job Reports" accent={AMBER} loading={loading}
+        <KpiCard icon={IconFlagged} label="Job Reports" loading={loading}
           value={String(jobReports)} sub="pending review" />
-        <KpiCard icon={IconUserPlus} label="New Users" accent={BLUE} loading={loading}
+        <KpiCard icon={IconNewUser} label="New Users" loading={loading}
           value={newUsersMtd.toLocaleString()} sub="this month" />
-        <KpiCard icon={IconBell} label="Notifications" loading={loading}
+        <KpiCard icon={IconNotifications} label="Notifications" loading={loading}
           value={String(unreadNotifications)} sub="unread" />
       </div>
 

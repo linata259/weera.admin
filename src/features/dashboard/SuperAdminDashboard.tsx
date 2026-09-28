@@ -4,9 +4,17 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import {
-  IconCurrencyDollar, IconUsers, IconBriefcase, IconActivity, IconAlertCircle,
-  IconArrowUpRight, IconArrowDownRight,
-} from "@tabler/icons-react";
+  Ico,
+  IconActivityFeed,
+  IconDeltaDown,
+  IconDeltaUp,
+  IconError,
+  IconJobs,
+  IconRevenue,
+  IconUserManagement,
+  TablerIcon,
+  iconSize,
+} from "../../components/icons";
 
 import { fetchSuperAdminData, SuperAdminData, KpiTrend } from "./services/superAdminService";
 import { readDashboardCache, writeDashboardCache } from "../../utils/dashboardCache";
@@ -25,14 +33,6 @@ const RED = "#DC2626";
 const AMBER = "#D97706";
 const BLUE = "#2563EB";
 const PINK = "#EC4899";
-
-/* Tabler icons TS2786 workaround (same pattern as Sidebar) */
-const Icon: React.FC<{ icon: (props: any) => any; size?: number; color?: string }> = ({
-  icon, size, color,
-}) => {
-  const Component = icon as React.ComponentType<{ size?: number; color?: string }>;
-  return <Component size={size} color={color} />;
-};
 
 const card: React.CSSProperties = {
   borderRadius: 16,
@@ -63,7 +63,7 @@ const TrendChip: React.FC<{ trend: KpiTrend; suffix?: string }> = ({
     <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: MUTED }}>
       {!flat && (
         <span style={{ display: "flex", alignItems: "center", color }}>
-          <Icon icon={up ? IconArrowUpRight : IconArrowDownRight} size={13} color={color} />
+          <Ico icon={up ? IconDeltaUp : IconDeltaDown} size={iconSize.sm} color={color} />
         </span>
       )}
       <span style={{ color, fontWeight: 700 }}>
@@ -75,7 +75,7 @@ const TrendChip: React.FC<{ trend: KpiTrend; suffix?: string }> = ({
 };
 
 const KpiCard: React.FC<{
-  icon: (props: any) => any;
+  icon: TablerIcon;
   label: string;
   value: string;
   trend?: KpiTrend;
@@ -90,7 +90,7 @@ const KpiCard: React.FC<{
           display: "flex", alignItems: "center", justifyContent: "center",
         }}
       >
-        <Icon icon={icon} size={16} color={ORANGE} />
+        <Ico icon={icon} size={iconSize.md} color={ORANGE} />
       </div>
       <span style={{ fontSize: 13, fontWeight: 600, color: MUTED }}>{label}</span>
     </div>
@@ -197,15 +197,15 @@ export function SuperAdminDashboardPage() {
           gap: 14,
         }}
       >
-        <KpiCard icon={IconCurrencyDollar} label="Total Revenue" loading={loading}
+        <KpiCard icon={IconRevenue} label="Total Revenue" loading={loading}
           value={k ? fmtMoney(k.totalRevenue) : ""} trend={k?.revenueTrend} />
-        <KpiCard icon={IconUsers} label="Total Users" loading={loading}
+        <KpiCard icon={IconUserManagement} label="Total Users" loading={loading}
           value={k ? fmtNum(k.totalUsers) : ""} trend={k?.usersTrend} />
-        <KpiCard icon={IconBriefcase} label="Total Jobs" loading={loading}
+        <KpiCard icon={IconJobs} label="Total Jobs" loading={loading}
           value={k ? fmtNum(k.totalJobs) : ""} trend={k?.jobsTrend} />
-        <KpiCard icon={IconActivity} label="Platform Health" loading={loading}
+        <KpiCard icon={IconActivityFeed} label="Platform Health" loading={loading}
           value={k ? `${k.healthScore}%` : ""} sub="live service checks" />
-        <KpiCard icon={IconAlertCircle} label="Open Issues" loading={loading}
+        <KpiCard icon={IconError} label="Open Issues" loading={loading}
           value={k ? fmtNum(k.openIssues) : ""} sub="reports + open tickets" />
       </div>
 

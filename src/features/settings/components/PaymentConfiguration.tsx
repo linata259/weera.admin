@@ -11,6 +11,11 @@ import {
   type SaveState,
 } from './Settingsshared';
 import type { PlatformSettings } from '../settingsApi';
+import { Ico, IconEdit, iconSize,
+  IconSecret
+} from '../../../components/icons';
+// No "secret / credential" concept exists in the icon vocabulary yet — the
+// nearest exports (IconEscrow, IconRoles) mean other things in this product.
 
 interface Props {
   settings: PlatformSettings;
@@ -160,9 +165,7 @@ export default function PaymentConfiguration({ settings, onToggle, onSaveSection
           {/* ── Sensitive credentials notice ── */}
           <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 12, padding: '16px 20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
+              <Ico icon={IconSecret} size={iconSize.md} color="#D97706" />
               <span style={{ fontSize: 13, fontWeight: 700, color: '#92400E' }}>Sensitive credentials — set via environment variables only</span>
             </div>
             <p style={{ margin: '0 0 12px', fontSize: 13, color: '#78350F', lineHeight: 1.5 }}>
@@ -171,9 +174,7 @@ export default function PaymentConfiguration({ settings, onToggle, onSaveSection
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               {ENV_ONLY_FIELDS.map((f) => (
                 <div key={f.env} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#FEF3C7', borderRadius: 8, padding: '8px 12px' }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2.5" strokeLinecap="round">
-                    <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                  </svg>
+                  <Ico icon={IconSecret} size={iconSize.sm} color="#D97706" />
                   <div>
                     <div style={{ fontSize: 11, color: '#92400E', fontWeight: 600 }}>{f.label}</div>
                     <code style={{ fontSize: 11, color: '#78350F' }}>{f.env}</code>
@@ -208,10 +209,7 @@ function SectionCard({ title, subtitle, isEditing, saveState, onEdit, onCancel, 
             onClick={onEdit}
             style={{ display: 'flex', alignItems: 'center', gap: 6, border: `1px solid ${BORDER}`, background: '#fff', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 500, color: TEXT_DARK, cursor: 'pointer', fontFamily: 'inherit' }}
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
+            <Ico icon={IconEdit} size={iconSize.sm} />
             Edit
           </button>
         ) : (
@@ -231,7 +229,7 @@ function SectionCard({ title, subtitle, isEditing, saveState, onEdit, onCancel, 
           >
             {saveState === 'saving' ? 'Saving…' : 'Save'}
           </button>
-          {saveState === 'saved' && <span style={{ fontSize: 13, color: '#16A34A', fontWeight: 500 }}>✓ Saved</span>}
+          {saveState === 'saved' && <span style={{ fontSize: 13, color: '#16A34A', fontWeight: 500 }}>Saved</span>}
           {saveState === 'error'  && <span style={{ fontSize: 13, color: '#DC2626', fontWeight: 500 }}>Failed to save</span>}
         </div>
       )}

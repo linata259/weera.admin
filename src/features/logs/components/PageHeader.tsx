@@ -1,5 +1,6 @@
 // src/features/logs/components/PageHeader.tsx
 
+import { Ico, IconLogs, IconRefreshAction, iconSize } from "../../../components/icons";
 import { relativeTime } from "../utils";
 import { PERIOD_OPTIONS } from "../constants";
 
@@ -26,9 +27,7 @@ export function PageHeader({
       <div>
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-[#6c5ce7] flex items-center justify-center">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            </svg>
+            <Ico icon={IconLogs} size={iconSize.md} color="white" />
           </div>
           <h1 className="text-white text-xl font-bold">Sentry Logs</h1>
           <span className="bg-[#161b22] border border-[#30363d] text-[#8b949e] text-xs px-2 py-0.5 rounded-full">
@@ -59,12 +58,9 @@ export function PageHeader({
           disabled={loading}
           className="flex items-center gap-2 bg-[#161b22] hover:bg-[#21262d] border border-[#30363d] text-[#c9d1d9] text-sm rounded-lg px-4 py-2 transition-colors disabled:opacity-50"
         >
-          <svg
-            className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
-            viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-          >
-            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-          </svg>
+          <span className={`inline-flex ${loading ? "animate-spin" : ""}`}>
+            <Ico icon={IconRefreshAction} size={iconSize.md} />
+          </span>
           Refresh
         </button>
 

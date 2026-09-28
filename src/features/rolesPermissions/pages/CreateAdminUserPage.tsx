@@ -6,6 +6,8 @@ import {
   card, input, label, MUTED, TEXT, BORDER, PRIMARY,
   PrimaryButton, GhostButton, ErrorNote, Spinner,
 } from "../components/ui";
+import { PageHeader } from "../../../components/PageHeader";
+import { IconRoles } from "../../../components/icons";
 
 const CreateAdminUserPage: React.FC = () => {
   const navigate = useNavigate();
@@ -122,14 +124,15 @@ const CreateAdminUserPage: React.FC = () => {
   /* ── form ──────────────────────────────────────────────────── */
   return (
     <div style={{ padding: 24, fontFamily: "'Inter', sans-serif", maxWidth: 760 }}>
-      <div style={{ marginBottom: 20 }}>
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: TEXT }}>
-          Create Admin User
-        </h1>
-        <p style={{ margin: "4px 0 0", fontSize: 13, color: MUTED }}>
-          A secure password is generated automatically and sent to the user by email
-        </p>
-      </div>
+      <PageHeader
+        title="Create Admin User"
+        subtitle="A secure password is generated automatically and sent to the user by email"
+        icon={IconRoles}
+        breadcrumbs={[
+          { label: "Roles & Permissions", onClick: () => navigate("/roles") },
+          { label: "Create Admin User" },
+        ]}
+      />
 
       <ErrorNote message={error} />
 

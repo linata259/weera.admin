@@ -11,6 +11,7 @@ import { exportPdf } from "../utils/exportPdf";
 import { Avatar } from "../../shared/Avatar";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import { useServerTable } from "../hooks/useServerTable";
+import { Ico, IconMore, iconSize } from "../../../components/icons";
 import {
   BG,
   BORDER,
@@ -457,11 +458,11 @@ export const EscrowManagement: React.FC = () => {
                               justifyContent: "center",
                             }}
                           >
-                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                              <circle cx="7" cy="3" r="1" fill={SLATE} />
-                              <circle cx="7" cy="7" r="1" fill={SLATE} />
-                              <circle cx="7" cy="11" r="1" fill={SLATE} />
-                            </svg>
+                            <Ico
+                              icon={IconMore}
+                              size={iconSize.sm}
+                              color={SLATE}
+                            />
                           </button>
                         </td>
                       </tr>

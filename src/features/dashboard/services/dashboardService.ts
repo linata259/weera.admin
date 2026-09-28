@@ -245,6 +245,18 @@ function deriveUserGrowth(
   });
 }
 
+// Jobs now store on-site locations as county/subcounty/ward plus
+// job_location_type; legacy rows only have location_id. Group by county so
+// the chart stays readable, falling back to the legacy location name.
+function jobLocationName(row: any, locationMap: Map<string, string>): string | null {
+  const type = String(row.job_location_type ?? '').toLowerCase();
+  if (type === 'remote') return 'Remote';
+  const county = row.counties?.name as string | null | undefined;
+  if (county) return county;
+  const legacyId = row.location_id as string | null;
+  return legacyId ? locationMap.get(legacyId) ?? null : null;
+}
+
 function deriveTopLocations(
   currentJobs: any[],
   locationMap: Map<string, string>,
@@ -253,15 +265,15 @@ function deriveTopLocations(
   const counts = new Map<string, number>();
   let total = 0;
   currentJobs.forEach((row) => {
-    const id = row.location_id as string | null;
-    if (!id) return;
-    counts.set(id, (counts.get(id) ?? 0) + 1);
+    const name = jobLocationName(row, locationMap);
+    if (!name) return;
+    counts.set(name, (counts.get(name) ?? 0) + 1);
     total += 1;
   });
   return Array.from(counts.entries())
-    .map(([id, count]) => ({
-      id,
-      name: locationMap.get(id) ?? 'Unknown',
+    .map(([name, count]) => ({
+      id: name,
+      name,
       count,
       percent: total > 0 ? Math.round((count / total) * 1000) / 10 : 0,
     }))
@@ -421,7 +433,7 @@ export async function fetchAllDashboardData(
     // jobs since previousStart with all chart columns — covers stats + all 3 charts
     supabase
       .from('jobs')
-      .select('posted_at, location_id, categories, budget')
+      .select('posted_at, location_id, job_location_type, counties:county_id(name), categories, budget')
       .gte('posted_at', previousStart)
       .lte('posted_at', now),
 
@@ -582,7 +594,7 @@ export async function fetchUserGrowthChart(): Promise<UserGrowthPoint[]> {
 export async function fetchTopJobLocations(range: DateRangeOption, limit = 4): Promise<BreakdownSlice[]> {
   const { currentStart, now } = getRangeBounds(range);
   const [jobsRes, locationMap] = await Promise.all([
-    supabase.from('jobs').select('location_id').gte('posted_at', currentStart).lte('posted_at', now),
+    supabase.from('jobs').select('location_id, job_location_type, counties:county_id(name)').gte('posted_at', currentStart).lte('posted_at', now),
     fetchLocationMap(),
   ]);
   if (jobsRes.error) logAndThrow('jobs (locations)', jobsRes.error);

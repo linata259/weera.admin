@@ -1,5 +1,6 @@
 // src/features/logs/components/IssueFilters.tsx
 
+import { Ico, IconSearchControl, iconSize } from "../../../components/icons";
 import type { StatusFilter, LevelFilter } from "../types";
 
 interface Props {
@@ -25,13 +26,9 @@ export function IssueFilters({
     <div className="flex items-center gap-3 mb-4">
       {/* Search */}
       <div className="relative flex-1 max-w-md">
-        <svg
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#484f58]"
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-        >
-          <circle cx="11" cy="11" r="8" />
-          <path d="M21 21l-4.35-4.35" />
-        </svg>
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#484f58] inline-flex">
+          <Ico icon={IconSearchControl} size={iconSize.md} />
+        </span>
         <input
           type="text"
           placeholder="Search issues…"

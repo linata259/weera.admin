@@ -3,10 +3,13 @@ import {
   ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from 'services/supabaseClient';
 import { fetchUsers } from '../api/userServices';
 import { User } from '../types';
 import { readDashboardCache, writeDashboardCache } from '../../../utils/dashboardCache';
+import { PageHeader } from '../../../components/PageHeader';
+import { IconUserManagement } from '../../../components/icons';
 
 interface UserAnalyticsCache {
   users: User[];
@@ -144,27 +147,20 @@ const SuspendIcon = (c: string) => (
 );
 
 // ── stat card ──────────────────────────────────────────────────────────
-function StatCard({ label, value, icon, accentColor }: {
-  label: string; value: number; icon: React.ReactNode; accentColor: string;
+function StatCard({ label, value, icon }: {
+  label: string; value: number; icon: React.ReactNode;
 }) {
   return (
     <div style={{
       background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 12,
       padding: '18px 20px', display: 'flex', flexDirection: 'column',
-      boxShadow: '0 1px 3px rgba(15,23,42,0.06)',
     }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
         <span style={{ fontSize: 13, fontWeight: 500, color: SLATE }}>{label}</span>
-        <div style={{
-          width: 36, height: 36, borderRadius: 9,
-          background: `${accentColor}18`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-        }}>
-          {icon}
-        </div>
+        {icon}
       </div>
       <span style={{
-        fontSize: 30, fontWeight: 700, color: NAVY,
+        fontSize: 28, fontWeight: 600, color: NAVY,
         lineHeight: 1.1, marginTop: 10, fontVariantNumeric: 'tabular-nums',
       }}>
         {value.toLocaleString()}
@@ -261,6 +257,7 @@ const PERIOD_OPTIONS: { value: GrowthPeriod; label: string }[] = [
 
 // ── main ───────────────────────────────────────────────────────────────
 const UserAnalytics: React.FC = () => {
+  const navigate = useNavigate();
   const cached = readDashboardCache<UserAnalyticsCache>(CACHE_KEY);
   const [users,   setUsers]   = useState<User[]>(cached?.users ?? []);
   const [ratings, setRatings] = useState<{ user_id: string; client_rating: number }[]>(cached?.ratings ?? []);
@@ -357,14 +354,24 @@ const UserAnalytics: React.FC = () => {
   return (
     <div style={{ fontFamily: "'Inter','Helvetica Neue',sans-serif", color: NAVY, display: 'flex', flexDirection: 'column', gap: 16 }}>
 
+      <PageHeader
+        title="User Analytics"
+        subtitle="Signup growth, the client/bidder split, and the locations and skills users bring."
+        icon={IconUserManagement}
+        breadcrumbs={[
+          { label: 'Users', onClick: () => navigate('/users') },
+          { label: 'Analytics' },
+        ]}
+      />
+
       {/* stat cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
-        <StatCard label="Total Users"       value={stats.total}            icon={UsersIcon(NAVY)}      accentColor={NAVY} />
-        <StatCard label="Clients"           value={stats.clients}          icon={ClientIcon(ORANGE)}   accentColor={ORANGE} />
-        <StatCard label="Bidders"           value={stats.bidders}          icon={BidderIcon(BLUE)}     accentColor={BLUE} />
+        <StatCard label="Total Users"       value={stats.total}            icon={UsersIcon('#94A3B8')} />
+        <StatCard label="Clients"           value={stats.clients}          icon={ClientIcon('#94A3B8')} />
+        <StatCard label="Bidders"           value={stats.bidders}          icon={BidderIcon('#94A3B8')} />
         {/* <StatCard label="New This Month"    value={stats.newThisMonth}     icon={UsersIcon('#16A34A')} accentColor="#16A34A" /> */}
         {/* <StatCard label="Complete Profiles" value={stats.completeProfiles} icon={ClientIcon('#7C3AED')} accentColor="#7C3AED" /> */}
-        <StatCard label="Suspended"         value={stats.suspended}        icon={SuspendIcon(SLATE_L)} accentColor={SLATE_L} />
+        <StatCard label="Suspended"         value={stats.suspended}        icon={SuspendIcon('#94A3B8')} />
       </div>
 
       {/* charts row */}

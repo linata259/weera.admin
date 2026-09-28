@@ -5,15 +5,15 @@ import GeneralSettings from './components/GeneralSettings';
 import PaymentConfiguration from './components/PaymentConfiguration';
 import UserSecuritySettings from './components/UserSecuritySettings';
 import { PlatformSettings, SettingsUpdate, fetchSettings, updateSetting, saveSettings } from './settingsApi';
-import { useNavbar } from '../../hooks/Navbarcontext';
 import { readDashboardCache, writeDashboardCache } from '../../utils/dashboardCache';
+import { PageHeader } from '../../components/PageHeader';
+import { IconSettingsNav } from '../../components/icons';
 
 const CACHE_KEY = 'platformSettings';
 
 const ORANGE   = '#EA580C';
 const SLATE    = '#64748B';
 const BORDER   = '#E2E8F0';
-// const TEXT_DARK = '#0F172A';
 
 type TabId = 'general' | 'financial' | 'payment' | 'security';
 
@@ -29,16 +29,6 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<PlatformSettings | null>(() => readDashboardCache<PlatformSettings>(CACHE_KEY));
   const [loading, setLoading] = useState(() => readDashboardCache<PlatformSettings>(CACHE_KEY) === null);
   const [globalStatus, setGlobalStatus] = useState<'idle' | 'saved' | 'error'>('idle');
-
-  const { setBreadcrumb } = useNavbar();
-
-  // Push "Settings > <active tab>" into the top navbar on every tab change.
-  // Cleans up on unmount so other pages see their normal label.
-  useEffect(() => {
-    const label = TABS.find((t) => t.id === activeTab)?.label ?? '';
-    setBreadcrumb({ parent: 'Settings', current: label });
-    return () => setBreadcrumb(null);
-  }, [activeTab, setBreadcrumb]);
 
   useEffect(() => {
     fetchSettings().then((s) => {
@@ -105,49 +95,54 @@ export default function SettingsPage() {
 
   return (
     <div style={{ maxWidth: 860 }}>
-      {/* Breadcrumb is now in the top navbar — page header is just the title */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-        {/* <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: TEXT_DARK }}>Settings</h1> */}
-        {globalStatus !== 'idle' && (
-          <span style={{
-            fontSize: 18,
-            fontWeight: 500,
-            color: globalStatus === 'saved' ? '#16A34A' : '#DC2626',
-          }}>
-            {globalStatus === 'saved' ? '✓ Saved' : 'Save failed'}
-          </span>
-        )}
-      </div>
-
-      {/* Tab bar */}
-      <div style={{ display: 'flex', borderBottom: `1px solid ${BORDER}`, marginBottom: 28, overflowX: 'auto' }}>
-        {TABS.map((tab) => {
-          const active = tab.id === activeTab;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              style={{
-                padding: '10px 18px',
-                border: 'none',
-                background: 'none',
-                fontSize: 13,
-                fontWeight: active ? 700 : 500,
-                color: active ? ORANGE : SLATE,
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                borderBottom: active ? `2.5px solid ${ORANGE}` : '2.5px solid transparent',
-                marginBottom: -1,
-                whiteSpace: 'nowrap',
-                transition: 'color 0.15s',
-              }}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
+      {/* Breadcrumb is in the top navbar — this header owns the title */}
+      <PageHeader
+        title="Settings"
+        subtitle="Platform-wide configuration for general behaviour, fees, payments, and user security."
+        icon={IconSettingsNav}
+        actions={
+          globalStatus !== 'idle' ? (
+            <span style={{
+              fontSize: 18,
+              fontWeight: 500,
+              color: globalStatus === 'saved' ? '#16A34A' : '#DC2626',
+            }}>
+              {globalStatus === 'saved' ? 'Saved' : 'Save failed'}
+            </span>
+          ) : undefined
+        }
+        below={
+          /* Tab bar */
+          <div style={{ display: 'flex', borderBottom: `1px solid ${BORDER}`, overflowX: 'auto' }}>
+            {TABS.map((tab) => {
+              const active = tab.id === activeTab;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  style={{
+                    padding: '10px 18px',
+                    border: 'none',
+                    background: 'none',
+                    fontSize: 13,
+                    fontWeight: active ? 700 : 500,
+                    color: active ? ORANGE : SLATE,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    borderBottom: active ? `2.5px solid ${ORANGE}` : '2.5px solid transparent',
+                    marginBottom: -1,
+                    whiteSpace: 'nowrap',
+                    transition: 'color 0.15s',
+                  }}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        }
+      />
 
       {/* Content */}
       {loading ? (

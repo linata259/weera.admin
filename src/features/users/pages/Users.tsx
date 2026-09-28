@@ -5,13 +5,26 @@ import { TableToolbar } from "../components/table/TableToolbar";
 import { UserTable } from "../components/table/UserTable";
 import { LazyBoundary } from "../../../components/LazyBoundary";
 import { readDashboardCache, writeDashboardCache } from "../../../utils/dashboardCache";
+import { Ico, IconExport, IconUserManagement, iconSize } from "../../../components/icons";
+import { PageHeader } from "../../../components/PageHeader";
 
 const CACHE_KEY = "usersPage";
 
 /* Only rendered once someone clicks Export, so there is no reason for it — or
  * for the PDF engine behind it — to be part of the Users page download. */
 const ExportReportModal = lazy(() =>
-  import("../components/ExportReportModal").then(m => ({ default: m.ExportReportModal })),
+  import("../components/ExportReportModal")
+    .then(m => {
+      try { sessionStorage.removeItem("usersExportReload"); } catch {}
+      return { default: m.ExportReportModal };
+    })
+    .catch((err) => {
+      // A redeploy renames chunks; an open tab then 404s on this import. Reload once to pick up the new build.
+      let reloaded = false;
+      try { reloaded = sessionStorage.getItem("usersExportReload") === "1"; sessionStorage.setItem("usersExportReload", "1"); } catch {}
+      if (!reloaded) { window.location.reload(); return new Promise<never>(() => {}); }
+      throw err;
+    }),
 );
 
 /* ── sanitise helpers (keep XSS out of rendered values) ─────── */
@@ -157,23 +170,25 @@ const UsersPage: React.FC = () => {
 
   return (
     <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 20, fontFamily: "'Inter', 'Helvetica Neue', sans-serif" }}>
-      {/* NEW — export trigger */}
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
-        <button
-          onClick={() => setShowExport(true)}
-          style={{
-            padding: "10px 18px", borderRadius: 10, border: "1px solid #E2E8F0", background: "#fff",
-            fontSize: 14, fontWeight: 600, color: "#0F172A", cursor: "pointer", fontFamily: "inherit",
-            display: "flex", alignItems: "center", gap: 8,
-          }}
-        >
-          <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
-            <path d="M8 1.5v9M4.5 7l3.5 3.5L11.5 7" stroke="#EA580C" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M2.5 12.5v1a1 1 0 001 1h9a1 1 0 001-1v-1" stroke="#EA580C" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Export Report
-        </button>
-      </div>
+      <PageHeader
+        title="Users"
+        subtitle="Everyone registered on the platform, with their contact details, location and account status."
+        icon={IconUserManagement}
+        actions={
+          /* NEW — export trigger */
+          <button
+            onClick={() => setShowExport(true)}
+            style={{
+              padding: "10px 18px", borderRadius: 10, border: "1px solid #E2E8F0", background: "#fff",
+              fontSize: 14, fontWeight: 600, color: "#0F172A", cursor: "pointer", fontFamily: "inherit",
+              display: "flex", alignItems: "center", gap: 8,
+            }}
+          >
+            <Ico icon={IconExport} size={iconSize.md} color="#EA580C" />
+            Export Report
+          </button>
+        }
+      />
 
       <TableToolbar
         searchTerm={searchTerm}

@@ -110,25 +110,19 @@ export function HealthOverview({ health, isLoading }: { health: AppHealth | null
                             onClick={() => navigate(t.path)}
                             style={{
                                 textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
-                                border: `1px solid ${hot ? `${t.accent}55` : '#EEF2F6'}`,
-                                background: hot ? `${t.accent}0D` : '#FAFBFC',
+                                border: '1px solid #E2E8F0',
+                                background: '#FFFFFF',
                                 borderRadius: 12, padding: '12px 14px',
                                 display: 'flex', flexDirection: 'column', gap: 3,
-                                transition: 'transform 0.12s, box-shadow 0.12s',
+                                transition: 'border-color 0.12s',
                             }}
-                            onMouseEnter={e => {
-                                e.currentTarget.style.transform = 'translateY(-1px)';
-                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(15,23,42,0.08)';
-                            }}
-                            onMouseLeave={e => {
-                                e.currentTarget.style.transform = 'none';
-                                e.currentTarget.style.boxShadow = 'none';
-                            }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#CBD5E1'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = '#E2E8F0'; }}
                         >
-                            <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: 0.4, textTransform: 'uppercase', color: hot ? t.accent : SLATE }}>
+                            <span style={{ fontSize: 12, fontWeight: 500, color: SLATE }}>
                                 {t.label}
                             </span>
-                            <span style={{ fontSize: 24, fontWeight: 800, color: NAVY, lineHeight: 1.1, fontVariantNumeric: 'tabular-nums' }}>
+                            <span style={{ fontSize: 22, fontWeight: 600, color: hot ? t.accent : NAVY, lineHeight: 1.1, fontVariantNumeric: 'tabular-nums' }}>
                                 {t.value.toLocaleString()}
                             </span>
                             <span style={{ fontSize: 10.5, color: '#94A3B8' }}>{t.sub}</span>

@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import type { Job } from "../pages/Jobs";
+import { Ico, IconClose, IconDocument, iconSize,
+  IconImage
+} from "../../../components/icons";
 
 type TabKey = "description" | "specifications" | "attachments";
 
@@ -108,9 +111,7 @@ export const JobDetailsModal: React.FC<Props> = ({ job, onClose }) => {
                             style={{ border: "none", background: "transparent", cursor: "pointer", padding: 4, display: "flex" }}
                             aria-label="Close"
                         >
-                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                                <path d="M5 5l10 10M15 5L5 15" stroke={NAVY} strokeWidth="1.8" strokeLinecap="round" />
-                            </svg>
+                            <Ico icon={IconClose} size={iconSize.lg} color={NAVY} />
                         </button>
                     </div>
 
@@ -218,11 +219,7 @@ export const JobDetailsModal: React.FC<Props> = ({ job, onClose }) => {
                                                     }}
                                                 />
                                                 <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px" }}>
-                                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                                                        <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" stroke={SLATE} strokeWidth="1.3" />
-                                                        <circle cx="5.5" cy="6.5" r="1.25" stroke={SLATE} strokeWidth="1.1" />
-                                                        <path d="M2.5 12l3.5-3.5 2.5 2.5 2-2 3 3" stroke={SLATE} strokeWidth="1.3" strokeLinejoin="round" />
-                                                    </svg>
+                                                    <Ico icon={IconImage} size={iconSize.sm} color={SLATE} />
                                                     <span style={{ fontSize: 13, color: NAVY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                                         {a.name}
                                                     </span>
@@ -249,10 +246,7 @@ export const JobDetailsModal: React.FC<Props> = ({ job, onClose }) => {
                                                     fontSize: 14,
                                                 }}
                                             >
-                                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                                    <path d="M4 1.5h5l3 3v8.5a1 1 0 01-1 1H4a1 1 0 01-1-1V2.5a1 1 0 011-1z" stroke={SLATE} strokeWidth="1.3" />
-                                                    <path d="M9 1.5V4.5h3" stroke={SLATE} strokeWidth="1.3" />
-                                                </svg>
+                                                <Ico icon={IconDocument} size={iconSize.md} color={SLATE} />
                                                 <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                                     {a.name}
                                                 </span>

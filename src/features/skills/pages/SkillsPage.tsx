@@ -8,6 +8,19 @@ import {
 } from '../api/skillsService';
 import { JobCategory, Skill } from '../types';
 import { readDashboardCache, writeDashboardCache } from '../../../utils/dashboardCache';
+import {
+  Ico,
+  IconAdd,
+  IconClose,
+  IconDelete,
+  IconEdit,
+  IconPageNext,
+  IconPagePrev,
+  IconSearchControl,
+  IconSkills,
+  iconSize,
+} from '../../../components/icons';
+import { PageHeader } from '../../../components/PageHeader';
 
 interface SkillsPageCache {
   skills: Skill[];
@@ -59,9 +72,7 @@ const Modal: React.FC<{
           border: `1px solid ${BORDER}`, background: '#fff',
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-            <path d="M2 2l10 10M12 2L2 12" stroke={SLATE} strokeWidth="1.8" strokeLinecap="round"/>
-          </svg>
+          <Ico icon={IconClose} size={iconSize.sm} color={SLATE} />
         </button>
       </div>
       <div style={{ padding: '20px 24px' }}>{children}</div>
@@ -142,18 +153,8 @@ const IconBtn: React.FC<{
   >{children}</button>
 );
 
-const EditIcon = () => (
-  <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-    <path d="M11.5 2.5a2.121 2.121 0 013 3L5 15l-4 1 1-4L11.5 2.5z"
-      stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-const TrashIcon = () => (
-  <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-    <path d="M2 4h12M5 4V3a1 1 0 011-1h4a1 1 0 011 1v1M6 7v5M10 7v5M3 4l1 9a1 1 0 001 1h6a1 1 0 001-1l1-9"
-      stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
+const EditIcon = () => <Ico icon={IconEdit} size={iconSize.sm} />;
+const TrashIcon = () => <Ico icon={IconDelete} size={iconSize.sm} />;
 
 /* ── Pagination ──────────────────────────────────────────────── */
 const Pagination: React.FC<{
@@ -219,9 +220,7 @@ const Pagination: React.FC<{
             onClick={() => onPage(page - 1)} disabled={page === 1}
             style={{ ...btnBase, opacity: page === 1 ? 0.4 : 1, cursor: page === 1 ? 'not-allowed' : 'pointer' }}
           >
-            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-              <path d="M9 2L4 7l5 5" stroke={NAVY} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+            <Ico icon={IconPagePrev} size={iconSize.sm} color={NAVY} />
           </button>
 
           {pages.map((p, i) =>
@@ -250,9 +249,7 @@ const Pagination: React.FC<{
             onClick={() => onPage(page + 1)} disabled={page === totalPages}
             style={{ ...btnBase, opacity: page === totalPages ? 0.4 : 1, cursor: page === totalPages ? 'not-allowed' : 'pointer' }}
           >
-            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-              <path d="M5 2l5 5-5 5" stroke={NAVY} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+            <Ico icon={IconPageNext} size={iconSize.sm} color={NAVY} />
           </button>
         </div>
       )}
@@ -440,26 +437,23 @@ const SkillsPage: React.FC = () => {
   return (
     <div style={{ fontFamily: "'Inter','Helvetica Neue',sans-serif", display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-      {/* page header — CHANGED: stacks on mobile, button goes full width */}
-      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: NAVY }}>Skills & Categories</h1>
-          <p style={{ margin: '4px 0 0', fontSize: 13, color: SLATE }}>
-            Manage skills and job categories used across the platform
-          </p>
-        </div>
-        <button onClick={openCreate} style={{
-          padding: '10px 20px', borderRadius: 10, border: 'none',
-          background: ORANGE, color: '#fff', fontWeight: 700,
-          fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-        }}>
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M7 1v12M1 7h12" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
-          {isSkills ? 'Add Skill' : 'Add Category'}
-        </button>
-      </div>
+      <PageHeader
+        title="Skills & Categories"
+        subtitle="Manage skills and job categories used across the platform"
+        icon={IconSkills}
+        actions={
+          <button onClick={openCreate} style={{
+            padding: '10px 20px', borderRadius: 10, border: 'none',
+            background: ORANGE, color: '#fff', fontWeight: 700,
+            fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+            width: isMobile ? '100%' : undefined,
+          }}>
+            <Ico icon={IconAdd} size={iconSize.sm} color="#fff" />
+            {isSkills ? 'Add Skill' : 'Add Category'}
+          </button>
+        }
+      />
 
       {/* stat chips */}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -504,11 +498,12 @@ const SkillsPage: React.FC = () => {
           alignItems: isMobile ? 'stretch' : 'center', borderBottom: `1px solid ${BORDER}`, background: BG,
         }}>
           <div style={{ position: 'relative', flex: isMobile ? 'unset' : 1, maxWidth: isMobile ? '100%' : 320 }}>
-            <svg style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
-              width="14" height="14" viewBox="0 0 16 16" fill="none">
-              <circle cx="7" cy="7" r="5" stroke={SLATE} strokeWidth="1.5"/>
-              <path d="M11 11l3 3" stroke={SLATE} strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
+            <Ico
+              icon={IconSearchControl}
+              size={iconSize.sm}
+              color={SLATE}
+              style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
+            />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}

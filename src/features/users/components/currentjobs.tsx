@@ -2,6 +2,12 @@ import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "services/supabaseClient";
 import { User } from "../types";
 import { Avatar } from "../../shared/Avatar";
+import {
+  Ico,
+  IconDateRange,
+  IconSearchControl,
+  iconSize,
+} from "../../../components/icons";
 
 /* ─── types ──────────────────────────────────────────────────── */
 interface JobRow {
@@ -231,11 +237,12 @@ export const CurrentJobsTab: React.FC<{ user: User }> = ({ user }) => {
 
         {/* search */}
         <div style={{ position: "relative", flex: "1 1 200px" }}>
-          <svg width="15" height="15" viewBox="0 0 16 16" fill="none"
-            style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
-            <circle cx="7" cy="7" r="5" stroke="#94A3B8" strokeWidth="1.5" />
-            <path d="M11 11l2.5 2.5" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
+          <Ico
+            icon={IconSearchControl}
+            size={iconSize.md}
+            color="#94A3B8"
+            style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
+          />
           <input
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
@@ -271,10 +278,7 @@ export const CurrentJobsTab: React.FC<{ user: User }> = ({ user }) => {
           border: `1px solid ${BORDER}`, borderRadius: 10,
           padding: "6px 12px", background: "#fff",
         }}>
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-            <rect x="1" y="3" width="14" height="12" rx="2" stroke="#94A3B8" strokeWidth="1.4" />
-            <path d="M1 7h14M5 1v4M11 1v4" stroke="#94A3B8" strokeWidth="1.4" strokeLinecap="round" />
-          </svg>
+          <Ico icon={IconDateRange} size={iconSize.sm} color="#94A3B8" />
           <input type="date" value={dateFrom}
             onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
             style={{ border: "none", outline: "none", fontSize: 12, color: SLATE, fontFamily: "inherit", background: "transparent" }}

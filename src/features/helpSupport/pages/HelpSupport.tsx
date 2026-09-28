@@ -9,6 +9,8 @@ import { SupportTicketTable } from "../components/table/SupportTicketTable";
 import { SupportToolbar } from "../components/table/SupportToolbar";
 import { useSupportTickets } from "../hooks/useSupportTickets";
 import type { SupportTicket } from "../types";
+import { PageHeader } from "../../../components/PageHeader";
+import { IconHelpSupport } from "../../../components/icons";
 
 const SUPPORT_NOTES_STORAGE_KEY = "weera_admin_support_ticket_notes";
 
@@ -145,6 +147,12 @@ const HelpSupport: React.FC = () => {
         fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
       }}
     >
+      <PageHeader
+        title="Help & Support"
+        subtitle="Support tickets raised by users, with status and admin notes."
+        icon={IconHelpSupport}
+      />
+
       <div
         style={{
           display: "grid",

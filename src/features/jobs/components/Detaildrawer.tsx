@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { supabase } from 'services/supabaseClient';
 import { Avatar } from '../../shared/Avatar';
 import { BLUE, BORDER, capitalize, fmt, fmtTime, GREEN, JobReport, JobReportReply, MessageReport, NAVY, ORANGE, SLATE, stS, Tab } from '../hooks/types';
+import { Ico, IconClose, iconSize } from '../../../components/icons';
 
 interface Props {
   report: JobReport | MessageReport | null;
@@ -151,9 +152,7 @@ export const DetailDrawer: React.FC<Props> = ({ report, type, onClose }) => {
         <div style={{ padding: '20px 24px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: 15, fontWeight: 700, color: NAVY }}>Report Details</span>
           <button onClick={onClose} style={{ width: 30, height: 30, borderRadius: 8, border: `1px solid ${BORDER}`, background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-              <path d="M2 2l10 10M12 2L2 12" stroke={SLATE} strokeWidth="1.8" strokeLinecap="round"/>
-            </svg>
+            <Ico icon={IconClose} size={iconSize.sm} color={SLATE} />
           </button>
         </div>
 

@@ -1,6 +1,7 @@
 import { StatusFilter, UserTypeFilter } from "@features/shared/types";
 import { Column, User } from "@features/users/types";
 import React, { useState } from "react";
+import { Ico, IconClose, IconColumnPicker, IconSearchControl, iconSize } from "../../../../components/icons";
 
 
 export const ALL_EXTRA_COLUMNS: Column[] = [
@@ -69,7 +70,7 @@ const ColVisPopover: React.FC<{
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
         <strong style={{ fontSize: 13 }}>Columns</strong>
-        <button onClick={onClose} style={{ border: "none", background: "transparent", cursor: "pointer", fontSize: 16, color: "#64748B" }}>✕</button>
+        <button onClick={onClose} style={{ border: "none", background: "transparent", cursor: "pointer", color: "#64748B", display: "flex" }}><Ico icon={IconClose} size={iconSize.md} /></button>
       </div>
       {cols.map((col) => (
         <label key={col} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", cursor: "pointer" }}>
@@ -112,11 +113,12 @@ export const TableToolbar: React.FC<ToolbarProps> = ({
       }}>
         {/* Search */}
         <div style={{ position: "relative", width: isMobile ? "100%" : 320 }}>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
-            style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
-            <circle cx="7" cy="7" r="5.5" stroke="#94A3B8" strokeWidth="1.5" />
-            <path d="M11 11l2.5 2.5" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
+          <Ico
+            icon={IconSearchControl}
+            size={iconSize.md}
+            color="#94A3B8"
+            style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
+          />
           <input
             type="text"
             placeholder="Search users..."
@@ -182,11 +184,11 @@ export const TableToolbar: React.FC<ToolbarProps> = ({
               style={{
                 width: 42, height: 42, border: "1px solid #E2E8F0",
                 borderRadius: 12, background: "#fff", cursor: "pointer",
-                fontSize: 16,
+                display: "flex", alignItems: "center", justifyContent: "center",
               }}
               title="Toggle columns"
             >
-              ☰
+              <Ico icon={IconColumnPicker} size={iconSize.lg} color="#64748B" />
             </button>
             {showColPicker && (
               <ColVisPopover

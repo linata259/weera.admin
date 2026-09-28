@@ -8,40 +8,36 @@ export type JobStatus =
     | "completed"
     | string;
 
-// Fallback for unknown statuses
-const DEFAULT_STYLE: React.CSSProperties = { background: "#F1F5F9", color: "#64748B" };
+const DEFAULT_DOT = "#94A3B8";
 
-const STATUS_STYLES: Record<string, React.CSSProperties> = {
-    active: { background: "#DCFCE7", color: "#16A34A" }, // Green
-    suspended: { background: "#FEE2E2", color: "#DC2626" }, // Red
-    pending: { background: "#FEF9C3", color: "#CA8A04" }, // Yellow/Orange
-    assigned: { background: "#FEF9C3", color: "#CA8A04" }, // Yellow/Orange
-    completed: { background: "#DBEAFE", color: "#2563EB" }, // Blue
-    expired: { background: "#FFE4E6", color: "#BE123C" }, // Rose
-    in_progress: { background: "#E0F2FE", color: "#0284C7" }, // Sky
+const STATUS_DOT: Record<string, string> = {
+    active: "#16A34A",
+    completed: "#16A34A",
+    offer_accepted: "#16A34A",
+    in_progress: "#2563EB",
+    assigned: "#2563EB",
+    offer_sent: "#2563EB",
+    pending: "#CA8A04",
+    pending_review: "#CA8A04",
+    waiting_for_bidder_response: "#CA8A04",
+    suspended: "#DC2626",
+    banned: "#DC2626",
+    expired: "#DC2626",
+    rejected: "#DC2626",
+    declined_work: "#DC2626",
+    withdrawn: "#94A3B8",
 };
 
-export const JobStatusBadge: React.FC<{ status: JobStatus }> = ({ status }) => {
-    const normalizedStatus = status.toLowerCase();
-    const style = STATUS_STYLES[normalizedStatus] || DEFAULT_STYLE;
-
-    // Format label: "pending_review" -> "Pending Review"
-    const label = normalizedStatus
-        .split("_")
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" ");
+export const JobStatusBadge: React.FC<{ status: JobStatus; label?: string }> = ({ status, label }) => {
+    const normalized = (status ?? "").toLowerCase();
+    const text =
+        label ??
+        normalized.split("_").filter(Boolean).map((w, i) => (i === 0 ? w.charAt(0).toUpperCase() + w.slice(1) : w)).join(" ");
 
     return (
-        <span style={{
-            ...style,
-            padding: "3px 12px",
-            borderRadius: 20,
-            fontSize: 12,
-            fontWeight: 600,
-            letterSpacing: 0.2,
-            display: "inline-block",
-        }}>
-            {label}
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 13, color: "#334155", whiteSpace: "nowrap" }}>
+            <span aria-hidden style={{ width: 7, height: 7, borderRadius: "50%", background: STATUS_DOT[normalized] ?? DEFAULT_DOT, flexShrink: 0 }} />
+            {text || "—"}
         </span>
     );
 };

@@ -7,6 +7,18 @@ import {
 } from '../api/locationsService';
 import { County, SubCounty, Ward } from '../types';
 import { readDashboardCache, writeDashboardCache } from '../../../utils/dashboardCache';
+import {
+    Ico,
+    IconClose,
+    IconDelete,
+    IconEdit,
+    IconVerified,
+    IconLocations,
+    IconPageNext,
+    IconSearchControl,
+    iconSize,
+} from '../../../components/icons';
+import { PageHeader } from '../../../components/PageHeader';
 
 interface LocationsCache {
     counties: County[];
@@ -44,26 +56,13 @@ const css = `
 `;
 
 /* ── icons ─────────────────────────────────────────────────── */
-const PencilIcon = () => (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-    </svg>
-);
-const TrashIcon = () => (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-    </svg>
-);
+const PencilIcon = () => <Ico icon={IconEdit} size={iconSize.sm} color="#94A3B8" />;
+const TrashIcon = () => <Ico icon={IconDelete} size={iconSize.sm} color="#94A3B8" />;
 const ChevronIcon = ({ color = '#CBD5E1' }: { color?: string }) => (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M9 18l6-6-6-6" />
-    </svg>
+    <Ico icon={IconPageNext} size={iconSize.sm} color={color} />
 );
-const PinIcon = ({ size = 26, color = '#CBD5E1' }: { size?: number; color?: string }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-        <circle cx="12" cy="10" r="3" />
-    </svg>
+const PinIcon = ({ size = iconSize.xl, color = '#CBD5E1' }: { size?: number; color?: string }) => (
+    <Ico icon={IconLocations} size={size} color={color} />
 );
 
 /* ── column ────────────────────────────────────────────────── */
@@ -166,10 +165,12 @@ function Column({
                     {/* filter (only useful for longer lists) */}
                     {items.length > 7 && (
                         <div style={{ padding: '0 14px 10px', position: 'relative' }}>
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#B4BFCC" strokeWidth="2.2"
-                                style={{ position: 'absolute', left: 26, top: '50%', transform: 'translateY(calc(-50% - 5px))' }}>
-                                <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
-                            </svg>
+                            <Ico
+                                icon={IconSearchControl}
+                                size={iconSize.sm}
+                                color="#B4BFCC"
+                                style={{ position: 'absolute', left: 26, top: '50%', transform: 'translateY(calc(-50% - 5px))' }}
+                            />
                             <input
                                 className="loc-input"
                                 value={filter}
@@ -212,11 +213,11 @@ function Column({
                                             />
                                             <button className="loc-iconbtn" title="Save"
                                                 onClick={e => { e.stopPropagation(); submitRename(item.id); }}>
-                                                <span style={{ color: '#16A34A', fontSize: 14, fontWeight: 800 }}>✓</span>
+                                                <Ico icon={IconVerified} size={iconSize.md} color="#16A34A" />
                                             </button>
                                             <button className="loc-iconbtn" title="Cancel"
                                                 onClick={e => { e.stopPropagation(); setEditingId(null); }}>
-                                                <span style={{ color: '#94A3B8', fontSize: 13 }}>✕</span>
+                                                <Ico icon={IconClose} size={iconSize.md} color="#94A3B8" />
                                             </button>
                                         </>
                                     ) : (
@@ -379,6 +380,12 @@ const LocationsPage: React.FC = () => {
         <div style={{ fontFamily: "'Inter', 'Helvetica Neue', sans-serif", color: NAVY, display: 'flex', flexDirection: 'column', gap: 14 }}>
             <style>{css}</style>
 
+            <PageHeader
+                title="Locations"
+                subtitle="Counties, subcounties and wards used to place jobs and users."
+                icon={IconLocations}
+            />
+
             {/* breadcrumb path + summary */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                 <div style={{
@@ -386,7 +393,7 @@ const LocationsPage: React.FC = () => {
                     background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 12,
                     padding: '8px 14px', fontSize: 12.5,
                 }}>
-                    <PinIcon size={14} color={ORANGE} />
+                    <PinIcon size={iconSize.sm} color={ORANGE} />
                     <span style={{ fontWeight: 700, color: countyName ? NAVY : '#B4BFCC' }}>
                         {countyName ?? 'County'}
                     </span>

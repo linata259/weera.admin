@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { lazy, useState, useEffect, useMemo } from "react";
 import { useJobs } from "../hooks/useJobs";
 import { fetchJobs, fetchBids, toggleJobSponsorship, softDeleteJob, banJob } from "../api/jobServices";
 import { TableToolbar } from "../components/table/TableToolbar";
@@ -7,6 +7,37 @@ import { JobDetailsModal } from "../components/JobDetailsModal";
 import { JobAgeStatusTable } from "../components/table/Jobagestatustable";
 import { useSearchParams } from 'react-router-dom';
 import { readDashboardCache, writeDashboardCache } from "../../../utils/dashboardCache";
+import {
+    Ico,
+    IconChevronDownControl,
+    IconExport,
+    IconJobs,
+    IconSearchControl,
+    iconSize,
+} from "../../../components/icons";
+import { PageHeader } from "../../../components/PageHeader";
+import { LazyBoundary } from "../../../components/LazyBoundary";
+import { JobStatusBadge } from "../components/table/JobStatusBadge";
+import { Avatar } from "../../shared/Avatar";
+import { SortIcon } from "../../shared/SortIcon";
+import { PageBtn } from "../../shared/PageBtn";
+import { bidTitle, bidStatusLabel, fmtMoney } from "../utils/jobsExport";
+
+/* Only needed once someone clicks Export — keeps the PDF engine out of the page bundle. */
+const ExportJobsModal = lazy(() =>
+    import("../components/ExportJobsModal")
+        .then(m => {
+            try { sessionStorage.removeItem("jobsExportReload"); } catch {}
+            return { default: m.ExportJobsModal };
+        })
+        .catch((err) => {
+            // A redeploy renames chunks; an open tab then 404s on this import. Reload once to pick up the new build.
+            let reloaded = false;
+            try { reloaded = sessionStorage.getItem("jobsExportReload") === "1"; sessionStorage.setItem("jobsExportReload", "1"); } catch {}
+            if (!reloaded) { window.location.reload(); return new Promise<never>(() => {}); }
+            throw err;
+        }),
+);
 
 const JOBS_CACHE_KEY = "jobsPage";
 const BIDS_CACHE_KEY = "jobsPageBids";
@@ -57,6 +88,8 @@ export interface BidRecord {
     decline_reason?: string | null;
     client_rating?: number | null;
     client_review?: string | null;
+    bidder_name?: string;
+    bidder_image?: string | null;
     jobs?: {
         title?: string;
         location_id?: { location?: string } | null;
@@ -81,208 +114,179 @@ export function bidJobLocation(b: BidRecord): string {
 }
 
 /* -------------------------------------------------------------------------- */
-/*                              BID TABLE CONSTANTS                           */
+/*                                  BIDS TABLE                                */
 /* -------------------------------------------------------------------------- */
 
-// Colour tokens (local to this file)
-const ORANGE = '#EA580C';
 const NAVY   = '#0F172A';
 const SLATE  = '#64748B';
 const BORDER = '#E2E8F0';
-const SKY    = '#0EA5E9';
-const GREEN  = '#16A34A';
-const PURPLE = '#7C3AED';
-const RED    = '#DC2626';
-const AMBER  = '#B45309';
 
-const BID_STATUS: Record<string, { color: string; label: string; bg: string }> = {
-    pending:                     { color: SLATE,     label: 'Pending',        bg: '#F1F5F9' },
-    waiting_for_bidder_response: { color: AMBER,     label: 'Waiting',        bg: '#FEF3C7' },
-    offer_sent:                  { color: '#2563EB', label: 'Offer Sent',     bg: '#DBEAFE' },
-    offer_accepted:              { color: PURPLE,    label: 'Offer Accepted', bg: '#EDE9FE' },
-    assigned:                    { color: ORANGE,    label: 'Assigned',       bg: '#FFEDD5' },
-    in_progress:                 { color: SKY,       label: 'In Progress',    bg: '#E0F2FE' },
-    pending_review:              { color: '#9333EA', label: 'In Review',      bg: '#F3E8FF' },
-    completed:                   { color: GREEN,     label: 'Completed',      bg: '#DCFCE7' },
-    declined_work:               { color: RED,       label: 'Declined',       bg: '#FEE2E2' },
-    rejected:                    { color: RED,       label: 'Rejected',       bg: '#FEE2E2' },
-    withdrawn:                   { color: SLATE,     label: 'Withdrawn',      bg: '#F1F5F9' },
-};
-
-type BidTableGroup = 'all' | 'active' | 'review' | 'completed' | 'declined';
-
-const BID_GROUP_STATUSES: Record<BidTableGroup, string[]> = {
-    all:       [],
-    active:    ['waiting_for_bidder_response', 'offer_sent', 'offer_accepted', 'assigned', 'in_progress'],
-    review:    ['pending_review'],
-    completed: ['completed'],
-    declined:  ['declined_work', 'rejected', 'withdrawn'],
-};
-
-const BID_TABLE_TABS: { id: BidTableGroup; label: string }[] = [
-    { id: 'all',       label: 'All'       },
-    { id: 'active',    label: 'Active'    },
-    { id: 'review',    label: 'In Review' },
-    { id: 'completed', label: 'Completed' },
-    { id: 'declined',  label: 'Declined'  },
-];
-
-/* -------------------------------------------------------------------------- */
-/*                           BID TABLE COMPONENTS                             */
-/* -------------------------------------------------------------------------- */
-
-function StatusBadge({ status }: { status: string }) {
-    const cfg = BID_STATUS[status] ?? { color: SLATE, label: status.replace(/_/g, ' '), bg: '#F1F5F9' };
-    return (
-        <span style={{ display: 'inline-block', fontSize: 10, fontWeight: 700, letterSpacing: 0.4, textTransform: 'uppercase', padding: '3px 8px', borderRadius: 20, color: cfg.color, background: cfg.bg, whiteSpace: 'nowrap' }}>
-            {cfg.label}
-        </span>
-    );
-}
-
-function StarRating({ value }: { value?: number | null }) {
-    if (value == null) return <span style={{ fontSize: 11, color: '#CBD5E1' }}>—</span>;
-    return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            {[1, 2, 3, 4, 5].map(s => (
-                <svg key={s} width={11} height={11} viewBox="0 0 24 24" fill={s <= value ? '#F59E0B' : '#E2E8F0'}>
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                </svg>
-            ))}
-            <span style={{ fontSize: 10, color: SLATE, marginLeft: 3 }}>{value.toFixed(1)}</span>
-        </div>
-    );
-}
 
 const BIDS_PER_PAGE = 12;
 
-function BidsTable({ bids, group = 'all' }: { bids: BidRecord[]; group?: BidTableGroup }) {
+const controlStyle: React.CSSProperties = {
+    height: 42, padding: '0 12px', border: `1px solid ${BORDER}`, borderRadius: 8,
+    fontSize: 13, color: NAVY, background: '#fff', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box',
+};
+const thStyle: React.CSSProperties = {
+    padding: '12px 16px', textAlign: 'left', borderBottom: '1px solid #E8EDF2',
+    color: SLATE, fontWeight: 500, fontSize: 13, whiteSpace: 'nowrap', userSelect: 'none',
+};
+const tdStyle: React.CSSProperties = {
+    padding: '13px 16px', borderBottom: '1px solid #F1F5F9', fontSize: 14, color: '#475569', verticalAlign: 'middle',
+};
+
+function BidsTable({ bids }: { bids: BidRecord[] }) {
     const [search, setSearch]             = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [dateFrom, setDateFrom]         = useState('');
+    const [dateTo, setDateTo]             = useState('');
+    const [titleSort, setTitleSort]       = useState<'asc' | 'desc' | null>(null);
     const [page, setPage]                 = useState(1);
 
-    const groupFiltered = useMemo(() => {
-        const statuses = BID_GROUP_STATUSES[group];
-        return statuses.length === 0 ? bids : bids.filter(b => statuses.includes(b.status));
-    }, [bids, group]);
+    const statusOptions = useMemo(() => Array.from(new Set(bids.map(b => b.status).filter(Boolean))).sort(), [bids]);
 
-    const statusOptions = useMemo(() => Array.from(new Set(groupFiltered.map(b => b.status))).sort(), [groupFiltered]);
+    const filtered = useMemo(() => {
+        const q = search.trim().toLowerCase();
+        const from = dateFrom ? new Date(dateFrom) : null;
+        const to = dateTo ? new Date(dateTo) : null;
+        if (to) to.setHours(23, 59, 59, 999);
 
-    const filtered = useMemo(() => groupFiltered.filter(b => {
-        const q = search.toLowerCase();
-        const matchSearch = !q || b.job_title?.toLowerCase().includes(q) || b.jobs?.title?.toLowerCase().includes(q);
-        const matchStatus = statusFilter === 'all' || b.status === statusFilter;
-        return matchSearch && matchStatus;
-    }), [groupFiltered, search, statusFilter]);
+        const list = bids.filter(b => {
+            if (q && !bidTitle(b).toLowerCase().includes(q) && !(b.bidder_name ?? '').toLowerCase().includes(q)) return false;
+            if (statusFilter !== 'all' && b.status !== statusFilter) return false;
+            if (from || to) {
+                if (!b.submitted_at) return false;
+                const d = new Date(b.submitted_at);
+                if (from && d < from) return false;
+                if (to && d > to) return false;
+            }
+            return true;
+        });
+        if (!titleSort) return list;
+        const dir = titleSort === 'asc' ? 1 : -1;
+        return [...list].sort((a, b) => dir * bidTitle(a).localeCompare(bidTitle(b), undefined, { sensitivity: 'base' }));
+    }, [bids, search, statusFilter, dateFrom, dateTo, titleSort]);
 
-    const totalPages = Math.ceil(filtered.length / BIDS_PER_PAGE);
-    const paginated  = filtered.slice((page - 1) * BIDS_PER_PAGE, page * BIDS_PER_PAGE);
+    const hasFilters = Boolean(search || statusFilter !== 'all' || dateFrom || dateTo);
+    const resetFilters = () => { setSearch(''); setStatusFilter('all'); setDateFrom(''); setDateTo(''); setPage(1); };
+    const toggleTitleSort = () => setTitleSort(s => (s === 'asc' ? 'desc' : 'asc'));
 
-    const fmt     = (price: number, currency: string) => `${currency} ${price.toLocaleString('en-KE', { minimumFractionDigits: 0 })}`;
-    const fmtDate = (s: string) => new Date(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' });
-
-    const pageNums = Array.from({ length: totalPages }, (_, i) => i + 1)
-        .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 1);
+    const totalPages = Math.max(1, Math.ceil(filtered.length / BIDS_PER_PAGE));
+    const safePage   = Math.min(page, totalPages);
+    const paginated  = filtered.slice((safePage - 1) * BIDS_PER_PAGE, safePage * BIDS_PER_PAGE);
+    const fmtDate    = (s: string) => (s ? new Date(s).toLocaleDateString('en-GB') : '—');
 
     return (
-        <div>
-            {/* Filter bar */}
-            <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-                <div style={{ position: 'relative', flex: '1 1 220px' }}>
-                    <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={SLATE} strokeWidth={2.2}
-                        style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }}>
-                        <circle cx={11} cy={11} r={8} /><path d="M21 21l-4.35-4.35" />
-                    </svg>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* Filters */}
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                <div style={{ position: 'relative', flex: '1 1 260px', maxWidth: 360 }}>
+                    <Ico icon={IconSearchControl} size={iconSize.sm} color="#94A3B8"
+                        style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
                     <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
-                        placeholder="Search by job title…"
-                        style={{ width: '100%', boxSizing: 'border-box', paddingLeft: 30, paddingRight: 12, height: 34, border: `1px solid ${BORDER}`, borderRadius: 8, fontSize: 12, color: NAVY, outline: 'none', background: '#FAFAFA', fontFamily: 'inherit' }} />
+                        placeholder="Search job title or bidder"
+                        style={{ ...controlStyle, width: '100%', paddingLeft: 34 }} />
                 </div>
 
-                {statusOptions.length > 1 && (
-                    <div style={{ position: 'relative' }}>
-                        <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
-                            style={{ height: 34, padding: '0 28px 0 10px', border: `1px solid ${BORDER}`, borderRadius: 8, fontSize: 12, color: NAVY, outline: 'none', appearance: 'none', background: '#FAFAFA', cursor: 'pointer', fontFamily: 'inherit' }}>
-                            <option value="all">All Statuses</option>
-                            {statusOptions.map(s => <option key={s} value={s}>{BID_STATUS[s]?.label ?? s}</option>)}
-                        </select>
-                        <svg width="10" height="6" viewBox="0 0 10 6" fill="none"
-                            style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
-                            <path d="M1 1L5 5L9 1" stroke={SLATE} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                    </div>
-                )}
+                <div style={{ position: 'relative' }}>
+                    <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
+                        style={{ ...controlStyle, paddingRight: 32, appearance: 'none', cursor: 'pointer', minWidth: 160 }}>
+                        <option value="all">All statuses</option>
+                        {statusOptions.map(s => <option key={s} value={s}>{bidStatusLabel(s)}</option>)}
+                    </select>
+                    <Ico icon={IconChevronDownControl} size={iconSize.sm} color={SLATE}
+                        style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                </div>
 
-                <span style={{ fontSize: 12, color: SLATE, marginLeft: 'auto' }}>
-                    {filtered.length} bid{filtered.length !== 1 ? 's' : ''}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <input type="date" aria-label="Submitted from" value={dateFrom} max={dateTo || undefined}
+                        onChange={e => { setDateFrom(e.target.value); setPage(1); }} style={controlStyle} />
+                    <span style={{ fontSize: 13, color: SLATE }}>to</span>
+                    <input type="date" aria-label="Submitted to" value={dateTo} min={dateFrom || undefined}
+                        onChange={e => { setDateTo(e.target.value); setPage(1); }} style={controlStyle} />
+                </div>
+
+                {hasFilters && (
+                    <button onClick={resetFilters}
+                        style={{ border: 'none', background: 'none', color: SLATE, fontSize: 13, cursor: 'pointer', textDecoration: 'underline', fontFamily: 'inherit', padding: 0 }}>
+                        Clear filters
+                    </button>
+                )}
             </div>
 
             {/* Table */}
-            <div style={{ overflowX: 'auto', borderRadius: 12, border: `1px solid ${BORDER}` }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, fontFamily: 'inherit' }}>
-                    <thead>
-                        <tr style={{ background: '#F8FAFC', borderBottom: `1px solid ${BORDER}` }}>
-                            {['Job Title', 'Amount', 'Type', 'Status', 'Rating', 'Submitted'].map(h => (
-                                <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: 0.5, whiteSpace: 'nowrap' }}>{h}</th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {paginated.length === 0
-                            ? <tr><td colSpan={6} style={{ padding: '36px 14px', textAlign: 'center', color: '#CBD5E1', fontSize: 13 }}>No bids match your filters</td></tr>
-                            : paginated.map((bid, i) => (
-                                <tr key={bid.id} style={{ borderBottom: i < paginated.length - 1 ? `1px solid ${BORDER}` : 'none', background: i % 2 === 0 ? '#fff' : '#FAFBFC' }}>
-                                    <td style={{ padding: '10px 14px', maxWidth: 220 }}>
-                                        <span style={{ fontWeight: 600, color: NAVY, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                            {bid.job_title || bid.jobs?.title || '—'}
+            <div style={{ background: '#fff', border: '1px solid #E8EDF2', borderRadius: 12, overflow: 'hidden' }}>
+                <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 900, fontFamily: 'inherit' }}>
+                        <thead>
+                            <tr style={{ background: '#F8FAFC' }}>
+                                <th style={{ ...thStyle, cursor: 'pointer' }} onClick={toggleTitleSort}
+                                    aria-sort={titleSort === 'asc' ? 'ascending' : titleSort === 'desc' ? 'descending' : 'none'}>
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                        Job title
+                                        <SortIcon active={titleSort !== null} direction={titleSort ?? undefined} />
+                                    </span>
+                                </th>
+                                <th style={thStyle}>Bidder</th>
+                                <th style={{ ...thStyle, textAlign: 'right' }}>Amount</th>
+                                <th style={thStyle}>Type</th>
+                                <th style={thStyle}>Status</th>
+                                <th style={thStyle}>Client rating</th>
+                                <th style={thStyle}>Submitted</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {paginated.length === 0 ? (
+                                <tr><td colSpan={7} style={{ padding: '48px 16px', textAlign: 'center', color: '#94A3B8', fontSize: 14 }}>
+                                    {bids.length === 0 ? 'No bids yet' : 'No bids match these filters'}
+                                </td></tr>
+                            ) : paginated.map(bid => (
+                                <tr key={bid.id}>
+                                    <td style={{ ...tdStyle, maxWidth: 280 }}>
+                                        <span title={bidTitle(bid)} style={{ color: NAVY, fontWeight: 500, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                            {bidTitle(bid) || '—'}
                                         </span>
                                     </td>
-                                    <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
-                                        <span style={{ fontWeight: 700, color: NAVY }}>{fmt(bid.price, bid.currency)}</span>
+                                    <td style={tdStyle}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                            <Avatar src={bid.bidder_image} name={bid.bidder_name || '?'} size={28} />
+                                            <span style={{ color: NAVY, whiteSpace: 'nowrap' }}>{bid.bidder_name || '—'}</span>
+                                        </div>
+                                    </td>
+                                    <td style={{ ...tdStyle, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                                        <span style={{ color: NAVY, fontVariantNumeric: 'tabular-nums' }}>{fmtMoney(bid.price, bid.currency)}</span>
                                         {bid.counter_offer != null && (
-                                            <span style={{ display: 'block', fontSize: 10, color: SLATE }}>Counter: {fmt(bid.counter_offer, bid.currency)}</span>
+                                            <span style={{ display: 'block', fontSize: 12, color: '#94A3B8' }}>Counter {fmtMoney(bid.counter_offer, bid.currency)}</span>
                                         )}
                                     </td>
-                                    <td style={{ padding: '10px 14px' }}>
-                                        <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 20, background: bid.is_hourly ? '#EDE9FE' : '#E0F2FE', color: bid.is_hourly ? PURPLE : SKY }}>
-                                            {bid.is_hourly ? 'Hourly' : 'Fixed'}
-                                        </span>
+                                    <td style={tdStyle}>{bid.is_hourly ? 'Hourly' : 'Fixed'}</td>
+                                    <td style={tdStyle}><JobStatusBadge status={bid.status} label={bidStatusLabel(bid.status)} /></td>
+                                    <td style={{ ...tdStyle, fontVariantNumeric: 'tabular-nums' }}>
+                                        {bid.client_rating != null ? `${bid.client_rating.toFixed(1)} / 5` : <span style={{ color: '#CBD5E1' }}>—</span>}
                                     </td>
-                                    <td style={{ padding: '10px 14px' }}><StatusBadge status={bid.status} /></td>
-                                    <td style={{ padding: '10px 14px' }}><StarRating value={bid.client_rating} /></td>
-                                    <td style={{ padding: '10px 14px', color: SLATE, whiteSpace: 'nowrap' }}>{fmtDate(bid.submitted_at)}</td>
+                                    <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>{fmtDate(bid.submitted_at)}</td>
                                 </tr>
-                            ))
-                        }
-                    </tbody>
-                </table>
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 16 }}>
-                    <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                        style={{ width: 30, height: 30, borderRadius: 8, border: `1px solid ${BORDER}`, background: page === 1 ? '#F8FAFC' : '#fff', color: page === 1 ? '#CBD5E1' : NAVY, cursor: page === 1 ? 'default' : 'pointer', fontSize: 15, fontWeight: 600 }}>
-                        ‹
-                    </button>
-                    {pageNums.map((p, idx) => {
-                        const prev = pageNums[idx - 1];
-                        return (
-                            <React.Fragment key={p}>
-                                {prev && p - prev > 1 && <span style={{ color: SLATE, fontSize: 12 }}>…</span>}
-                                <button onClick={() => setPage(p)}
-                                    style={{ width: 30, height: 30, borderRadius: 8, border: `1px solid ${page === p ? ORANGE : BORDER}`, background: page === p ? ORANGE : '#fff', color: page === p ? '#fff' : NAVY, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-                                    {p}
-                                </button>
-                            </React.Fragment>
-                        );
-                    })}
-                    <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                        style={{ width: 30, height: 30, borderRadius: 8, border: `1px solid ${BORDER}`, background: page === totalPages ? '#F8FAFC' : '#fff', color: page === totalPages ? '#CBD5E1' : NAVY, cursor: page === totalPages ? 'default' : 'pointer', fontSize: 15, fontWeight: 600 }}>
-                        ›
-                    </button>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
-            )}
+
+                <div style={{ padding: '14px 20px', borderTop: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                    <span style={{ fontSize: 13, color: '#94A3B8' }}>
+                        {filtered.length === 0
+                            ? '0 bids'
+                            : `Showing ${(safePage - 1) * BIDS_PER_PAGE + 1}–${Math.min(safePage * BIDS_PER_PAGE, filtered.length)} of ${filtered.length.toLocaleString()} bids`}
+                    </span>
+                    {totalPages > 1 && (
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                            <PageBtn label="Previous" disabled={safePage === 1} onClick={() => setPage(Math.max(1, safePage - 1))} />
+                            <span style={{ fontSize: 13, color: '#475569', padding: '0 8px' }}>Page {safePage} of {totalPages}</span>
+                            <PageBtn label="Next" disabled={safePage === totalPages} onClick={() => setPage(Math.min(totalPages, safePage + 1))} />
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }
@@ -313,7 +317,7 @@ const Jobs: React.FC = () => {
     const [bids, setBids]                 = useState<BidRecord[]>(() => readDashboardCache<BidRecord[]>(BIDS_CACHE_KEY) ?? []);
     const [viewingJob, setViewingJob]     = useState<Job | null>(null);
     const [mainTab, setMainTab]           = useState<MainTab>("all");
-    const [bidTableGroup, setBidTableGroup] = useState<BidTableGroup>('all');
+    const [showExport, setShowExport]     = useState(false);
 
     const [dateRangeFilter, setDateRangeFilter] = useState<string>("all");
     const [statusFilter, setStatusFilter]       = useState<string>("all");
@@ -362,27 +366,21 @@ const Jobs: React.FC = () => {
     }, []);
 
     /* ---------------------------------------------------------------------- */
-    /*                          BID GROUP COUNTS                              */
-    /* ---------------------------------------------------------------------- */
-
-    const groupCounts = useMemo<Record<BidTableGroup, number>>(() => {
-        const c = { all: bids.length, active: 0, review: 0, completed: 0, declined: 0 };
-        bids.forEach(b => {
-            if      (BID_GROUP_STATUSES.active.includes(b.status))    c.active++;
-            else if (BID_GROUP_STATUSES.review.includes(b.status))    c.review++;
-            else if (BID_GROUP_STATUSES.completed.includes(b.status)) c.completed++;
-            else if (BID_GROUP_STATUSES.declined.includes(b.status))  c.declined++;
-        });
-        return c;
-    }, [bids]);
-
-    /* ---------------------------------------------------------------------- */
     /*                                FILTERING                               */
     /* ---------------------------------------------------------------------- */
+
+    const dateRangeStart = useMemo(() => {
+        const now = new Date();
+        if (dateRangeFilter === "7d")  return new Date(now.getTime() - 7 * 86_400_000);
+        if (dateRangeFilter === "30d") return new Date(now.getTime() - 30 * 86_400_000);
+        if (dateRangeFilter === "1y")  return new Date(now.getFullYear(), 0, 1);
+        return null;
+    }, [dateRangeFilter]);
 
     const filteredAndSortedJobs = baseFiltered.filter((j) => {
         if (statusFilter !== "all" && j.status !== statusFilter) return false;
         if (jobTypeFilter !== "all" && !j.categories.includes(jobTypeFilter)) return false;
+        if (dateRangeStart && (!j.posted_at || new Date(j.posted_at) < dateRangeStart)) return false;
         return true;
     });
 
@@ -421,35 +419,52 @@ const Jobs: React.FC = () => {
     /* ---------------------------------------------------------------------- */
 
     const MAIN_TABS: { id: MainTab; label: string }[] = [
-        { id: "all",       label: "All Jobs"        },
+        { id: "all",       label: "All jobs"        },
         { id: "bids",      label: "Bids"            },
-        { id: "ageStatus", label: "Job Age & Status" },
+        { id: "ageStatus", label: "Job age & status" },
     ];
 
     return (
         <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 20, fontFamily: "'Inter', 'Helvetica Neue', sans-serif" }}>
 
-            {/* ── Tabs ─────────────────────────────────────────────── */}
-            <div style={{ display: "flex", gap: 4, borderBottom: "1px solid #E8EDF2" }}>
-                {MAIN_TABS.map(t => (
-                    <button key={t.id} onClick={() => setMainTab(t.id)} style={{
-                        padding: "12px 18px", border: "none", background: "none", cursor: "pointer",
-                        fontSize: 14, fontFamily: "inherit",
-                        fontWeight: mainTab === t.id ? 700 : 500,
-                        color: mainTab === t.id ? "#EA580C" : "#64748B",
-                        borderBottom: mainTab === t.id ? "2px solid #EA580C" : "2px solid transparent",
-                        marginBottom: -1, transition: "all 0.15s",
-                        display: "flex", alignItems: "center", gap: 6,
-                    }}>
-                        {t.label}
-                        {t.id === "bids" && (
-                            <span style={{ fontSize: 11, fontWeight: 700, padding: '1px 7px', borderRadius: 20, background: mainTab === "bids" ? '#FFF7ED' : '#F1F5F9', color: mainTab === "bids" ? '#EA580C' : '#94A3B8' }}>
-                                {bids.length}
-                            </span>
-                        )}
+            <PageHeader
+                title="Jobs"
+                subtitle="Every job posted on the platform, the bids placed on them, and how long each has been open."
+                icon={IconJobs}
+                actions={mainTab !== "ageStatus" ? (
+                    <button
+                        onClick={() => setShowExport(true)}
+                        style={{
+                            padding: "9px 16px", borderRadius: 8, border: `1px solid ${BORDER}`, background: "#fff",
+                            fontSize: 14, fontWeight: 600, color: NAVY, cursor: "pointer", fontFamily: "inherit",
+                            display: "flex", alignItems: "center", gap: 8,
+                        }}
+                    >
+                        <Ico icon={IconExport} size={iconSize.md} color={SLATE} />
+                        Export {mainTab === "bids" ? "bids" : "jobs"}
                     </button>
-                ))}
-            </div>
+                ) : undefined}
+                below={
+                    <div style={{ display: "flex", gap: 4, borderBottom: "1px solid #E8EDF2" }}>
+                        {MAIN_TABS.map(t => (
+                            <button key={t.id} onClick={() => setMainTab(t.id)} style={{
+                                padding: "12px 18px", border: "none", background: "none", cursor: "pointer",
+                                fontSize: 14, fontFamily: "inherit",
+                                fontWeight: mainTab === t.id ? 700 : 500,
+                                color: mainTab === t.id ? "#EA580C" : "#64748B",
+                                borderBottom: mainTab === t.id ? "2px solid #EA580C" : "2px solid transparent",
+                                marginBottom: -1,
+                                display: "flex", alignItems: "center", gap: 6,
+                            }}>
+                                {t.label}
+                                {t.id === "bids" && (
+                                    <span style={{ fontSize: 13, fontWeight: 500, color: "#94A3B8" }}>{bids.length.toLocaleString()}</span>
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                }
+            />
 
             {/* ── All Jobs ─────────────────────────────────────────── */}
             {mainTab === "all" && (
@@ -480,63 +495,7 @@ const Jobs: React.FC = () => {
             )}
 
             {/* ── Bids ─────────────────────────────────────────────── */}
-            {mainTab === "bids" && (
-                <div style={{ background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 16, overflow: "hidden" }}>
-
-                    {/* Card header */}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px 0", flexWrap: "wrap", gap: 12 }}>
-                        <div>
-                            <div style={{ fontSize: 15, fontWeight: 700, color: NAVY }}>Bids</div>
-                            <div style={{ fontSize: 12, color: SLATE, marginTop: 2 }}>
-                                {bids.length.toLocaleString()} total bids across all jobs
-                            </div>
-                        </div>
-                        {/* Quick summary pills */}
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                            {([
-                                { label: "In Progress", value: groupCounts.active,    color: SKY    },
-                                { label: "In Review",   value: groupCounts.review,    color: PURPLE },
-                                { label: "Completed",   value: groupCounts.completed, color: GREEN  },
-                            ] as { label: string; value: number; color: string }[]).map(p => (
-                                <div key={p.label} style={{ display: "flex", alignItems: "center", gap: 6, background: "#F8FAFC", border: `1px solid ${BORDER}`, borderRadius: 20, padding: "4px 12px" }}>
-                                    <div style={{ width: 7, height: 7, borderRadius: "50%", background: p.color }} />
-                                    <span style={{ fontSize: 11, color: SLATE }}>{p.label}</span>
-                                    <span style={{ fontSize: 11, fontWeight: 700, color: NAVY }}>{p.value}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Status sub-tabs */}
-                    <div style={{ display: "flex", gap: 0, borderBottom: `1px solid ${BORDER}`, marginTop: 16, paddingLeft: 12 }}>
-                        {BID_TABLE_TABS.map(t => (
-                            <button key={t.id} onClick={() => setBidTableGroup(t.id)} style={{
-                                padding: "10px 14px", border: "none", background: "none", cursor: "pointer",
-                                fontSize: 13, fontFamily: "inherit",
-                                fontWeight: bidTableGroup === t.id ? 700 : 500,
-                                color: bidTableGroup === t.id ? ORANGE : SLATE,
-                                borderBottom: bidTableGroup === t.id ? `2px solid ${ORANGE}` : "2px solid transparent",
-                                marginBottom: -1, whiteSpace: "nowrap",
-                                display: "flex", alignItems: "center", gap: 6, transition: "all 0.15s",
-                            }}>
-                                {t.label}
-                                <span style={{
-                                    fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 20,
-                                    background: bidTableGroup === t.id ? "#FFF7ED" : "#F1F5F9",
-                                    color:      bidTableGroup === t.id ? ORANGE    : "#94A3B8",
-                                }}>
-                                    {groupCounts[t.id]}
-                                </span>
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Table — keyed by group so search/filter resets on tab switch */}
-                    <div style={{ padding: "20px 24px 24px" }}>
-                        <BidsTable key={bidTableGroup} bids={bids} group={bidTableGroup} />
-                    </div>
-                </div>
-            )}
+            {mainTab === "bids" && <BidsTable bids={bids} />}
 
             {/* ── Job Age & Status ─────────────────────────────────── */}
             {mainTab === "ageStatus" && (
@@ -550,6 +509,21 @@ const Jobs: React.FC = () => {
             )}
 
             <JobDetailsModal job={viewingJob} onClose={() => setViewingJob(null)} />
+
+            {showExport && (
+                <LazyBoundary fallback={null}>
+                    {mainTab === "bids" ? (
+                        <ExportJobsModal kind="bids" bids={bids} onClose={() => setShowExport(false)} />
+                    ) : (
+                        <ExportJobsModal
+                            kind="jobs"
+                            jobs={jobs}
+                            categoryOptions={jobCategoryOptions.map(o => o.value)}
+                            onClose={() => setShowExport(false)}
+                        />
+                    )}
+                </LazyBoundary>
+            )}
         </div>
     );
 };

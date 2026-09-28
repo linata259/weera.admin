@@ -1,6 +1,12 @@
-import { IconBriefcase, IconCurrencyDollar, IconUser } from '@tabler/icons-react';
 import type { ActivityItem, ActivityType } from '../types';
 import { formatRelativeTime } from '../Formatters';
+import {
+  Ico,
+  IconJobs,
+  IconNewUser,
+  IconWithdrawal,
+} from '../../../components/icons';
+import { iconSize } from '../../../theme/tokens';
 
 const TEXT_DARK = '#0F172A';
 const SLATE = '#475569';
@@ -17,19 +23,19 @@ interface ActivityFeedProps {
 // Icon badge config per activity type — matches Figma screenshot
 const TYPE_CONFIG: Record<ActivityType, { bg: string; icon: JSX.Element; title: string }> = {
   job_posted: {
-    bg: '#FFF4EE',
+    bg: '#FFFFFF',
     title: 'New Job Posted',
-    icon: <IconBriefcase size={16} color="#EA580C" />,
+    icon: <Ico icon={IconJobs} size={iconSize.md} color="#64748B" />,
   },
   withdrawal_requested: {
-    bg: '#FFFBEB',
+    bg: '#FFFFFF',
     title: 'Withdrawal Requested',
-    icon: <IconCurrencyDollar size={16} color="#D97706" />,
+    icon: <Ico icon={IconWithdrawal} size={iconSize.md} color="#64748B" />,
   },
   user_signed_up: {
-    bg: '#EFF6FF',
+    bg: '#FFFFFF',
     title: 'New User Signed Up',
-    icon: <IconUser size={16} color="#2563EB" />,
+    icon: <Ico icon={IconNewUser} size={iconSize.md} color="#64748B" />,
   },
 };
 
@@ -74,6 +80,7 @@ export function ActivityFeed({ items, isLoading, onItemClick }: ActivityFeedProp
                 height: 36,
                 borderRadius: 10,
                 background: cfg.bg,
+                border: `1px solid ${BORDER}`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

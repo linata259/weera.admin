@@ -4,6 +4,12 @@ import { StatusBadge } from "../../../shared/StatusBadge";
 import { Avatar } from "../../../shared/Avatar";
 import { CurrentJobsTab } from "../currentjobs";
 import { FinancialTab } from "../Financialtab";
+import {
+  Ico,
+  IconBack,
+  IconDocument,
+  iconSize,
+} from "../../../../components/icons";
 
 
 interface Props {
@@ -360,21 +366,7 @@ const BasicInfoTab: React.FC<{ user: UserExtended }> = ({ user }) => {
                   gap: 6,
                 }}
               >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  style={{ flexShrink: 0 }}
-                >
-                  <path
-                    d="M14 10v2a2 2 0 01-2 2H4a2 2 0 01-2-2v-2M8 2v8M5 5l3-3 3 3"
-                    stroke={ORANGE}
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                <Ico icon={IconDocument} size={iconSize.sm} color={ORANGE} />
                 {att}
               </a>
             ))}
@@ -512,15 +504,7 @@ export const UserDetailPanel: React.FC<Props> = ({
                 cursor: "pointer",
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path
-                  d="M10 3L5 8l5 5"
-                  stroke={SLATE}
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+              <Ico icon={IconBack} size={iconSize.md} color={SLATE} />
             </button>
             <span>User Management</span>
             <span style={{ color: "#CBD5E1" }}>/</span>

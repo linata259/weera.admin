@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { FiX } from "react-icons/fi";
+import { Ico, IconClose, iconSize } from "../../../components/icons";
 import { fetchConversationThread } from "../api/chatService";
 import { detectPhoneNumbers } from "../utils/phoneDetection";
 import type { ChatMessage, Conversation } from "../types";
@@ -15,11 +15,6 @@ interface Props {
   conversation: Conversation;
   onClose: () => void;
 }
-
-const Icon: React.FC<{ icon: (props: any) => any; size?: number }> = ({ icon, size }) => {
-  const C = icon as React.ComponentType<{ size?: number }>;
-  return <C size={size} />;
-};
 
 // Read-only viewer. It never sends or edits — it only reads the thread.
 export const ConversationThread: React.FC<Props> = ({ conversation, onClose }) => {
@@ -105,7 +100,7 @@ export const ConversationThread: React.FC<Props> = ({ conversation, onClose }) =
               color: "#475569",
             }}
           >
-            <Icon icon={FiX} size={18} />
+            <Ico icon={IconClose} size={iconSize.lg} />
           </button>
         </div>
 

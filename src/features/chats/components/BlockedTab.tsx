@@ -1,5 +1,5 @@
 import React from "react";
-import { FiEye, FiRotateCcw } from "react-icons/fi";
+import { Ico, IconRetry, IconView, iconSize } from "../../../components/icons";
 import type { BlockedConversation } from "../types";
 import { Avatar, cardStyle, formatDateTime } from "./shared";
 
@@ -9,11 +9,6 @@ interface Props {
   onOpenConversation: (conversationId: string) => void;
   busyIds: Set<string>;
 }
-
-const Icon: React.FC<{ icon: (props: any) => any; size?: number }> = ({ icon, size }) => {
-  const C = icon as React.ComponentType<{ size?: number }>;
-  return <C size={size} />;
-};
 
 const actionBtn: React.CSSProperties = {
   display: "inline-flex",
@@ -101,14 +96,14 @@ export const BlockedTab: React.FC<Props> = ({
                 >
                   {conv && (
                     <button style={actionBtn} onClick={() => onOpenConversation(b.conversationId)}>
-                      <Icon icon={FiEye} size={14} /> View
+                      <Ico icon={IconView} size={iconSize.sm} /> View
                     </button>
                   )}
                   <button
                     style={{ ...actionBtn, color: "#15803D", borderColor: "#BBF7D0" }}
                     onClick={() => onUnblock(b.conversationId)}
                   >
-                    <Icon icon={FiRotateCcw} size={14} /> Unblock
+                    <Ico icon={IconRetry} size={iconSize.sm} /> Unblock
                   </button>
                 </div>
               </div>

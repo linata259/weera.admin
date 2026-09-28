@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import type { Job } from "../pages/Jobs";
+import { Ico, IconBlocked, iconSize } from "../../../components/icons";
 
 const NAVY = "#0F172A";
 const SLATE = "#64748B";
@@ -73,10 +74,7 @@ export const BanJobModal: React.FC<Props> = ({ job, onClose, onConfirm }) => {
                             justifyContent: "center",
                         }}
                     >
-                        <svg width="22" height="22" viewBox="0 0 16 16" fill="none">
-                            <circle cx="8" cy="8" r="6.5" stroke={RED} strokeWidth="1.6" />
-                            <path d="M3.8 3.8l8.4 8.4" stroke={RED} strokeWidth="1.6" strokeLinecap="round" />
-                        </svg>
+                        <Ico icon={IconBlocked} size={iconSize.xl} color={RED} />
                     </div>
                 </div>
 

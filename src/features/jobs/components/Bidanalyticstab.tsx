@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { bidJobLocation, type BidRecord, type Job } from '../pages/Jobs';
+import { Ico, IconDocument, IconRating, iconSize } from '../../../components/icons';
 import { BidStats, DonutSegment, AMBER, PURPLE, ORANGE, SKY, GREEN, RED, SectionHead, StatCard, NAVY, ChartCard, DonutChart, HBarList, BORDER, SLATE, HBar, buildGrowthBuckets, GrowthPeriod, PeriodDropdown } from './Analyticscomponents';
 
 interface Props {
@@ -67,14 +68,14 @@ const BidAnalyticsTab: React.FC<Props> = ({ bids, bidStats, jobs }) => {
 
   return (
     <>
-      <SectionHead title="Bids Overview" sub="Metrics across all submitted bids" icon="💼" />
+      <SectionHead title="Bids Overview" sub="Metrics across all submitted bids" icon={IconDocument} />
 
       {/* Stat cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
-        <StatCard label="Total Bids"      value={bidStats.total}          sub="All bids submitted"       accent={NAVY}   />
-        <StatCard label="Conversion Rate" value={bidStats.conversionRate} sub="% of bids progressed"    accent={GREEN}  />
-        <StatCard label="Rejected Bids"   value={bidStats.declined}       sub="Declined or rejected"     accent={RED}    />
-        <StatCard label="Pending Review"  value={bidStats.inReview}       sub="Awaiting client approval" accent={SKY}    />
+        <StatCard label="Total Bids"      value={bidStats.total}          sub="All bids submitted" />
+        <StatCard label="Conversion Rate" value={bidStats.conversionRate} sub="% of bids progressed" />
+        <StatCard label="Rejected Bids"   value={bidStats.declined}       sub="Declined or rejected" />
+        <StatCard label="Pending Review"  value={bidStats.inReview}       sub="Awaiting client approval" />
       </div>
 
       {/* Bids over time + Top 10 jobs by bids */}
@@ -220,10 +221,12 @@ const BidAnalyticsTab: React.FC<Props> = ({ bids, bidStats, jobs }) => {
                 <div>
                   <div style={{ display: 'flex', gap: 3 }}>
                     {[1, 2, 3, 4, 5].map(s => (
-                      <svg key={s} width={18} height={18} viewBox="0 0 24 24"
-                        fill={s <= Math.round(bidStats.avgRating) ? '#F59E0B' : '#E2E8F0'}>
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                      </svg>
+                      <Ico
+                        key={s}
+                        icon={IconRating}
+                        size={iconSize.lg}
+                        color={s <= Math.round(bidStats.avgRating) ? '#F59E0B' : '#E2E8F0'}
+                      />
                     ))}
                   </div>
                   <div style={{ fontSize: 12, color: SLATE, marginTop: 5 }}>

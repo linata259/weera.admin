@@ -109,12 +109,18 @@ function fetchSkillMap(): Promise<Map<string, string>> {
 
 async function fetchProfileMap(userIds: string[]): Promise<Map<string, DBProfile>> {
     if (!userIds.length) return new Map();
-    const { data, error } = await supabase
-        .from("profiles")
-        .select("id, first_name, last_name, image_url")
-        .in("id", userIds);
-    if (error) console.warn("Supabase error fetching profiles:", error);
-    return new Map(((data ?? []) as DBProfile[]).map((profile) => [profile.id, profile]));
+    // Chunked so a long id list doesn't overflow the request URL.
+    const chunks: string[][] = [];
+    for (let i = 0; i < userIds.length; i += 150) chunks.push(userIds.slice(i, i + 150));
+    const results = await Promise.all(
+        chunks.map((ids) => supabase.from("profiles").select("id, first_name, last_name, image_url").in("id", ids))
+    );
+    const map = new Map<string, DBProfile>();
+    results.forEach(({ data, error }) => {
+        if (error) console.warn("Supabase error fetching profiles:", error);
+        ((data ?? []) as DBProfile[]).forEach((profile) => map.set(profile.id, profile));
+    });
+    return map;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -333,5 +339,12 @@ export async function fetchBids() {
         .select('*, jobs!inner(title, location_id(location), job_location_type, counties:county_id(name), subcounties:subcounty_id(name), wards:ward_id(name))')
         .order('submitted_at', { ascending: false });
     if (error) throw error;
-    return data ?? [];
+    const rows = (data ?? []) as any[];
+    const bidderIds = Array.from(new Set(rows.map((r) => r.user_id).filter(Boolean))) as string[];
+    const profiles = await fetchProfileMap(bidderIds);
+    return rows.map((r) => {
+        const p = profiles.get(r.user_id);
+        const name = p ? [p.first_name, p.last_name].filter(Boolean).join(" ") : "";
+        return { ...r, bidder_name: name || "Unknown", bidder_image: p?.image_url ?? null };
+    });
 }

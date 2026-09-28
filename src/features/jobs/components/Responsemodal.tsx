@@ -1,6 +1,7 @@
 /* ─── src/features/reports/components/ResponseModal.tsx ─────── */
 import React, { useState } from 'react';
 import { BG, BORDER, capitalize, fmt, JobReport, NAVY, ORANGE, SLATE } from '../hooks/types';
+import { Ico, IconClose, iconSize } from '../../../components/icons';
 
 interface Props {
   report: JobReport;
@@ -42,9 +43,7 @@ export const ResponseModal: React.FC<Props> = ({ report, onClose, onSave }) => {
             </div>
           </div>
           <button onClick={onClose} style={{ width: 30, height: 30, borderRadius: 8, border: `1px solid ${BORDER}`, background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-              <path d="M2 2l10 10M12 2L2 12" stroke={SLATE} strokeWidth="1.8" strokeLinecap="round"/>
-            </svg>
+            <Ico icon={IconClose} size={iconSize.sm} color={SLATE} />
           </button>
         </div>
 

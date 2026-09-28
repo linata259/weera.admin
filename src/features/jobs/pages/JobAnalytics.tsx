@@ -1,11 +1,14 @@
 import React, { lazy, useEffect, useState, useMemo } from 'react';
 import { fetchJobs, fetchBids } from '../api/jobServices';
 import { bidJobLocation, type Job, type BidRecord } from '../pages/Jobs';
-import { BidStats, buildGrowthBuckets, ChartCard, DonutChart, DonutSegment, GREEN, GrowthPeriod, HBarList, NAVY, ORANGE, PeriodDropdown, PURPLE, RED, SectionHead, SKY, SLATE, Spinner, StatCard } from '../components/Analyticscomponents';
+import { BidStats, buildGrowthBuckets, ChartCard, DonutChart, DonutSegment, GREEN, GrowthPeriod, HBarList, NAVY, ORANGE, PeriodDropdown, RED, SectionHead, SKY, SLATE, Spinner, StatCard } from '../components/Analyticscomponents';
 import { effectiveStatus, getExpiredAt, getRepostedAt, isJobExpired, isJobReposted } from '../utils/jobLifecycle';
 import type { LifecyclePoint } from '../components/LifecycleChart';
 import { LazyBoundary, LazyChart } from '../../../components/LazyBoundary';
 import { readDashboardCache, writeDashboardCache } from '../../../utils/dashboardCache';
+import { PageHeader } from '../../../components/PageHeader';
+import { IconJobs } from '../../../components/icons';
+import { useNavigate } from 'react-router-dom';
 
 interface JobAnalyticsCache {
   jobs: Job[];
@@ -26,12 +29,13 @@ const BidAnalyticsTab = lazy(() => import('../components/Bidanalyticstab'));
 type TabView = 'overview' | 'bid-analytics';
 
 const MAIN_TABS: { id: TabView; label: string }[] = [
-  { id: 'overview',      label: '📊  Overview'     },
-  { id: 'bid-analytics', label: '💼  Bid Analytics' },
+  { id: 'overview',      label: 'Overview'     },
+  { id: 'bid-analytics', label: 'Bid Analytics' },
 ];
 
 // ── main component ─────────────────────────────────────────────────────
 const JobAnalytics: React.FC = () => {
+  const navigate = useNavigate();
   const cached = readDashboardCache<JobAnalyticsCache>(CACHE_KEY);
   const [jobs, setJobs]     = useState<Job[]>(cached?.jobs ?? []);
   const [bids, setBids]     = useState<BidRecord[]>(cached?.bids ?? []);
@@ -168,34 +172,45 @@ const JobAnalytics: React.FC = () => {
   return (
     <div style={{ fontFamily: "'Inter', 'Helvetica Neue', sans-serif", color: NAVY }}>
 
-      {/* ── tab nav ─────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: 4, background: '#F1F5F9', borderRadius: 12, padding: 4, marginBottom: 24, width: 'fit-content' }}>
-        {MAIN_TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{
-            padding: '7px 18px', borderRadius: 9, border: 'none', cursor: 'pointer',
-            fontSize: 13, fontWeight: 700,
-            background: tab === t.id ? '#fff'        : 'transparent',
-            color:      tab === t.id ? NAVY          : SLATE,
-            boxShadow:  tab === t.id ? '0 1px 4px rgba(0,0,0,0.10)' : 'none',
-            transition: 'all 0.18s',
-          }}>{t.label}</button>
-        ))}
-      </div>
+      <PageHeader
+        title="Job Analytics"
+        subtitle="Job lifecycle, status mix and bid outcomes across every posting."
+        icon={IconJobs}
+        breadcrumbs={[
+          { label: 'Jobs', onClick: () => navigate('/jobs') },
+          { label: 'Analytics' },
+        ]}
+        below={
+          /* ── tab nav ─────────────────────────────────────────────── */
+          <div style={{ display: 'flex', gap: 4, background: '#F1F5F9', borderRadius: 12, padding: 4, width: 'fit-content' }}>
+            {MAIN_TABS.map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)} style={{
+                padding: '7px 18px', borderRadius: 9, border: 'none', cursor: 'pointer',
+                fontSize: 13, fontWeight: 700,
+                background: tab === t.id ? '#fff'        : 'transparent',
+                color:      tab === t.id ? NAVY          : SLATE,
+                boxShadow:  tab === t.id ? '0 1px 4px rgba(0,0,0,0.10)' : 'none',
+                transition: 'all 0.18s',
+              }}>{t.label}</button>
+            ))}
+          </div>
+        }
+      />
 
       {/* ══════════════════════════════════════════════════════════ */}
       {/* OVERVIEW TAB                                              */}
       {/* ══════════════════════════════════════════════════════════ */}
       {tab === 'overview' && (
         <>
-          <SectionHead title="Jobs Overview" sub="Metrics across all job postings" icon="📋" />
+          <SectionHead title="Jobs Overview" sub="Metrics across all job postings" icon={IconJobs} />
 
           {/* Stat cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
-            <StatCard label="Total Jobs"   value={jobStats.total}     sub="All postings"                                  accent={NAVY}   />
-            <StatCard label="Active Jobs"  value={jobStats.active}    sub="Currently open"                                accent={ORANGE} />
-            <StatCard label="Completed"    value={jobStats.completed} sub={`${jobStats.completionRate}% completion rate`} accent={SKY}    />
-            <StatCard label="Expired Jobs" value={jobStats.expired}   sub={`${jobStats.expiredRate}% lapsed after 7 days`} accent={RED}   />
-            <StatCard label="Reposted"     value={jobStats.reposted}  sub="Posted again after expiry"                     accent={PURPLE} />
+            <StatCard label="Total Jobs"   value={jobStats.total}     sub="All postings" />
+            <StatCard label="Active Jobs"  value={jobStats.active}    sub="Currently open" />
+            <StatCard label="Completed"    value={jobStats.completed} sub={`${jobStats.completionRate}% completion rate`} />
+            <StatCard label="Expired Jobs" value={jobStats.expired}   sub={`${jobStats.expiredRate}% lapsed after 7 days`} />
+            <StatCard label="Reposted"     value={jobStats.reposted}  sub="Posted again after expiry" />
           </div>
 
           {/* Combined line chart */}

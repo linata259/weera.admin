@@ -9,6 +9,8 @@ import {
   PrimaryButton, GhostButton, RoleBadge, ErrorNote, Spinner,
 } from "../components/ui";
 import { readDashboardCache, writeDashboardCache } from "../../../utils/dashboardCache";
+import { PageHeader } from "../../../components/PageHeader";
+import { IconRoles } from "../../../components/icons";
 
 interface AdminUsersCache {
   users: AdminUser[];
@@ -119,21 +121,19 @@ const AdminUsersPage: React.FC = () => {
 
   return (
     <div style={{ padding: 24, fontFamily: "'Inter', sans-serif" }}>
-      {/* header */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", marginBottom: 20 }}>
-        <div style={{ marginRight: "auto" }}>
-          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: TEXT }}>
-            Roles &amp; Permissions
-          </h1>
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: MUTED }}>
-            Admin users and the roles assigned to them
-          </p>
-        </div>
-        <GhostButton onClick={() => navigate("/roles/manage")}>Manage Roles</GhostButton>
-        <PrimaryButton onClick={() => navigate("/roles/create-user")}>
-          + Create Admin User
-        </PrimaryButton>
-      </div>
+      <PageHeader
+        title="Roles & Permissions"
+        subtitle="Admin users and the roles assigned to them"
+        icon={IconRoles}
+        actions={
+          <>
+            <GhostButton onClick={() => navigate("/roles/manage")}>Manage Roles</GhostButton>
+            <PrimaryButton onClick={() => navigate("/roles/create-user")}>
+              + Create Admin User
+            </PrimaryButton>
+          </>
+        }
+      />
 
       <ErrorNote message={error} />
 
